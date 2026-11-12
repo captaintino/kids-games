@@ -299,7 +299,7 @@ export function createFeed(env) {
       const mp = mouthPt();
       fx.text(mp.x, mp.y - mp.k * 120, 'BURP!', '#d6ffb8', 58, 1.4);
       fx.ring(mp.x, mp.y, '#d6ffb8');
-      earnSticker('monster', { delay: 2200 });
+      earnSticker('monster-fed', { delay: 2200 });
     }, 450);
     later(() => {
       T.tickle = T.now;
