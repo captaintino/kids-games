@@ -41,7 +41,7 @@ export function addArt(source, { game = 'art', title = 'My picture' } = {}) {
   c.drawImage(source, 0, 0, cv.width, cv.height);
   let img;
   try { img = cv.toDataURL('image/jpeg', 0.82); } catch (err) { return null; }
-  const item = { id: `${game}-${Date.now().toString(36)}`, game, title, img, w: cv.width, h: cv.height, t: Date.now() };
+  const item = { id: `${game}-${Date.now().toString(36)}${Math.floor(Math.random() * 1296).toString(36)}`, game, title, img, w: cv.width, h: cv.height, t: Date.now() };
   store.reload();
   store.data.items.push(item);
   store.data.items.sort((a, b) => a.t - b.t);

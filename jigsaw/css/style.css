@@ -181,23 +181,6 @@
   text-align: center;
   pointer-events: none;
 }
-.group-head {
-  grid-column: 1 / -1;
-  justify-self: start;
-  margin-top: 6px;
-  padding: 4px 16px 6px 10px;
-  border-radius: 999px;
-  background: rgba(90, 40, 190, .4);
-  border: 3px solid rgba(255, 255, 255, .7);
-  color: #fff;
-  font-weight: 700;
-  font-size: 20px;
-  text-shadow: 0 2px 0 rgba(80, 30, 150, .5);
-  -webkit-animation: card-in .4s cubic-bezier(.2, 1.5, .4, 1) both;
-  animation: card-in .4s cubic-bezier(.2, 1.5, .4, 1) both;
-}
-.group-head:first-child { margin-top: 0; }
-.group-icon { font-size: 24px; }
 .pic-stars, .done-name {
   display: flex;
   align-items: center;
@@ -397,7 +380,6 @@
   .size-tile { width: min(130px, 15vw, 33vh); margin: 4px 5px; padding: 6px 6px 4px; }
   .size-card { padding-top: 12px; padding-bottom: 14px; }
   .size-card .heading { font-size: 30px; }
-  .group-head { display: none; } /* the badges on the cards still show where art came from */
   .mine-empty { padding: 4px; }
   .mine-empty > * + * { margin-top: 8px; }
   .mine-art { width: 120px; height: 96px; }

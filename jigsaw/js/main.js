@@ -219,17 +219,7 @@ function buildGrid(keepPlace) {
     $('#pic-grid').innerHTML = '';
     return;
   }
-  let html = '';
-  let group = null;
-  galleryList.forEach((entry, n) => {
-    if (tab === 'mine' && entry.src !== group) {
-      group = entry.src;
-      const s = sourceInfo(group);
-      html += `<div class="group-head"><span class="group-icon">${s.icon}</span> ${s.name}</div>`;
-    }
-    html += cardHTML(entry, n);
-  });
-  $('#pic-grid').innerHTML = html;
+  $('#pic-grid').innerHTML = galleryList.map(cardHTML).join('');
   if (keepPlace) {
     scroller.scrollTop = top;
     const card = state.entry && $(`.pic-card[data-i="${galleryList.findIndex((e) => e.key === state.entry.key)}"]`);
@@ -381,7 +371,7 @@ function paintBackdrop(c, w, h) {
   for (let y = step / 2; y < h + step; y += step * 0.86) {
     const row = Math.round(y / (step * 0.86));
     for (let x = (row % 2 ? step / 2 : 0); x < w + step; x += step) {
-      c.globalAlpha = 0.28;
+      c.globalAlpha = 0.45;
       c.fillStyle = colors[k++ % colors.length];
       c.beginPath();
       c.arc(x + (r() - 0.5) * step * 0.2, y + (r() - 0.5) * step * 0.2, step * (0.12 + r() * 0.06), 0, Math.PI * 2);
@@ -425,6 +415,9 @@ async function artBitmap(entry, px) {
   c.fillStyle = '#fff';
   c.fillRect(x - f, y - f, w + 2 * f, h + 2 * f);
   c.restore();
+  c.strokeStyle = '#ff7ac6';
+  c.lineWidth = Math.max(2, f * 0.5);
+  c.strokeRect(x - f, y - f, w + 2 * f, h + 2 * f);
   c.drawImage(img, x, y, w, h);
   return cv;
 }
@@ -583,11 +576,13 @@ function scatterSpots(A, L, n) {
     while (spots.length < n) spots.push({ x: rand(L.m / 2, W - L.m / 2), y: rand(H * 0.5, H - L.m / 2) });
     return shuffle(spots).slice(0, n);
   }
-  const pickN = [];
-  for (let i = 0; i < n; i++) pickN.push(spots[Math.floor((i + 0.5) * spots.length / n)]);
+  // more spots than pieces: leave a few random gaps
+  const pickN = shuffle(spots).slice(0, n);
+  // the gaps are random, but the pieces go back in tray order, so they don't look like a jumble
+  pickN.sort((a, b) => (a.y - b.y) || (a.x - b.x));
   // never lay them out already in picture order
-  let out = shuffle(pickN);
-  for (let k = 0; k < 6 && n > 1 && out.every((sp, i) => sp === pickN[i]); k++) out = shuffle(pickN);
+  let out = shuffle(pickN.slice());
+  for (let k = 0; k < 6 && n > 1 && out.every((sp, i) => sp === pickN[i]); k++) out = shuffle(pickN.slice());
   return out;
 }
 
