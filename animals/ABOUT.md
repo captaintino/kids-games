@@ -28,8 +28,8 @@ Tap the little animals on the title screen too.
   drawn here. Shapes wrapped in `shut(...)` show while the animal is quiet and `open(...)` while it sings.
 - `sounds/`: real recordings of each animal, trimmed to a short call, cleaned up (rumble filtered out,
   soft fades), evened out in loudness and saved as small mono MP3s (6 to 17 KB each; MP3 so that Safari 12
-  can play them). They are free to use: most are CC0 from BigSoundBank, the rest are public domain (the
-  frog is a U.S. Geological Survey recording) or Creative Commons from Wikimedia Commons and OpenGameArt. `sounds/CREDITS.md` lists the source, author
+  can play them). They are free to use: most are CC0 from BigSoundBank, the rest are public domain or
+  Creative Commons from Wikimedia Commons and OpenGameArt, and the frog is from Pixabay. `sounds/CREDITS.md` lists the source, author
   and license of every one.
 - `js/sounds.js` loads and plays them with Web Audio (all are fetched on the first tap, and the service
   worker keeps them for offline play). `js/sound-data.js` holds each sound's length and when the animal's

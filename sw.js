@@ -1,7 +1,7 @@
 // Service worker: caches every game so the whole collection works offline.
 // Run `python3 tools/update-sw.py` after changing files: it refreshes ASSETS and
 // bumps VERSION, so installed copies download the new files.
-const VERSION = 'v7';
+const VERSION = 'v8';
 const CACHE = `play-party-${VERSION}`;
 
 const ASSETS = [

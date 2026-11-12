@@ -27,7 +27,7 @@ It's an installable **Progressive Web App**: once it has loaded, every game work
 - 🔢 **Count & Pop**: the counting mode of Bubble Pop (the tile opens it directly).
 - ✏️ **Letter Tracing** (`tracing/`): trace A–Z, a–z and 0–9 along dotted paths with a brush that stays
   inside the letter. "B! B is for ball!"
-- 🐮 **Animal Sounds** (`animals/`): tap 15 animals to hear their real sounds (free, openly licensed recordings), then
+- 🐮 **Animal Sounds** (`animals/`): tap 15 animals to hear their real sounds (free recordings), then
   play "Who says moo?".
 
 **Music & Making**

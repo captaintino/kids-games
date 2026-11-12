@@ -1,6 +1,6 @@
 # Animal sound credits
 
-Every sound here is a real recording, used under a free license. Each file was trimmed to one short call,
+Every sound here is a real recording, free to use in this game. Each file was trimmed to one short call,
 filtered to remove low rumble, given soft fades, evened out in loudness and saved as a mono MP3.
 Where a file joins two calls (for example "woof … woof"), both come from the same recording.
 
@@ -14,7 +14,7 @@ Where a file joins two calls (for example "woof … woof"), both come from the s
 | `sheep.mp3` | [Sheep #3](https://bigsoundbank.com/sheep-3-s2345.html) | Joseph Sardin, BigSoundBank.com | CC0 1.0 |
 | `horse.mp3` | [Neighing Horse #2](https://bigsoundbank.com/neighing-horse-2-s0859.html) | Joseph Sardin, BigSoundBank.com | CC0 1.0 |
 | `chicken.mp3` | [Hens Lays](https://bigsoundbank.com/hens-lays-s0978.html) | Joseph Sardin, BigSoundBank.com | CC0 1.0 |
-| `frog.mp3` | [Green frog](https://umesc.usgs.gov/terrestrial/amphibians/armi/frog_calls.html), from the USGS frog and toad calls | U.S. Geological Survey, Upper Midwest Environmental Sciences Center | Public domain (U.S. government work) |
+| `frog.mp3` | [Frog croaking sound effect](https://pixabay.com/sound-effects/nature-frog-croaking-sound-effect-322956/), Pixabay | DRAGON-STUDIO | Pixabay Content License |
 | `lion.mp3` | [Lion raring-sound1TamilNadu178](https://commons.wikimedia.org/wiki/File:Lion_raring-sound1TamilNadu178.ogg), Wikimedia Commons | தகவலுழவன் (Wikimedia Commons user) | Public domain |
 | `owl.mp3` | [Tawny Owl #2](https://bigsoundbank.com/tawny-owl-2-s1764.html) | Joseph Sardin, BigSoundBank.com | CC0 1.0 |
 | `bee.mp3` | [Bumblebee #1](https://bigsoundbank.com/bumblebee-1-s1000.html) | Joseph Sardin, BigSoundBank.com | CC0 1.0 |
@@ -25,6 +25,10 @@ Where a file joins two calls (for example "woof … woof"), both come from the s
 BigSoundBank's sounds are released under [Creative Commons CC0 1.0](https://bigsoundbank.com/droit.html)
 ("Share, copy, distribute … use, including for commercial purposes. Without any restrictions."). Thank you,
 Joseph Sardin!
+
+The frog comes from Pixabay under the [Pixabay Content License](https://pixabay.com/service/license-summary/):
+free to use in a project like this game, no credit required, but not to be sold or shared on its own as a
+standalone sound file. It is the one sound here that is not CC0, public domain or Creative Commons.
 
 The pig and monkey recordings need credit (above), and the pig's trimmed file is shared under the same
 license as the original, CC BY-SA 3.0.
