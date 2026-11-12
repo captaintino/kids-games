@@ -6,6 +6,7 @@ import {
   boot, $, fx, showScreen, celebrate, onPointer, createStore, replayClass, shuffle, pickOne,
   rand, vibrate, unit,
 } from '../../shared/js/kit.js';
+import { earnSticker } from '../../shared/js/rewards.js';
 import {
   SHAPES, SHAPE, BLOCK_COLORS, COLORS, blockSvg, holeSvg, miniShapeSvg, basketBackSvg, basketFrontSvg, blobSvg,
 } from './art.js';
@@ -327,6 +328,7 @@ function roundDone() {
     const cheer = pickOne(CHEERS);
     celebrate(cheer, '');
     say(cheer, { queue: true });
+    earnSticker('sorter');
     targets.forEach((t) => replayClass(t.el, 'happy'));
   }, 900);
   later(() => {

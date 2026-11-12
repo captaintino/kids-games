@@ -7,6 +7,7 @@ import {
   boot, $, fx, showScreen, celebrate, onPointer, createStore, replayClass, shuffle, pickOne,
   rand, vibrate, unit,
 } from '../../shared/js/kit.js';
+import { earnSticker } from '../../shared/js/rewards.js';
 import { FRIENDS, FRIEND, friendSvg, mountFriend } from './characters.js';
 import { FOODS, foodSvg } from '../../shared/js/food.js';
 
@@ -448,6 +449,7 @@ function full() {
   rig.setOpen(open);
   replayClass($('#fa'), 'dance');
   celebrate('So full!', '');
+  earnSticker('feed', { delay: 1600 });
   friendSay("I'm so full!");
   hearts(8);
   store.data.fed[cur.id] = (store.data.fed[cur.id] || 0) + 1;

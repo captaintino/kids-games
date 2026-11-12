@@ -3,50 +3,58 @@ import * as sfx from '../shared/js/audio.js';
 import { SCENES, paintScene, createAnimator } from '../shared/js/scenes.js';
 import { say } from '../shared/js/speech.js';
 import {
-  boot, $, $$, showScreen, setScene, settings, IS_IOS, replayClass,
+  boot, $, $$, showScreen, setScene, settings, IS_IOS, replayClass, centerOf, fx,
 } from '../shared/js/kit.js';
+import {
+  grownups, saveGrownups, isHidden, playedToday, holdGate,
+} from '../shared/js/grownups.js';
+import { STICKERS, CATS, album, stickerHTML, resetAlbum } from '../shared/js/rewards.js';
 
 // To add a game: add it here, then run tools/update-sw.py.
-// icon: an emoji, or an image path (img: true).
+// id: used by the grown-up corner to hide a game. icon: an emoji, or an image path (img: true).
 export const SECTIONS = [
   {
     title: 'Pop & Color', icon: '🎈',
     games: [
-      { href: 'bubbles/', name: 'Bubble Pop', icon: 'bubbles/icons/icon.svg', img: true, color: 'purple', say: 'Bubble Pop!' },
-      { href: 'coloring/', name: 'Coloring', icon: 'coloring/icons/icon.svg', img: true, color: 'pink', say: 'Coloring!' },
+      { id: 'bubbles', href: 'bubbles/', name: 'Bubble Pop', icon: 'bubbles/icons/icon.svg', img: true, color: 'purple', say: 'Bubble Pop!' },
+      { id: 'coloring', href: 'coloring/', name: 'Coloring', icon: 'coloring/icons/icon.svg', img: true, color: 'pink', say: 'Coloring!' },
     ],
   },
   {
     title: 'Pictures & Puzzles', icon: '🧩',
     games: [
-      { href: 'jigsaw/', name: 'Jigsaw', icon: '🧩', color: 'blue', say: 'Jigsaw puzzles!' },
-      { href: 'memory/', name: 'Memory Match', icon: '🃏', color: 'orange', say: 'Memory match!' },
-      { href: 'stickers/', name: 'Sticker Scene', icon: '🎩', color: 'teal', say: 'Sticker scene!' },
+      { id: 'jigsaw', href: 'jigsaw/', name: 'Jigsaw', icon: '🧩', color: 'blue', say: 'Jigsaw puzzles!' },
+      { id: 'memory', href: 'memory/', name: 'Memory Match', icon: '🃏', color: 'orange', say: 'Memory match!' },
+      { id: 'stickers', href: 'stickers/', name: 'Sticker Scene', icon: '🎩', color: 'teal', say: 'Sticker scene!' },
+      { id: 'dots', href: 'dots/', name: 'Dot-to-Dot', icon: '✏️', color: 'purple', say: 'Dot to dot!' },
     ],
   },
   {
     title: 'Learn & Play', icon: '🧠',
     games: [
-      { href: 'sorter/', name: 'Shapes & Colors', icon: '🔺', color: 'red', say: 'Shapes and colors!' },
-      { href: 'bubbles/#count', name: 'Count & Pop', icon: '🔢', color: 'green', say: 'Count and pop!' },
-      { href: 'tracing/', name: 'Letters', icon: '✏️', color: 'yellow', say: 'Letter tracing!' },
-      { href: 'animals/', name: 'Animal Sounds', icon: '🐮', color: 'orange', say: 'Animal sounds!' },
+      { id: 'sorter', href: 'sorter/', name: 'Shapes & Colors', icon: '🔺', color: 'red', say: 'Shapes and colors!' },
+      { id: 'count', href: 'bubbles/#count', name: 'Count & Pop', icon: '🔢', color: 'green', say: 'Count and pop!' },
+      { id: 'shapepop', href: 'bubbles/#shapes', name: 'Shape Pop', icon: '🔷', color: 'blue', say: 'Shape pop!' },
+      { id: 'letterpop', href: 'bubbles/#letters', name: 'Letter Pop', icon: '🅰️', color: 'pink', say: 'Letter pop!' },
+      { id: 'tracing', href: 'tracing/', name: 'Letters', icon: '🔤', color: 'yellow', say: 'Letter tracing!' },
+      { id: 'animals', href: 'animals/', name: 'Animal Sounds', icon: '🐮', color: 'orange', say: 'Animal sounds!' },
     ],
   },
   {
     title: 'Music & Making', icon: '🎵',
     games: [
-      { href: 'music/', name: 'Music Time', icon: '🎹', color: 'purple', say: 'Music time!' },
-      { href: 'spinart/', name: 'Spin Art', icon: '🌀', color: 'pink', say: 'Spin art!' },
-      { href: 'monster/', name: 'Build a Monster', icon: '👾', color: 'green', say: 'Build a monster!' },
+      { id: 'music', href: 'music/', name: 'Music Time', icon: '🎹', color: 'purple', say: 'Music time!' },
+      { id: 'spinart', href: 'spinart/', name: 'Spin Art', icon: '🌀', color: 'pink', say: 'Spin art!' },
+      { id: 'monster', href: 'monster/', name: 'Build a Monster', icon: '👾', color: 'green', say: 'Build a monster!' },
     ],
   },
   {
     title: 'Just for Fun', icon: '🌟',
     games: [
-      { href: 'stars/', name: 'Catch the Stars', icon: '⭐', color: 'blue', say: 'Catch the stars!' },
-      { href: 'fishing/', name: 'Fishing Pond', icon: '🎣', color: 'teal', say: 'Fishing pond!' },
-      { href: 'feed/', name: 'Feed the Animal', icon: '🍌', color: 'yellow', say: 'Feed the animal!' },
+      { id: 'stars', href: 'stars/', name: 'Catch the Stars', icon: '⭐', color: 'blue', say: 'Catch the stars!' },
+      { id: 'fishing', href: 'fishing/', name: 'Fishing Pond', icon: '🎣', color: 'teal', say: 'Fishing pond!' },
+      { id: 'feed', href: 'feed/', name: 'Feed the Animal', icon: '🍌', color: 'yellow', say: 'Feed the animal!' },
+      { id: 'carwash', href: 'carwash/', name: 'Car Wash', icon: '🚗', color: 'red', say: 'Car wash!' },
     ],
   },
 ];
@@ -55,11 +63,14 @@ const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
 function buildSections() {
   let i = 0;
-  $('#sections').innerHTML = SECTIONS.map((sec) => `
+  $('#sections').innerHTML = SECTIONS.map((sec) => {
+    const games = sec.games.filter((g) => !isHidden(g.id));
+    if (!games.length) return '';
+    return `
     <section class="hub-section">
       <h2 class="section-title"><span class="section-icon">${sec.icon}</span>${esc(sec.title)}</h2>
       <div class="game-grid">
-        ${sec.games.map((g) => {
+        ${games.map((g) => {
           const icon = g.img
             ? `<img class="game-img" src="${g.icon}" alt="">`
             : `<span class="game-emoji">${g.icon}</span>`;
@@ -67,7 +78,9 @@ function buildSections() {
               data-say="${esc(g.say)}"><span class="game-icon">${icon}</span><span class="tile-name">${esc(g.name)}</span></a>`;
         }).join('')}
       </div>
-    </section>`).join('');
+    </section>`;
+  }).join('');
+  updateBookButton();
 }
 
 // Tiles are real links (so they work even before the script loads), but give
@@ -147,6 +160,89 @@ function buildThemeGrid() {
 }
 
 // ---------------------------------------------------------------------------
+// Sticker book: every sticker earned in any game
+// ---------------------------------------------------------------------------
+let bookCat = CATS[0].key;
+
+function updateBookButton() {
+  const n = Object.keys(album().have).length;
+  $('#book-count').textContent = n ? `${n} / ${STICKERS.length}` : '';
+}
+
+function buildBook() {
+  const have = album().have;
+  const n = Object.keys(have).length;
+  $('#book-total').textContent = `${n} of ${STICKERS.length} stickers`;
+  $('#book-tabs').innerHTML = CATS.map((c) => {
+    const got = STICKERS.filter((s) => s.cat === c.key && have[s.id]).length;
+    const all = STICKERS.filter((s) => s.cat === c.key).length;
+    return `<button class="tab${c.key === bookCat ? ' on' : ''}" data-action="book-cat" data-cat="${c.key}" data-quiet
+      aria-label="${c.name}">${c.icon} <small>${got}/${all}</small></button>`;
+  }).join('');
+  $('#book-page').innerHTML = STICKERS.filter((s) => s.cat === bookCat).map((s, i) => {
+    const count = have[s.id] || 0;
+    return count
+      ? `<button class="slot got" data-action="book-sticker" data-id="${s.id}" data-quiet style="animation-delay:${i * 0.03}s"
+          aria-label="${s.name}">${stickerHTML(s, 'slot-art')}${count > 1 ? `<span class="slot-n">×${count}</span>` : ''}</button>`
+      : `<div class="slot empty" aria-label="Not found yet">${stickerHTML(s, 'slot-art')}<span class="slot-q">?</span></div>`;
+  }).join('');
+  if (!n) {
+    $('#book-page').insertAdjacentHTML('afterbegin',
+      '<p class="book-hint">Play any game to earn stickers! 🎉</p>');
+  }
+}
+
+function openBook() {
+  buildBook();
+  showScreen('screen-book');
+  const n = Object.keys(album().have).length;
+  say(n ? `Your sticker book! You have ${n} stickers!` : 'Your sticker book! Play games to earn stickers!');
+}
+
+// ---------------------------------------------------------------------------
+// Grown-up corner (opened by holding the lock button for 3 seconds)
+// ---------------------------------------------------------------------------
+const LIMITS = [0, 15, 30, 45, 60, 90, 120];
+
+function buildGrownups() {
+  const g = grownups.data;
+  $('#gu-name').value = g.name || '';
+  $('#gu-volume').value = Math.round((g.volume == null ? 1 : g.volume) * 100);
+  $('#gu-voice').value = Math.round((g.voice == null ? 1 : g.voice) * 100);
+  $('#gu-limit').innerHTML = LIMITS.map((m) =>
+    `<button class="chip${(+g.limit || 0) === m ? ' on' : ''}" data-action="gu-limit" data-min="${m}">${m ? `${m} min` : 'No limit'}</button>`).join('');
+  $('#gu-today').textContent = `Played today: ${playedToday()} min`;
+  $('#gu-stickers').checked = g.stickers !== false;
+  $('#gu-games').innerHTML = SECTIONS.map((sec) => sec.games.map((gm) => `
+    <label class="gu-game"><input type="checkbox" data-game="${gm.id}"${isHidden(gm.id) ? '' : ' checked'}>
+      <span class="gu-ico">${gm.img ? `<img src="${gm.icon}" alt="">` : gm.icon}</span> ${esc(gm.name)}</label>`).join('')).join('');
+}
+
+function openGrownups() {
+  buildGrownups();
+  showScreen('screen-grownups');
+}
+
+function readGrownups() {
+  const g = grownups.data;
+  g.name = $('#gu-name').value.trim().slice(0, 20);
+  g.volume = +$('#gu-volume').value / 100;
+  g.voice = +$('#gu-voice').value / 100;
+  g.stickers = $('#gu-stickers').checked;
+  g.hidden = $$('#gu-games input').filter((i) => !i.checked).map((i) => i.dataset.game);
+  saveGrownups();
+}
+
+function wireGrownups() {
+  ['#gu-name', '#gu-volume', '#gu-voice', '#gu-stickers'].forEach((sel) => {
+    $(sel).addEventListener('change', readGrownups);
+  });
+  $('#gu-name').addEventListener('input', readGrownups);
+  $('#gu-games').addEventListener('change', readGrownups);
+  holdGate($('#gu-lock'), openGrownups);
+}
+
+// ---------------------------------------------------------------------------
 // Install
 // ---------------------------------------------------------------------------
 let installPrompt = null;
@@ -180,10 +276,45 @@ updateInstallButton();
 boot({
   hub: true,
   party: HUB_PARTY,
-  onAction(action) {
+  onAction(action, el) {
     switch (action) {
       case 'worlds': buildThemeGrid(); showScreen('screen-worlds'); break;
       case 'home': showScreen('screen-home'); break;
+      case 'book': openBook(); break;
+      case 'book-cat': bookCat = el.dataset.cat; sfx.click(); buildBook(); break;
+      case 'book-sticker': {
+        const st = STICKERS.filter((x) => x.id === el.dataset.id)[0];
+        replayClass(el, 'bounce');
+        const c = centerOf(el);
+        fx.sparkles(c.x, c.y, 8, 30);
+        sfx.chime([0, 7, 12], 880, 0.05);
+        if (st) say(st.name);
+        break;
+      }
+      case 'gu-limit':
+        grownups.data.limit = +el.dataset.min;
+        saveGrownups();
+        buildGrownups();
+        break;
+      case 'gu-test':
+        readGrownups();
+        sfx.chime([0, 4, 7, 12], 660, 0.08);
+        say('Hello! This is how loud I am.');
+        break;
+      case 'gu-reset':
+        showScreen('screen-reset');
+        break;
+      case 'gu-reset-no': showScreen('screen-grownups'); break;
+      case 'gu-reset-yes':
+        resetAlbum();
+        updateBookButton();
+        showScreen('screen-grownups');
+        break;
+      case 'gu-done':
+        readGrownups();
+        buildSections();
+        showScreen('screen-home');
+        break;
       case 'install':
         if (installPrompt) {
           installPrompt.prompt();
@@ -197,8 +328,16 @@ boot({
         break;
     }
   },
-  onBack() { showScreen('screen-home'); return true; },
+  onBack(screen) {
+    if (screen === 'screen-grownups') { readGrownups(); buildSections(); }
+    if (screen === 'screen-reset') { showScreen('screen-grownups'); return true; }
+    showScreen('screen-home');
+    return true;
+  },
 });
+wireGrownups();
+// stickers earned in a game show up when coming back with the back button
+window.addEventListener('pageshow', () => { updateBookButton(); buildSections(); });
 
 // coming back with the browser's back button: the page may be restored from memory
 window.addEventListener('pageshow', () => { $$('.game-tile').forEach((t) => t.classList.remove('bounce')); });

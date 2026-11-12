@@ -5,6 +5,7 @@ import { say } from '../../shared/js/speech.js';
 import {
   boot, $, $$, fx, showScreen, banner, createStore, centerOf, replayClass, pickOne, shuffle, wait, W, H,
 } from '../../shared/js/kit.js';
+import { earnSticker } from '../../shared/js/rewards.js';
 import { ANIMALS, animalSVG } from './animals.js';
 import { play as playSound, SOUNDS, soundLength } from './sounds.js';
 
@@ -213,6 +214,7 @@ function tapQuiz(tile, a) {
       sfx.chime([0, 4, 7, 12, 16], 523, 0.08);
       say(`${pickOne(RIGHT)} The ${lower(a.name)} says ${a.says}!`);
       if (store.data.stars % 5 === 0) {
+        earnSticker('animals');
         setTimeout(() => {
           if (token !== Q.token) return;
           fx.confetti(90);

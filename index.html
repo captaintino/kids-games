@@ -25,11 +25,17 @@
       <header class="hub-head">
         <h1 class="logo"><span>Play</span><span>Party!</span></h1>
         <p class="tagline">What do you want to play?</p>
+        <button class="book-btn" data-action="book" aria-label="My sticker book">
+          <span class="book-ico">📒</span><span class="book-label">My Stickers</span><span class="book-count" id="book-count"></span>
+        </button>
       </header>
       <div id="sections"></div>
       <div class="hub-foot">
         <button class="btn btn-purple btn-small" data-action="worlds"><span class="btn-icon">🌍</span> Worlds</button>
         <button class="btn btn-green btn-small hidden" id="install-btn" data-action="install"><span class="btn-icon">📲</span> Install</button>
+      </div>
+      <div class="hub-foot">
+        <button class="grownup-btn" id="gu-lock" aria-label="Grown-up corner: hold for 3 seconds">🔒 Grown-ups <small>(hold)</small></button>
       </div>
     </div>
     <button class="round-btn corner-left" data-action="worlds" aria-label="Pick a world">🌍</button>
@@ -42,6 +48,64 @@
       <h2 class="heading">Pick a World</h2>
       <div class="theme-grid" id="theme-grid"></div>
       <button class="btn btn-purple btn-small" data-action="home"><span class="btn-icon">🏠</span> Back</button>
+    </div>
+  </section>
+
+  <!-- Sticker book -->
+  <section id="screen-book" class="screen">
+    <div class="panel book-panel">
+      <div class="book-head">
+        <button class="round-btn" data-action="home" aria-label="Back">⬅️</button>
+        <h2 class="heading">My Stickers</h2>
+        <div class="round-spacer"></div>
+      </div>
+      <div class="book-total" id="book-total"></div>
+      <div class="tabs" id="book-tabs"></div>
+      <div class="book-scroll scroll-y">
+        <div class="book-page" id="book-page"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Grown-up corner -->
+  <section id="screen-grownups" class="screen">
+    <div class="panel gu-panel scroll-y">
+      <h2 class="heading">Grown-up Corner</h2>
+      <div class="gu-card">
+        <label class="gu-row" for="gu-name"><span class="gu-label">Kid's name</span>
+          <input id="gu-name" type="text" maxlength="20" autocomplete="off" autocapitalize="words" placeholder="For Letter Tracing and cheers"></label>
+      </div>
+      <div class="gu-card">
+        <label class="gu-row" for="gu-volume"><span class="gu-label">🔊 Sounds</span><input id="gu-volume" type="range" min="0" max="100" step="5"></label>
+        <label class="gu-row" for="gu-voice"><span class="gu-label">🗣️ Voice</span><input id="gu-voice" type="range" min="0" max="100" step="5"></label>
+        <button class="chip" data-action="gu-test">Test the sound</button>
+      </div>
+      <div class="gu-card">
+        <div class="gu-label">⏰ Play time each day</div>
+        <div class="chips" id="gu-limit"></div>
+        <div class="gu-note" id="gu-today"></div>
+        <div class="gu-note">When time is up, a "Time for a break!" screen appears. Hold its lock button for 3 seconds to add more time.</div>
+      </div>
+      <div class="gu-card">
+        <div class="gu-label">🎮 Games on the home screen</div>
+        <div class="gu-games" id="gu-games"></div>
+      </div>
+      <div class="gu-card">
+        <label class="gu-row gu-check" for="gu-stickers"><input id="gu-stickers" type="checkbox"> <span class="gu-label">📒 Earn stickers for the sticker book</span></label>
+        <button class="chip" data-action="gu-reset">Empty the sticker book…</button>
+      </div>
+      <button class="btn btn-green btn-small gu-done" data-action="gu-done"><span class="btn-icon">✅</span> Done</button>
+    </div>
+  </section>
+
+  <section id="screen-reset" class="screen dim">
+    <div class="panel card">
+      <h2 class="heading">Empty the sticker book?</h2>
+      <p class="card-text">All earned stickers will be removed.</p>
+      <div class="btn-col">
+        <button class="btn btn-orange btn-small" data-action="gu-reset-yes"><span class="btn-icon">🧽</span> Yes, empty it</button>
+        <button class="btn btn-green btn-small" data-action="gu-reset-no"><span class="btn-icon">📒</span> Keep stickers</button>
+      </div>
     </div>
   </section>
 

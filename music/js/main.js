@@ -6,6 +6,7 @@ import {
   boot, $, $$, fx, showScreen, celebrate, onPointer, createStore, replayClass, setPartyColors,
   pickOne, W, H, DPR,
 } from '../../shared/js/kit.js';
+import { earnSticker } from '../../shared/js/rewards.js';
 import { Xylophone, Piano, Drums, RAINBOW } from './instruments.js';
 import { note, drum } from './voices.js';
 import { SONGS, songById } from './songs.js';
@@ -283,6 +284,7 @@ const follow = {
     store.persist();
     celebrate('Bravo!', s.name);
     say(`You played ${s.name}!`);
+    earnSticker('music', { delay: 1800 });
     this.pill('🎶');
     later(() => {
       say('Listen!');
