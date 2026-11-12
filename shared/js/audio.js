@@ -12,9 +12,16 @@ let master = null;
 let noiseBuf = null;
 let muted = false;
 
+let volume = 1;
+function level() { return muted ? 0 : 0.9 * volume; }
 export function setMuted(m) {
   muted = m;
-  if (master && ctx) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.02);
+  if (master && ctx) master.gain.setTargetAtTime(level(), ctx.currentTime, 0.02);
+}
+/** Overall loudness, 0 to 1 (set from the grown-up corner). */
+export function setVolume(v) {
+  volume = Math.max(0, Math.min(1, v));
+  if (master && ctx) master.gain.setTargetAtTime(level(), ctx.currentTime, 0.02);
 }
 export function isMuted() { return muted; }
 
@@ -28,7 +35,7 @@ export function unlock() {
     comp.threshold.value = -14;
     comp.ratio.value = 6;
     master = ctx.createGain();
-    master.gain.value = muted ? 0 : 0.9;
+    master.gain.value = level();
     master.connect(comp);
     comp.connect(ctx.destination);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.25, ctx.sampleRate);

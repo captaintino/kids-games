@@ -42,7 +42,13 @@ if (synth) {
   } catch (err) { /* ignore */ }
 }
 
+let speechVolume = 1;
 export function canSpeak() { return !!synth; }
+/** Loudness of the spoken words, 0 (off) to 1 (set from the grown-up corner). */
+export function setSpeechVolume(v) {
+  speechVolume = Math.max(0, Math.min(1, v));
+  if (!speechVolume) stopSpeech();
+}
 export function setSpeechMuted(m) {
   muted = !!m;
   if (muted) stopSpeech();
@@ -69,7 +75,7 @@ export function unlockSpeech() {
  * (or straight away if speech is muted or missing), so games can wait for it.
  */
 export function say(text, opts = {}) {
-  if (!synth || muted || !text) return Promise.resolve();
+  if (!synth || muted || !speechVolume || !text) return Promise.resolve();
   if (!voice) pickVoice();
   return new Promise((resolve) => {
     let done = false;
@@ -80,7 +86,7 @@ export function say(text, opts = {}) {
       if (voice) { u.voice = voice; u.lang = voice.lang; } else u.lang = 'en-US';
       u.rate = opts.rate || 0.95;
       u.pitch = opts.pitch || 1.15;
-      u.volume = opts.volume == null ? 1 : opts.volume;
+      u.volume = (opts.volume == null ? 1 : opts.volume) * speechVolume;
       u.onend = finish;
       u.onerror = finish;
       // Chrome sometimes never fires onend; don't let a game wait forever

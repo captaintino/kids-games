@@ -14,6 +14,10 @@ still carry most of their own code; every newer game is built on this kit.
 | `js/pictures.js` | The 36 coloring pictures (`PICTURES`), the `PALETTE`, and the path helpers (`circle`, `ellipse`, `rect`, `poly`, `star`, `cloud`, `S`, `I`, `D`, `BG`, `eye`). |
 | `js/art.js` | Turns a picture into SVG (`pictureMarkup`, `svgOpen`) and into a canvas (`svgToCanvas`). |
 | `js/food.js` | 32 drawn fruit, veg and snacks (`FOODS`, `foodSvg`), used by Shapes & Colors and Feed the Animal. |
+| `js/store.js` | `createStore(name, defaults)`: saving on the device. No side effects, so any page can use it (the kit re-exports it). |
+| `js/rewards.js` | The sticker book: `earnSticker('mygame')` when a kid finishes something shows a "New sticker!" pop-up and adds a sticker to the album on the home screen (at most one per game every 45 seconds). The stickers are the Sticker Scene art. |
+| `js/gallery.js` | Saved artwork: `addArt(canvas, { game, title })`, `listArt()`. Jigsaw turns these into puzzles. |
+| `js/grownups.js` | The grown-up corner settings (kid's name, volumes, daily play limit, hidden games, stickers on/off), `holdGate()` for hold-3-seconds buttons, and the "Time for a break!" screen. `boot()` starts it; pages without the kit call `startGrownups()`. |
 | `fonts/` | Fredoka (SIL Open Font License). |
 
 ## Making a new game

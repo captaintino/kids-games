@@ -19,6 +19,8 @@
 import * as sfx from './audio.js';
 import { SCENES, paintScene, createAnimator } from './scenes.js';
 import { unlockSpeech, setSpeechMuted } from './speech.js';
+import { createStore } from './store.js';
+import { startGrownups } from './grownups.js';
 
 // ---------------------------------------------------------------------------
 // Small helpers
@@ -59,32 +61,8 @@ export const ease = {
 // ---------------------------------------------------------------------------
 // Saving
 // ---------------------------------------------------------------------------
-/**
- * A little saved object for one game:  const store = createStore('memory', { best: 0 });
- * Change store.data freely, then call store.persist(). Stored under "kids-games.<name>".
- */
-export function createStore(name, defaults) {
-  const key = `kids-games.${name}`;
-  let data = JSON.parse(JSON.stringify(defaults));
-  try {
-    const s = JSON.parse(localStorage.getItem(key));
-    if (s && typeof s === 'object') data = Object.assign(data, s);
-  } catch (err) { /* storage blocked: play without saving */ }
-  let timer = 0;
-  const store = {
-    data,
-    persistNow() {
-      clearTimeout(timer);
-      try { localStorage.setItem(key, JSON.stringify(store.data)); } catch (err) { /* full or blocked */ }
-    },
-    persist() {
-      clearTimeout(timer);
-      timer = setTimeout(store.persistNow, 250);
-    },
-  };
-  window.addEventListener('pagehide', store.persistNow);
-  return store;
-}
+// createStore lives in store.js (no side effects, so pages without the kit can use it too).
+export { createStore };
 
 /** Settings every game shares: sound on/off and the background world. */
 export const settings = createStore('settings', { muted: false, scene: 'party' });
@@ -686,6 +664,7 @@ export function boot(options = {}) {
 
   resize();
   applyMuted();
+  startGrownups();
   requestAnimationFrame((t) => { last = t; requestAnimationFrame(frame); });
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
