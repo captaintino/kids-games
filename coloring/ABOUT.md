@@ -34,8 +34,9 @@ leave the page after drawing something real (once per visit), so Jigsaw can turn
 earns a sticker too. The game also follows the grown-up corner settings (volumes, play-time limit).
 
 **Themes:** pick a world for the background: Paint Party (its colors change with each mode), Under the Sea,
-Wild West, Knights & Castles, or Outer Space. Each one has a few moving details (fish, a tumbleweed,
-waving flags, a rocket...). The worlds are shared with the Bubble Pop Party game.
+Wild West, Knights & Castles, Outer Space, Farm, City, Winter or Birthday Party. Each one has a few moving
+details (fish, a tumbleweed, waving flags, a rocket...). The worlds are shared with the other games. The
+picker shows them three to a row (five to a row on sideways phones).
 
 Other things you can do:
 - ↩️ Undo, and 🗑️ start a picture over (it asks first).

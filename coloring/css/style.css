@@ -418,12 +418,15 @@ canvas#fx { z-index: 30; }
   .theme-grid { grid-gap: 12px; gap: 12px; }
 }
 @media (min-width: 700px) {
-  .theme-grid { grid-auto-rows: 230px; max-width: 760px; grid-gap: 16px; gap: 16px; }
+  .theme-grid { grid-auto-rows: 230px; max-width: 760px; }
   .theme-card .theme-name { font-size: 19px; padding: 16px 6px 10px; }
   .theme-card .check { width: 36px; height: 36px; font-size: 22px; }
 }
 @media (min-width: 700px) and (min-height: 1000px) {
   .theme-grid { grid-auto-rows: 290px; }
+}
+@media (min-width: 700px) and (max-aspect-ratio: 5/4) {
+  .theme-grid { grid-gap: 16px; gap: 16px; }
 }
 /* sideways: five worlds in a row, the last row centered */
 @media (min-aspect-ratio: 5/4) {
