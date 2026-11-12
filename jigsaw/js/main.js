@@ -1,5 +1,6 @@
-// Jigsaw Puzzles: the coloring pictures cut into 4, 6 or 9 big pieces that
-// snap into place. Kids can also make puzzles from their own colored pictures.
+// Jigsaw Puzzles: the coloring pictures cut into 4 to 16 big pieces that snap
+// into place. Kids can also make puzzles from their own art: colored pictures,
+// spin paintings, butterflies, monsters and drawings (shared/js/gallery.js).
 import * as sfx from '../../shared/js/audio.js';
 import { say } from '../../shared/js/speech.js';
 import {
@@ -8,15 +9,21 @@ import {
 } from '../../shared/js/kit.js';
 import { PICTURES, CATEGORIES, PALETTE, INK } from '../../shared/js/pictures.js';
 import { pictureMarkup, svgOpen, svgToCanvas, installDefs } from '../../shared/js/art.js';
+import { listArt } from '../../shared/js/gallery.js';
+import { earnSticker } from '../../shared/js/rewards.js';
 import { makeCut, pieceOps, tracePath, svgPath, seamsPath, seeded } from './cut.js';
 
 const store = createStore('jigsaw', { done: {}, size: 4, tab: 'all' });
 if (!store.data.done || typeof store.data.done !== 'object') store.data.done = {};
 
+// grids: the ways to cut each size (cols, rows); the one that gives the
+// biggest pieces on this screen (and for this picture's shape) wins.
 const SIZES = [
-  { n: 4, cols: 2, rows: 2, tile: 'green', word: 'Four' },
-  { n: 6, cols: 3, rows: 2, tile: 'orange', word: 'Six' },
-  { n: 9, cols: 3, rows: 3, tile: 'purple', word: 'Nine' },
+  { n: 4, grids: [[2, 2]], tile: 'green', word: 'Four' },
+  { n: 6, grids: [[3, 2], [2, 3]], tile: 'orange', word: 'Six' },
+  { n: 9, grids: [[3, 3]], tile: 'purple', word: 'Nine' },
+  { n: 12, grids: [[4, 3], [3, 4]], tile: 'blue', word: 'Twelve' },
+  { n: 16, grids: [[4, 4]], tile: 'pink', word: 'Sixteen' },
 ];
 const sizeInfo = (n) => SIZES.find((s) => s.n === n) || SIZES[0];
 
@@ -39,14 +46,61 @@ function hasArt(a) {
   return Object.keys(f).some((k) => !!f[k]) || (Array.isArray(a.s) && a.s.length > 0);
 }
 
-function realEntry(pic) { return { pic, mine: false, key: pic.id }; }
+// Where a kid's artwork came from (the My Pictures tab groups them like this).
+const SOURCES = [
+  { key: 'spinart', icon: '🌀', name: 'Spin Art' },
+  { key: 'monster', icon: '👾', name: 'Monsters' },
+  { key: 'coloring', icon: '🎨', name: 'Coloring' },
+  { key: 'drawing', icon: '✏️', name: 'Drawings' },
+  { key: 'other', icon: '🖼️', name: 'More Art' },
+];
+const sourceInfo = (k) => SOURCES.find((s) => s.key === k) || SOURCES[SOURCES.length - 1];
+
+function sourceOf(item) {
+  const g = String(item.game || '').toLowerCase();
+  const t = String(item.title || '').toLowerCase();
+  if (/draw|doodle|sketch|trac/.test(g) || (/color|colour/.test(g) && /draw|doodle/.test(t))) return 'drawing';
+  if (/spin|butterfl/.test(g)) return 'spinart';
+  if (/monster/.test(g)) return 'monster';
+  if (/color|colour/.test(g)) return 'coloring';
+  return 'other';
+}
+
+function realEntry(pic) { return { kind: 'pic', pic, name: pic.name, mine: false, key: pic.id, asp: 1 }; }
+
+// A saved artwork from the gallery. Its id never changes, so progress is saved per id.
+function artEntry(item) {
+  const asp = item.w > 0 && item.h > 0 ? item.w / item.h : 1;
+  return {
+    kind: 'art', item, name: item.title || 'My picture', mine: true, key: `art-${item.id}`,
+    src: sourceOf(item), artAsp: asp, asp: clamp(asp, 0.7, 1.43),
+  };
+}
+
+function galleryArt() {
+  let items = [];
+  try { items = listArt(); } catch (err) { items = []; }
+  return items.filter((it) => it && it.id && typeof it.img === 'string' && it.img.indexOf('data:image') === 0).map(artEntry);
+}
 
 function entriesFor(tab) {
   if (tab === 'mine') {
     const art = myArt();
-    return PICTURES.filter((p) => hasArt(art[p.id])).map((pic) => ({ pic, mine: true, key: `my-${pic.id}`, art: art[pic.id] }));
+    const colored = PICTURES.filter((p) => hasArt(art[p.id])).map((pic) =>
+      ({ kind: 'pic', pic, name: pic.name, mine: true, key: `my-${pic.id}`, art: art[pic.id], src: 'coloring', asp: 1 }));
+    const all = galleryArt().concat(colored);
+    // grouped by where they were made (newest first inside each group)
+    const out = [];
+    SOURCES.forEach((s) => all.forEach((e) => { if (e.src === s.key) out.push(e); }));
+    return out;
   }
   return PICTURES.filter((p) => tab === 'all' || p.cat === tab).map(realEntry);
+}
+
+// The picture as a little HTML thumbnail (inside a square box).
+function thumbHTML(entry, prefix) {
+  if (entry.kind === 'art') return `<img class="art-img" src="${entry.item.img}" alt="" draggable="false">`;
+  return `${svgOpen()}${markup(entry, prefix)}</svg>`;
 }
 
 function markup(entry, prefix) {
@@ -141,6 +195,17 @@ function starsRow(entry) {
   return '<span class="pic-stars">' + SIZES.map((s) => `<i class="${d[s.n] ? 'on' : ''}">★</i>`).join('') + '</span>';
 }
 
+const esc = (t) => String(t).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
+
+function cardHTML(entry, n) {
+  const art = entry.kind === 'art';
+  const src = entry.src ? sourceInfo(entry.src) : null;
+  return `<button class="pic-card${entry.mine ? ' mine' : ''}${art ? ' art' : ''}" data-i="${n}" style="animation-delay:${Math.min(n, 16) * 25}ms" aria-label="${esc(entry.name)}">` +
+    `<span class="thumb${art ? ' art-thumb' : ''}">${thumbHTML(entry, `t${n}-`)}</span>` +
+    (src ? `<span class="src-badge" aria-hidden="true">${src.icon}</span>` : '') +
+    `<span class="pic-name">${esc(entry.name)}</span>${starsRow(entry)}</button>`;
+}
+
 function buildGrid(keepPlace) {
   const scroller = $('#gallery-scroll');
   const top = scroller.scrollTop;
@@ -154,10 +219,17 @@ function buildGrid(keepPlace) {
     $('#pic-grid').innerHTML = '';
     return;
   }
-  $('#pic-grid').innerHTML = galleryList.map((entry, n) =>
-    `<button class="pic-card${entry.mine ? ' mine' : ''}" data-i="${n}" style="animation-delay:${Math.min(n, 16) * 25}ms">` +
-    `<span class="thumb">${svgOpen()}${markup(entry, `t${n}-`)}</svg></span>` +
-    `<span class="pic-name">${entry.pic.name}</span>${starsRow(entry)}</button>`).join('');
+  let html = '';
+  let group = null;
+  galleryList.forEach((entry, n) => {
+    if (tab === 'mine' && entry.src !== group) {
+      group = entry.src;
+      const s = sourceInfo(group);
+      html += `<div class="group-head"><span class="group-icon">${s.icon}</span> ${s.name}</div>`;
+    }
+    html += cardHTML(entry, n);
+  });
+  $('#pic-grid').innerHTML = html;
   if (keepPlace) {
     scroller.scrollTop = top;
     const card = state.entry && $(`.pic-card[data-i="${galleryList.findIndex((e) => e.key === state.entry.key)}"]`);
@@ -177,7 +249,7 @@ $('#tabs').addEventListener('click', (e) => {
   store.persist();
   $$('.tab').forEach((b) => b.classList.toggle('on', b === t));
   buildGrid(false);
-  if (t.dataset.tab === 'mine') say(galleryList.length ? 'My pictures!' : 'Color a picture first, then make a puzzle!');
+  if (t.dataset.tab === 'mine') say(galleryList.length ? 'My pictures!' : 'Make a picture first, then make a puzzle!');
 });
 
 $('#pic-grid').addEventListener('click', (e) => {
@@ -194,22 +266,58 @@ $('#pic-grid').addEventListener('click', (e) => {
 // ---------------------------------------------------------------------------
 let pending = null;
 const iconCuts = {};
-function iconSeams(s) {
-  if (!iconCuts[s.n]) iconCuts[s.n] = seamsPath(makeCut(s.cols, s.rows, seeded(s.n * 31 + 5)), 400);
-  return iconCuts[s.n];
+function iconSeams(n, cols, rows, bw, bh) {
+  const id = `${cols}x${rows}:${bw}x${bh}`;
+  if (!iconCuts[id]) iconCuts[id] = seamsPath(makeCut(cols, rows, seeded(n * 31 + 5)), bw, bh);
+  return iconCuts[id];
+}
+
+// The play area while the puzzle is not showing yet (mirrors .area in the CSS).
+function areaGuess() {
+  const cs = window.getComputedStyle(document.documentElement);
+  const v = (k) => parseFloat(cs.getPropertyValue(k)) || 0;
+  const short = H <= 560;
+  const top = (short ? 68 : 78) + v('--safe-top');
+  const bottom = (short ? 8 : 12) + v('--safe-bottom');
+  const left = 12 + v('--safe-left');
+  const right = 12 + v('--safe-right');
+  return { x: left, y: top, w: W - left - right, h: H - top - bottom };
+}
+
+// Which way to cut this size for this picture on this screen (cols x rows).
+function gridFor(entry, size, A) {
+  let best = null;
+  size.grids.forEach((g) => {
+    const L = fitBoard(A, entry.asp, g[0], g[1], size.n);
+    const better = !best || L.m > best.m + 1 ||
+      (Math.abs(L.m - best.m) <= 1 && (A.w >= A.h ? g[0] > best.cols : g[1] > best.rows));
+    if (better) best = { cols: g[0], rows: g[1], m: L.m };
+  });
+  return best;
+}
+
+// The picture with the seams of a cut drawn over it (the "how many pieces" buttons).
+function sizePreview(entry, size, i) {
+  const g = gridFor(entry, size, areaGuess());
+  const bw = entry.asp >= 1 ? 400 : Math.round(400 * entry.asp);
+  const bh = entry.asp >= 1 ? Math.round(400 / entry.asp) : 400;
+  const seams = iconSeams(size.n, g.cols, g.rows, bw, bh);
+  const lines = `<path d="${seams}" fill="none" stroke="${INK}" stroke-width="15" stroke-linecap="round"/>` +
+    `<path d="${seams}" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>`;
+  if (entry.kind === 'art') {
+    return `<span class="size-pic art-thumb"><svg viewBox="0 0 ${bw} ${bh}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">` +
+      `<rect width="${bw}" height="${bh}" fill="#fff" fill-opacity=".35"/>` +
+      `<image xlink:href="${entry.item.img}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMid meet"/>${lines}</svg></span>`;
+  }
+  return `<span class="size-pic">${svgOpen()}${markup(entry, `sz${i}-`)}${lines}</svg></span>`;
 }
 
 function openSize(entry) {
   pending = entry;
   const d = doneFor(entry);
-  $('#size-tiles').innerHTML = SIZES.map((s, i) => {
-    const seams = iconSeams(s);
-    return `<button class="tile size-tile ${s.tile}${store.data.size === s.n ? ' last' : ''}" data-size="${s.n}" style="animation-delay:${i * 70}ms" aria-label="${s.n} pieces">` +
-      `<span class="size-pic">${svgOpen()}${markup(entry, `sz${i}-`)}` +
-      `<path d="${seams}" fill="none" stroke="${INK}" stroke-width="15" stroke-linecap="round"/>` +
-      `<path d="${seams}" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/></svg></span>` +
-      `<span class="tile-name">${s.n}</span>${d[s.n] ? '<span class="size-star">⭐</span>' : ''}</button>`;
-  }).join('');
+  $('#size-tiles').innerHTML = SIZES.map((s, i) =>
+    `<button class="tile size-tile ${s.tile}${store.data.size === s.n ? ' last' : ''}" data-size="${s.n}" style="animation-delay:${i * 70}ms" aria-label="${s.n} pieces">` +
+      `${sizePreview(entry, s, i)}<span class="tile-name">${s.n}</span>${d[s.n] ? '<span class="size-star">⭐</span>' : ''}</button>`).join('');
   showScreen('screen-size');
   say('How many pieces?');
 }
@@ -234,13 +342,90 @@ let token = 0; // bumps whenever a puzzle starts or ends, so stale async work st
 const bitmaps = {};
 
 async function bitmapFor(entry) {
-  const id = entry.mine ? `${entry.key}:${JSON.stringify(entry.art)}` : entry.key;
+  const id = entry.kind === 'art' ? entry.key : entry.mine ? `${entry.key}:${JSON.stringify(entry.art)}` : entry.key;
   if (bitmaps[id]) return bitmaps[id];
-  const holder = document.createElement('div');
-  holder.innerHTML = `${svgOpen()}${markup(entry, 'bm')}</svg>`;
   const px = clamp(Math.ceil(Math.min(W, H) * DPR), 600, 1400);
-  const cv = await svgToCanvas(holder.firstChild, px);
+  let cv;
+  if (entry.kind === 'art') cv = await artBitmap(entry, px);
+  else {
+    const holder = document.createElement('div');
+    holder.innerHTML = `${svgOpen()}${markup(entry, 'bm')}</svg>`;
+    cv = await svgToCanvas(holder.firstChild, px);
+  }
   bitmaps[id] = cv;
+  return cv;
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+// A happy backdrop for art that is much wider or taller than the board:
+// soft candy colors with polka dots, so the extra space looks on purpose.
+function paintBackdrop(c, w, h) {
+  const g = c.createLinearGradient(0, 0, w * 0.4, h);
+  g.addColorStop(0, '#fff4c9');
+  g.addColorStop(0.5, '#ffe2f2');
+  g.addColorStop(1, '#dff1ff');
+  c.fillStyle = g;
+  c.fillRect(0, 0, w, h);
+  const colors = ['#ff7ac6', '#ffd93b', '#5cd65c', '#6fc8ff', '#c27bff', '#ff9a3d'];
+  const step = Math.max(w, h) / 9;
+  const r = seeded(11);
+  let k = 0;
+  for (let y = step / 2; y < h + step; y += step * 0.86) {
+    const row = Math.round(y / (step * 0.86));
+    for (let x = (row % 2 ? step / 2 : 0); x < w + step; x += step) {
+      c.globalAlpha = 0.28;
+      c.fillStyle = colors[k++ % colors.length];
+      c.beginPath();
+      c.arc(x + (r() - 0.5) * step * 0.2, y + (r() - 0.5) * step * 0.2, step * (0.12 + r() * 0.06), 0, Math.PI * 2);
+      c.fill();
+    }
+  }
+  c.globalAlpha = 1;
+}
+
+// A gallery picture on a board of the entry's shape. Art that is close to that
+// shape fills it exactly; very wide or tall art sits in a little white frame.
+async function artBitmap(entry, px) {
+  const img = await loadImage(entry.item.img);
+  const asp = entry.asp;
+  const bw = Math.round(asp >= 1 ? px : px * asp);
+  const bh = Math.round(asp >= 1 ? px / asp : px);
+  const cv = document.createElement('canvas');
+  cv.width = bw;
+  cv.height = bh;
+  const c = cv.getContext('2d');
+  c.imageSmoothingEnabled = true;
+  if ('imageSmoothingQuality' in c) c.imageSmoothingQuality = 'high';
+  const ia = (img.naturalWidth || img.width) / (img.naturalHeight || img.height);
+  if (Math.abs(ia - asp) / asp < 0.02) {
+    c.drawImage(img, 0, 0, bw, bh);
+    return cv;
+  }
+  paintBackdrop(c, bw, bh);
+  // contain, with a little room for the frame
+  const room = 0.92;
+  let w = bw * room;
+  let h = w / ia;
+  if (h > bh * room) { h = bh * room; w = h * ia; }
+  const x = (bw - w) / 2;
+  const y = (bh - h) / 2;
+  const f = Math.max(4, Math.round(px * 0.012));
+  c.save();
+  c.shadowColor = 'rgba(40, 10, 90, .3)';
+  c.shadowBlur = f * 2;
+  c.shadowOffsetY = f;
+  c.fillStyle = '#fff';
+  c.fillRect(x - f, y - f, w + 2 * f, h + 2 * f);
+  c.restore();
+  c.drawImage(img, x, y, w, h);
   return cv;
 }
 
@@ -259,10 +444,10 @@ async function startPuzzle(entry, n) {
   // drop the old pieces
   $$('.piece', layer).forEach((el) => el.parentNode.removeChild(el));
   state = {
-    entry, n: size.n, cols: size.cols, rows: size.rows, pieces: [], placed: 0, done: false,
+    entry, n: size.n, cols: size.grids[0][0], rows: size.grids[0][1], pieces: [], placed: 0, done: false,
     drags: new Map(), ready: false, idle: 0, hintPiece: null, hintAt: 0, nearPiece: null, z: 10,
   };
-  $('#pic-name').textContent = entry.pic.name;
+  $('#pic-name').textContent = entry.name;
   board.classList.remove('happy', 'finished');
   $('#full').classList.remove('show');
   $('#slot-glow').classList.add('hidden');
@@ -270,12 +455,11 @@ async function startPuzzle(entry, n) {
   play.classList.remove('hidden');
   board.classList.add('loading');
 
-  // 6 pieces: 3 across in landscape, 3 down in portrait (whichever gives bigger pieces)
-  if (size.n === 6) {
-    const A = measureArea();
-    const a = fitBoard(A, 3, 2, 6);
-    const b = fitBoard(A, 2, 3, 6);
-    if (b.s > a.s) { state.cols = 2; state.rows = 3; }
+  // 6 and 12 pieces: more across or more down, whichever gives bigger pieces here
+  if (size.grids.length > 1) {
+    const g = gridFor(entry, size, measureArea());
+    state.cols = g.cols;
+    state.rows = g.rows;
   }
   let bm;
   try { bm = await bitmapFor(entry); } catch (err) { bm = null; }
@@ -297,7 +481,7 @@ async function startPuzzle(entry, n) {
   board.classList.remove('loading');
   // start as the whole picture, then the pieces jump out
   state.pieces.forEach((p) => { p.x = p.hx; p.y = p.hy; place(p); });
-  say(`${entry.pic.name}!`);
+  say(`${entry.name}!`);
   await wait(900);
   if (my !== token) return;
   sfx.whoosh();
@@ -315,53 +499,63 @@ function measureArea() {
   return { x: r.left, y: r.top, w: r.width, h: r.height };
 }
 
-// Free space around a board of side s: below/left/right (stack) or left/right (side).
-function trays(A, s, mode, g) {
+// Free space around a bw x bh board: below/left/right (stack) or left/right (side).
+function trays(A, bw, bh, mode, g) {
   if (mode === 'stack') {
-    const bx = A.x + (A.w - s) / 2;
+    const bx = A.x + (A.w - bw) / 2;
     const by = A.y;
     return {
       bx, by,
       rects: [
-        { x: A.x, y: by + s + g, w: A.w, h: A.y + A.h - (by + s + g) },
-        { x: A.x, y: A.y, w: bx - g - A.x, h: s },
-        { x: bx + s + g, y: A.y, w: A.x + A.w - (bx + s + g), h: s },
+        { x: A.x, y: by + bh + g, w: A.w, h: A.y + A.h - (by + bh + g) },
+        { x: A.x, y: A.y, w: bx - g - A.x, h: bh },
+        { x: bx + bw + g, y: A.y, w: A.x + A.w - (bx + bw + g), h: bh },
       ],
     };
   }
-  const bx = A.x + (A.w - s) / 2;
-  const by = A.y + (A.h - s) / 2;
+  const bx = A.x + (A.w - bw) / 2;
+  const by = A.y + (A.h - bh) / 2;
   return {
     bx, by,
     rects: [
       { x: A.x, y: A.y, w: bx - g - A.x, h: A.h },
-      { x: bx + s + g, y: A.y, w: A.x + A.w - (bx + s + g), h: A.h },
+      { x: bx + bw + g, y: A.y, w: A.x + A.w - (bx + bw + g), h: A.h },
     ],
   };
 }
 
 const fitCount = (R, fw, fh) => Math.max(0, Math.floor(R.w / fw)) * Math.max(0, Math.floor(R.h / fh));
 
-// The biggest board that still leaves room to lay every piece out beside it.
-function fitBoard(A, cols, rows, n) {
+// The biggest board (of shape asp = width / height) that still leaves room to
+// lay every piece out beside it. Big puzzles let the loose pieces overlap a
+// little, so the board (and every piece) can be bigger.
+function fitBoard(A, asp, cols, rows, n) {
   const g = 10;
-  const maxS = Math.floor(Math.min(A.w, A.h, 700));
-  for (let s = maxS; s >= 90; s -= 2) {
-    const cw = s / cols;
-    const ch = s / rows;
+  const ov = n >= 12 ? 0.8 : 1;
+  const maxW = Math.floor(Math.min(A.w, A.h * asp, asp >= 1 ? 700 : 700 * asp));
+  const minW = 90 * Math.min(1, asp);
+  const make = (bw, t) => {
+    const bh = bw / asp;
+    const cw = bw / cols;
+    const ch = bh / rows;
     const m = Math.min(cw, ch);
-    const fw = cw + m * 0.2;
-    const fh = ch + m * 0.2;
+    return { bw, bh, bx: t.bx, by: t.by, rects: t.rects, fw: (cw + m * 0.2) * ov, fh: (ch + m * 0.2) * ov, cw, ch, m };
+  };
+  for (let bw = maxW; bw >= minW; bw -= 2) {
+    const bh = bw / asp;
+    const cw = bw / cols;
+    const ch = bh / rows;
+    const m = Math.min(cw, ch);
+    const fw = (cw + m * 0.2) * ov;
+    const fh = (ch + m * 0.2) * ov;
     for (const mode of ['stack', 'side']) {
-      const t = trays(A, s, mode, g);
+      const t = trays(A, bw, bh, mode, g);
       let cap = 0;
       t.rects.forEach((R) => { cap += fitCount(R, fw, fh); });
-      if (cap >= n) return { s, bx: t.bx, by: t.by, rects: t.rects, fw, fh, cw, ch, m };
+      if (cap >= n) return make(bw, t);
     }
   }
-  const s = 90;
-  const t = trays(A, s, 'stack', g);
-  return { s, bx: t.bx, by: t.by, rects: t.rects, fw: s / cols, fh: s / rows, cw: s / cols, ch: s / rows, m: s / Math.max(cols, rows) };
+  return make(minW, trays(A, minW, minW / asp, 'stack', g));
 }
 
 // Spots for the loose pieces, spread over the free space.
@@ -399,13 +593,15 @@ function scatterSpots(A, L, n) {
 
 function layout(keepLoose) {
   const A = measureArea();
-  const L = fitBoard(A, state.cols, state.rows, state.n);
+  const L = fitBoard(A, state.entry.asp, state.cols, state.rows, state.n);
   L.pad = Math.ceil(L.m * 0.3) + 10;
   state.L = L;
   board.style.left = `${L.bx}px`;
   board.style.top = `${L.by}px`;
-  board.style.width = `${L.s}px`;
-  board.style.height = `${L.s}px`;
+  board.style.width = `${L.bw}px`;
+  board.style.height = `${L.bh}px`;
+  // small pieces grow a little more while a finger holds them
+  play.classList.toggle('small-pieces', L.m < 110);
   drawBoard();
   const loose = state.pieces.filter((p) => !p.placed);
   const spots = scatterSpots(A, L, loose.length);
@@ -444,12 +640,12 @@ function drawBoard() {
   const L = state.L;
   const dpr = Math.min(DPR, 2);
   const bm = state.bitmap;
-  let c = sizeCanvas($('#ghost'), L.s, L.s, dpr);
-  c.drawImage(bm, 0, 0, L.s, L.s);
-  c = sizeCanvas($('#full'), L.s, L.s, dpr);
-  c.drawImage(bm, 0, 0, L.s, L.s);
+  let c = sizeCanvas($('#ghost'), L.bw, L.bh, dpr);
+  c.drawImage(bm, 0, 0, L.bw, L.bh);
+  c = sizeCanvas($('#full'), L.bw, L.bh, dpr);
+  c.drawImage(bm, 0, 0, L.bw, L.bh);
   // the outline of every slot
-  c = sizeCanvas($('#slots'), L.s, L.s, dpr);
+  c = sizeCanvas($('#slots'), L.bw, L.bh, dpr);
   c.lineJoin = 'round';
   state.pieces.forEach((p) => {
     const ops = pieceOps(state.cut, p.c, p.r, L.cw, L.ch);
@@ -484,7 +680,7 @@ function drawPiece(p, lifted) {
   c.save();
   tracePath(c, p.ops, L.pad, L.pad);
   c.clip();
-  c.drawImage(state.bitmap, L.pad - p.c * L.cw, L.pad - p.r * L.ch, L.s, L.s);
+  c.drawImage(state.bitmap, L.pad - p.c * L.cw, L.pad - p.r * L.ch, L.bw, L.bh);
   c.restore();
   tracePath(c, p.ops, L.pad, L.pad);
   c.strokeStyle = 'rgba(255,255,255,.9)';
@@ -661,10 +857,12 @@ async function finish() {
   state.pieces.forEach((p) => { p.el.style.visibility = 'hidden'; });
   // ...and the picture does a happy wiggle
   replayClass(board, 'happy');
-  celebrate(pickOne(BANNERS), entry.pic.name);
-  say(`${pickOne(PRAISE)} ${entry.pic.name}!`);
+  celebrate(pickOne(BANNERS), entry.name);
+  say(`${pickOne(PRAISE)} ${entry.name}!`);
   const r = board.getBoundingClientRect();
   fx.sparkles(r.left + r.width / 2, r.top + r.height / 2, 14, Math.min(r.width, 300) * 0.5);
+  // a sticker for the sticker book (always one for a big 16-piece puzzle)
+  earnSticker('jigsaw', state.n >= 16 ? { cooldown: 0 } : {});
   await wait(2600);
   if (my !== token) return;
   showDone();
@@ -672,9 +870,11 @@ async function finish() {
 
 function showDone() {
   const entry = state.entry;
-  $('#done-thumb').innerHTML = `${svgOpen()}${markup(entry, 'dn')}</svg>`;
+  $('#done-thumb').innerHTML = thumbHTML(entry, 'dn');
+  $('#done-thumb').classList.toggle('art-thumb', entry.kind === 'art');
   const d = doneFor(entry);
-  $('#done-name').innerHTML = `${entry.pic.name} ${SIZES.map((s) => `<i class="${d[s.n] ? 'on' : ''}">★</i>`).join('')}`;
+  $('#done-name').innerHTML = `<span class="done-title">${esc(entry.name)}</span>` +
+    `<span class="done-stars">${SIZES.map((s) => `<i class="${d[s.n] ? 'on' : ''}">★</i>`).join('')}</span>`;
   $('#done-title').textContent = pickOne(['You did it!', 'Hooray!', 'Puzzle done!', 'Great job!']);
   showScreen('screen-done');
 }
@@ -766,6 +966,8 @@ boot({
       case 'next': nextPuzzle(); break;
       case 'pictures': leavePuzzle(); break;
       case 'go-color': window.location.href = '../coloring/'; break;
+      case 'go-spin': window.location.href = '../spinart/'; break;
+      case 'go-monster': window.location.href = '../monster/'; break;
     }
   },
   onBack(screen) {
@@ -796,7 +998,7 @@ window.__jigsaw = {
   store,
   startPuzzle: (id, n, mine) => {
     const list = entriesFor(mine ? 'mine' : 'all');
-    const e = list.find((x) => x.pic.id === id) || list[0];
+    const e = list.find((x) => (x.kind === 'art' ? x.item.id === id : x.pic.id === id)) || list[0];
     galleryList = list;
     return startPuzzle(e, n);
   },

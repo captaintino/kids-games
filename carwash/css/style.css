@@ -1,0 +1,8 @@
+/* This game's own styles (kit.css has the shared look) */
+.play { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 4; }
+.target {
+  position: absolute; left: 50%; top: 50%; width: 180px; height: 180px; margin: -90px 0 0 -90px;
+  border-radius: 50%; display: grid; place-items: center; font-size: 26px; font-weight: 700;
+  background: radial-gradient(circle at 35% 30%, #fff, #ff7ac6 45%, #c4166b);
+  border: 5px solid #fff; box-shadow: 0 10px 24px rgba(40, 10, 90, .35);
+}

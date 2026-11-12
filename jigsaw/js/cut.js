@@ -107,12 +107,12 @@ export function svgPath(ops, ox, oy, k) {
 }
 
 /**
- * SVG path data for every inside seam of a cut over a size x size square
- * (used for the "how many pieces" icons).
+ * SVG path data for every inside seam of a cut over a w x h box (h defaults
+ * to w, a square), used for the "how many pieces" icons.
  */
-export function seamsPath(cut, size) {
-  const cw = size / cut.cols;
-  const ch = size / cut.rows;
+export function seamsPath(cut, w, h) {
+  const cw = w / cut.cols;
+  const ch = (h || w) / cut.rows;
   const m = Math.min(cw, ch);
   let d = '';
   const curve = (P) => {

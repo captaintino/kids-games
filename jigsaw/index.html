@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Jigsaw Puzzles</title>
-  <meta name="description" content="Big, friendly jigsaw puzzles for little hands: 4, 6 or 9 pieces that snap into place. Make puzzles from your own colored pictures too. Works offline.">
+  <meta name="description" content="Big, friendly jigsaw puzzles for little hands: 4 to 16 pieces that snap into place. Make puzzles from your own spin art, monsters and colored pictures too. Works offline.">
   <meta name="theme-color" content="#ff8a3d">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -47,8 +47,12 @@
         <div class="pic-grid" id="pic-grid"></div>
         <div class="mine-empty hidden" id="mine-empty">
           <div class="mine-art" id="mine-art" aria-hidden="true"></div>
-          <p class="card-text">Color a picture in<br><b>Color Splash Party</b><br>and make it a puzzle here!</p>
-          <button class="btn btn-pink btn-small" data-action="go-color"><span class="btn-icon">🖍️</span> Go Color!</button>
+          <p class="card-text">Make a picture in<br><b>🌀 Spin Art</b>, <b>👾 Build a Monster</b><br>or <b>🎨 Coloring</b>,<br>then make it a puzzle here!</p>
+          <div class="go-row">
+            <button class="btn btn-pink btn-small" data-action="go-spin" aria-label="Spin Art"><span class="btn-icon">🌀</span> Spin</button>
+            <button class="btn btn-green btn-small" data-action="go-monster" aria-label="Build a Monster"><span class="btn-icon">👾</span> Monster</button>
+            <button class="btn btn-orange btn-small" data-action="go-color" aria-label="Coloring"><span class="btn-icon">🖍️</span> Color</button>
+          </div>
         </div>
       </div>
     </div>

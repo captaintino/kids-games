@@ -86,10 +86,11 @@ function drawBody(ctx, hue, rainbow) {
   ctx.stroke();
 }
 
-function drawHighlights(ctx) {
+function drawHighlights(ctx, soft = false) {
   const R = SPRITE_R;
-  // big soft window highlight
+  // big soft window highlight (softer over a shape or letter, so it stays clear)
   ctx.save();
+  if (soft) ctx.globalAlpha = 0.5;
   ctx.translate(C - R * 0.36, C - R * 0.42);
   ctx.rotate(-0.65);
   ctx.scale(1, 0.58);
@@ -104,6 +105,7 @@ function drawHighlights(ctx) {
   ctx.restore();
 
   ctx.lineCap = 'round';
+  if (soft) ctx.globalAlpha = 0.75;
   // curved shine along top-left edge
   ctx.strokeStyle = 'rgba(255,255,255,0.7)';
   ctx.lineWidth = R * 0.075;
@@ -121,6 +123,7 @@ function drawHighlights(ctx) {
   ctx.beginPath();
   ctx.arc(C - R * 0.62, C - R * 0.05, R * 0.06, 0, Math.PI * 2);
   ctx.fill();
+  ctx.globalAlpha = 1;
 }
 
 export function starPath(ctx, x, y, outer, inner, points = 5, rot = -Math.PI / 2) {
