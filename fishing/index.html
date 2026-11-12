@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Fishing Pond</title>
+  <meta name="description" content="Tap the water to drop your line and catch colorful fish. Can you find the golden ones?">
+  <meta name="theme-color" content="#34b6e4">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Play Party">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+  <link rel="preload" href="../shared/fonts/fredoka-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../shared/css/kit.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="game" aria-label="The fishing pond"></canvas>
+
+  <!-- Title -->
+  <section id="screen-title" class="screen active" data-start>
+    <button class="round-btn corner-left" data-action="hub" aria-label="All games">🏠</button>
+    <button class="round-btn corner-right" data-action="sound" aria-label="Toggle sound">🔊</button>
+    <div class="panel title-panel">
+      <h1 class="logo"><span>Fishing</span><span>Pond</span></h1>
+      <p class="tagline">Tap the water to catch a fish!</p>
+      <div class="btn-col">
+        <button class="btn btn-pink" data-action="play"><span class="btn-icon">🎣</span> Fish!</button>
+        <button class="btn btn-blue btn-small" data-action="book"><span class="btn-icon">📖</span> Fish Book</button>
+      </div>
+      <div class="best-line" id="title-best"></div>
+    </div>
+  </section>
+
+  <!-- In-game top bar -->
+  <div id="hud" class="hud hidden">
+    <button class="round-btn" data-action="home" aria-label="Back">⬅️</button>
+    <div class="hud-spacer"></div>
+    <div class="pill catch-pill" id="catch-pill"><span class="pill-fish" aria-hidden="true">🐟</span> <span id="hud-count">0</span></div>
+    <div class="hud-spacer"></div>
+    <button class="round-btn book-btn" id="book-btn" data-action="book" aria-label="Fish book">📖<span class="badge" id="book-badge">0</span></button>
+    <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
+  </div>
+
+  <!-- A fish was caught -->
+  <section id="screen-catch" class="screen dim">
+    <div class="panel card catch-card" id="catch-card">
+      <div class="catch-rays" aria-hidden="true"></div>
+      <div class="new-badge hidden" id="catch-new">New!</div>
+      <button class="catch-pic" data-action="say-fish" data-quiet aria-label="Say the name"><canvas id="catch-canvas" width="360" height="270"></canvas></button>
+      <h2 class="heading catch-name" id="catch-name">Fish</h2>
+      <div class="catch-count" id="catch-count"></div>
+      <div class="btn-row catch-btns">
+        <button class="btn btn-blue btn-small" data-action="release" aria-label="Let it go"><span class="btn-icon">💦</span> Let go</button>
+        <button class="btn btn-green btn-small" data-action="keep" aria-label="Keep it in the fish book"><span class="btn-icon">📖</span> Keep</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Fish book -->
+  <section id="screen-book" class="screen dim">
+    <div class="panel book-panel">
+      <h2 class="heading">Fish Book</h2>
+      <div class="book-progress"><div class="book-bar"><div class="book-fill" id="book-fill"></div></div><span id="book-text">0 / 15</span></div>
+      <div class="book-grid scroll-y" id="book-grid"></div>
+      <button class="btn btn-purple btn-small" data-action="book-done"><span class="btn-icon">👍</span> Done</button>
+    </div>
+  </section>
+
+  <script type="module" src="js/main.js"></script>
+  <script nomodule>
+    document.body.insertAdjacentHTML('beforeend',
+      '<p style="position:fixed;left:0;right:0;top:40%;padding:20px;text-align:center;font:600 22px sans-serif;color:#fff">' +
+      'Sorry! This browser is too old for this game. Please update it to play.</p>');
+  </script>
+</body>
+</html>

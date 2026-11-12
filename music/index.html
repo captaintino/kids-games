@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Music Time</title>
+  <meta name="description" content="Play a rainbow xylophone, a drum kit and a big-key piano, and follow the lights to learn little tunes.">
+  <meta name="theme-color" content="#9d5cff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Play Party">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+  <link rel="preload" href="../shared/fonts/fredoka-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../shared/css/kit.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Title: pick an instrument -->
+  <section id="screen-title" class="screen active" data-start>
+    <button class="round-btn corner-left" data-action="hub" aria-label="All games">🏠</button>
+    <button class="round-btn corner-right" data-action="sound" aria-label="Toggle sound">🔊</button>
+    <div class="floaty" aria-hidden="true">
+      <span class="fn n1">♪</span><span class="fn n2">♫</span><span class="fn n3">♬</span>
+      <span class="fn n4">♪</span><span class="fn n5">♩</span><span class="fn n6">♫</span>
+    </div>
+    <div class="panel title-panel">
+      <h1 class="logo"><span>Music</span><span>Time!</span></h1>
+      <p class="tagline">Pick an instrument!</p>
+      <div class="tile-grid inst-grid">
+        <button class="tile pink" data-action="inst" data-inst="xylo">
+          <span class="tile-art xylo-art" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+          <span class="tile-name">Xylophone</span>
+        </button>
+        <button class="tile orange" data-action="inst" data-inst="drums">
+          <span class="tile-icon">🥁</span>
+          <span class="tile-name">Drums</span>
+        </button>
+        <button class="tile blue" data-action="inst" data-inst="piano">
+          <span class="tile-icon">🎹</span>
+          <span class="tile-name">Piano</span>
+        </button>
+      </div>
+      <div class="best-line" id="title-best"></div>
+    </div>
+  </section>
+
+  <!-- Song picker (Follow the Lights or Play a Song) -->
+  <section id="screen-songs" class="screen dim">
+    <div class="panel card songs-card">
+      <button class="round-btn close-btn" data-action="close" aria-label="Close">✖️</button>
+      <h2 class="heading"><span id="songs-icon">💡</span> <span id="songs-title">Follow the Lights</span></h2>
+      <div class="scroll-y songs-scroll">
+        <div class="tile-grid song-grid" id="song-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Finished a song -->
+  <section id="screen-done" class="screen dim">
+    <div class="panel card done-card">
+      <div class="done-icon" id="done-icon">⭐</div>
+      <h2 class="heading">Bravo!</h2>
+      <p class="card-text" id="done-name"></p>
+      <div class="btn-col">
+        <button class="btn btn-pink btn-small" data-action="again"><span class="btn-icon">🔁</span> Again</button>
+        <button class="btn btn-blue btn-small" data-action="more"><span class="btn-icon">💡</span> More songs</button>
+        <button class="btn btn-green btn-small" data-action="free"><span class="btn-icon">🎶</span> Free play</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Play area -->
+  <div id="play" class="play hidden">
+    <canvas id="stage" aria-label="Instrument"></canvas>
+    <div id="area" class="area" aria-hidden="true"></div>
+    <div class="hud">
+      <button class="round-btn" data-action="back" aria-label="Back">⬅️</button>
+      <div class="pill" id="pill"></div>
+      <button class="round-btn hud-btn" id="btn-voice" data-action="voice" data-quiet aria-label="Change the sound">🔔</button>
+      <button class="round-btn hud-btn" id="btn-listen" data-action="listen" aria-label="Play a song for me">🎵</button>
+      <button class="round-btn hud-btn glowy" id="btn-follow" data-action="follow" aria-label="Follow the lights">💡</button>
+      <button class="round-btn hud-btn hidden" id="btn-replay" data-action="replay" aria-label="Show me again">💡</button>
+      <button class="round-btn hud-btn hidden" id="btn-stop" data-action="stop" aria-label="Stop">⏹️</button>
+      <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+  <script nomodule>
+    document.body.insertAdjacentHTML('beforeend',
+      '<p style="position:fixed;left:0;right:0;top:40%;padding:20px;text-align:center;font:600 22px sans-serif;color:#fff">' +
+      'Sorry! This browser is too old for this game. Please update it to play.</p>');
+  </script>
+</body>
+</html>

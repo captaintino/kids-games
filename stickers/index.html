@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Sticker Scene</title>
+  <meta name="description" content="Drag stickers onto a world: hats, glasses, flowers, fish and friends to dress up. Save your scene as a picture.">
+  <meta name="theme-color" content="#ff8a3d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Play Party">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+  <link rel="preload" href="../shared/fonts/fredoka-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../shared/css/kit.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Title -->
+  <section id="screen-title" class="screen active" data-start>
+    <button class="round-btn corner-left" data-action="hub" aria-label="All games">🏠</button>
+    <button class="round-btn corner-right" data-action="sound" aria-label="Toggle sound">🔊</button>
+    <div class="panel title-panel">
+      <h1 class="logo"><span>Sticker</span><span>Scene!</span></h1>
+      <div class="title-friend" id="title-friend" aria-hidden="true"></div>
+      <p class="tagline">Dress up, decorate, make a world!</p>
+      <div class="btn-col">
+        <button class="btn btn-orange" data-action="worlds"><span class="btn-icon">▶️</span> Play</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- World picker -->
+  <section id="screen-worlds" class="screen">
+    <div class="panel worlds-panel">
+      <div class="worlds-head">
+        <button class="round-btn" data-action="home" aria-label="Back">⬅️</button>
+        <h2 class="heading">Pick a World</h2>
+        <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
+      </div>
+      <div class="world-grid" id="world-grid"></div>
+    </div>
+  </section>
+
+  <!-- Play -->
+  <div id="play" class="play hidden">
+    <canvas id="stage-cv" class="stage-cv" aria-hidden="true"></canvas>
+    <div id="layer" class="layer" aria-label="Sticker scene"></div>
+    <div id="glow" class="glow hidden" aria-hidden="true"></div>
+    <div id="selring" class="selring hidden" aria-hidden="true"><i></i></div>
+
+    <div class="hud" id="hud">
+      <button class="round-btn" data-action="back" aria-label="Back to worlds">⬅️</button>
+      <div class="pill" id="world-name">World</div>
+      <button class="round-btn" data-action="clear" aria-label="Clear the scene">🗑️</button>
+      <button class="round-btn" data-action="save" aria-label="Save picture">📷</button>
+      <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
+    </div>
+
+    <div class="selbar hidden" id="selbar">
+      <button class="sb" data-action="smaller" data-quiet aria-label="Smaller">➖</button>
+      <button class="sb" data-action="bigger" data-quiet aria-label="Bigger">➕</button>
+      <button class="sb" data-action="flip" data-quiet aria-label="Flip">↔️</button>
+      <button class="sb" data-action="spin" data-quiet aria-label="Spin">🔄</button>
+      <button class="sb" data-action="front" data-quiet aria-label="Bring to front">⏫</button>
+      <button class="sb sb-del" data-action="remove" data-quiet aria-label="Remove">✖️</button>
+    </div>
+
+    <div class="trash" id="trash" aria-hidden="true"><span>🗑️</span></div>
+
+    <div class="tray" id="tray">
+      <div class="tabs" id="tabs"></div>
+      <div class="items" id="items"></div>
+      <div class="tray-bin" aria-hidden="true">🗑️</div>
+    </div>
+  </div>
+
+  <!-- Clear? -->
+  <section id="screen-clear" class="screen dim">
+    <div class="panel card confirm-card">
+      <div class="confirm-icon">🗑️</div>
+      <h2 class="heading">Clear it all?</h2>
+      <div class="confirm-row">
+        <button class="btn btn-pink" data-action="clear-yes" aria-label="Yes, clear"><span class="btn-icon">🧹</span> Yes</button>
+        <button class="btn btn-green" data-action="clear-no" aria-label="No, keep it"><span class="btn-icon">↩️</span> No</button>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="js/main.js"></script>
+  <script nomodule>
+    document.body.insertAdjacentHTML('beforeend',
+      '<p style="position:fixed;left:0;right:0;top:40%;padding:20px;text-align:center;font:600 22px sans-serif;color:#fff">' +
+      'Sorry! This browser is too old for this game. Please update it to play.</p>');
+  </script>
+</body>
+</html>

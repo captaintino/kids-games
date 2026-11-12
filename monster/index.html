@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Build a Monster</title>
+  <meta name="description" content="Mix and match heads, bodies, legs and silly eyes to build a monster, then watch it dance!">
+  <meta name="theme-color" content="#5cd65c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Play Party">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+  <link rel="preload" href="../shared/fonts/fredoka-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../shared/css/kit.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Title -->
+  <section id="screen-title" class="screen active" data-start>
+    <button class="round-btn corner-left" data-action="hub" aria-label="All games">🏠</button>
+    <button class="round-btn corner-right" data-action="sound" aria-label="Toggle sound">🔊</button>
+    <div class="panel title-panel">
+      <h1 class="logo"><span>Build a</span><span>Monster!</span></h1>
+      <button class="title-mon" id="title-mon" data-action="title-giggle" data-quiet aria-label="Tickle the monster"></button>
+      <div class="btn-col">
+        <button class="btn btn-green" data-action="build"><span class="btn-icon">🛠️</span> Build!</button>
+        <button class="btn btn-purple" data-action="shelf"><span class="btn-icon">👾</span> My Monsters</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- My Monsters -->
+  <section id="screen-shelf" class="screen">
+    <div class="panel shelf-panel">
+      <div class="shelf-head">
+        <button class="round-btn" data-action="home" aria-label="Back">⬅️</button>
+        <h2 class="heading">My Monsters</h2>
+        <button class="round-btn" id="shelf-edit" data-action="shelf-edit" aria-label="Remove monsters">🗑️</button>
+      </div>
+      <div class="shelf-grid" id="shelf-grid"></div>
+    </div>
+  </section>
+
+  <!-- Build and dance -->
+  <div id="play" class="play hidden">
+    <div class="topbar">
+      <button class="round-btn" data-action="back" aria-label="Back">⬅️</button>
+      <button class="name-pill" id="mon-name" data-action="rename" data-quiet aria-label="Monster name">👾</button>
+      <button class="round-btn" data-action="save" aria-label="Save picture">📷</button>
+      <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
+    </div>
+
+    <div class="stage" id="stage">
+      <div class="mon" id="mon"></div>
+      <button class="arrow arrow-l" data-action="prev" data-quiet aria-label="Previous">
+        <svg viewBox="0 0 40 40"><path d="M27 7L9 20L27 33Z"/></svg>
+      </button>
+      <button class="arrow arrow-r" data-action="next" data-quiet aria-label="Next">
+        <svg viewBox="0 0 40 40"><path d="M13 7L31 20L13 33Z"/></svg>
+      </button>
+    </div>
+
+    <div class="done-row" id="done-row">
+      <button class="round-btn dice" data-action="surprise" data-quiet aria-label="Surprise monster">🎲</button>
+      <button class="btn btn-green done-btn" data-action="done"><span class="btn-icon">✅</span> Done!</button>
+    </div>
+
+    <div class="dance-row" id="dance-row">
+      <button class="round-btn big-round" data-action="again" aria-label="Dance again">🔁</button>
+      <button class="round-btn big-round" data-action="edit" aria-label="Change my monster">✏️</button>
+      <button class="round-btn big-round" data-action="new" aria-label="New monster">🆕</button>
+    </div>
+
+    <div class="dock" id="dock">
+      <div class="tabs" id="tabs"></div>
+      <div class="opts" id="opts"></div>
+      <div class="paint hidden" id="paint">
+        <div class="swatches" id="swatches"></div>
+        <div class="pats" id="pats"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+  <script nomodule>
+    document.body.insertAdjacentHTML('beforeend',
+      '<p style="position:fixed;left:0;right:0;top:40%;padding:20px;text-align:center;font:600 22px sans-serif;color:#fff">' +
+      'Sorry! This browser is too old for this game. Please update it to play.</p>');
+  </script>
+</body>
+</html>

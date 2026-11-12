@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Spin Art</title>
+  <meta name="description" content="Fling paint on a spinning disc, fold paper into butterfly paintings, and print with painty bubbles.">
+  <meta name="theme-color" content="#ff6fb5">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Play Party">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+  <link rel="preload" href="../shared/fonts/fredoka-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../shared/css/kit.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Title -->
+  <section id="screen-title" class="screen active" data-start>
+    <button class="round-btn corner-left" data-action="hub" aria-label="All games">🏠</button>
+    <button class="round-btn corner-right" data-action="sound" aria-label="Toggle sound">🔊</button>
+    <div class="panel title-panel">
+      <div class="title-swirl" aria-hidden="true"><canvas id="title-disc" width="200" height="200"></canvas></div>
+      <h1 class="logo"><span>Spin</span><span>Art!</span></h1>
+      <p class="tagline">How do you want to paint?</p>
+      <div class="btn-col">
+        <button class="btn btn-pink" data-action="mode" data-mode="spin"><span class="btn-icon">🌀</span> Spin Paint</button>
+        <button class="btn btn-blue" data-action="mode" data-mode="fly"><span class="btn-icon">🦋</span> Butterfly Fold</button>
+        <button class="btn btn-purple" data-action="mode" data-mode="bub"><span class="btn-icon"><i class="bub-ico"></i></span> Bubble Print</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Painting -->
+  <div id="play" class="play hidden">
+    <div class="topbar">
+      <button class="round-btn" data-action="back" aria-label="Back">⬅️</button>
+      <div class="pill" id="pill"><span id="pill-icon">🌀</span><span class="pill-text" id="pill-text">Spin Paint</span></div>
+      <button class="round-btn" data-action="new" aria-label="New paper">🆕</button>
+      <button class="round-btn" data-action="save" aria-label="Save my picture">📷</button>
+      <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
+    </div>
+    <div class="stage-wrap" id="stage-wrap">
+      <canvas id="stage" aria-label="Painting"></canvas>
+    </div>
+    <div class="dock" id="dock">
+      <div class="tools tools-spin">
+        <div class="seg" id="speed-seg">
+          <button class="seg-btn" data-action="speed" data-speed="0" data-quiet aria-label="Stop">⏸️</button>
+          <button class="seg-btn" data-action="speed" data-speed="1" data-quiet aria-label="Slow">🐢</button>
+          <button class="seg-btn" data-action="speed" data-speed="2" data-quiet aria-label="Medium">🐇</button>
+          <button class="seg-btn" data-action="speed" data-speed="3" data-quiet aria-label="Fast">🚀</button>
+        </div>
+        <div class="seg tool-seg">
+          <button class="seg-btn" data-action="tool" data-tool="drip" aria-label="Drip paint">💧</button>
+          <button class="seg-btn" data-action="tool" data-tool="bubble" aria-label="Bubble brush"><i class="bub-ico"></i></button>
+        </div>
+      </div>
+      <div class="tools tools-fly">
+        <div class="seg tool-seg">
+          <button class="seg-btn" data-action="tool" data-tool="blob" aria-label="Paint blobs">💧</button>
+          <button class="seg-btn" data-action="tool" data-tool="brush" aria-label="Brush">🖌️</button>
+          <button class="seg-btn" data-action="tool" data-tool="bubble" aria-label="Bubble brush"><i class="bub-ico"></i></button>
+        </div>
+        <button class="seg-btn solo" id="mirror-btn" data-action="mirror" aria-label="Magic mirror"><i class="mirror-ico"><b></b><b></b></i></button>
+        <button class="btn btn-orange btn-small fold-btn" data-action="fold"><span class="btn-icon">🦋</span> Fold</button>
+      </div>
+      <div class="tools tools-made">
+        <button class="btn btn-green btn-small" data-action="unmake"><span class="btn-icon">🎨</span> Paint more</button>
+        <button class="btn btn-pink btn-small" data-action="flutter"><span class="btn-icon">✨</span> Fly!</button>
+      </div>
+      <div class="tools tools-bub">
+        <div class="seg sizes" id="size-seg">
+          <button class="seg-btn size-btn" data-action="bsize" data-size="s" aria-label="Small bubbles"><i></i></button>
+          <button class="seg-btn size-btn" data-action="bsize" data-size="m" aria-label="Medium bubbles"><i></i></button>
+          <button class="seg-btn size-btn" data-action="bsize" data-size="l" aria-label="Big bubbles"><i></i></button>
+        </div>
+        <button class="btn btn-blue btn-small blow-btn" data-action="blow"><span class="btn-icon">💨</span> Blow</button>
+      </div>
+      <div class="palette" id="palette"></div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+  <script nomodule>
+    document.body.insertAdjacentHTML('beforeend',
+      '<p style="position:fixed;left:0;right:0;top:40%;padding:20px;text-align:center;font:600 22px sans-serif;color:#fff">' +
+      'Sorry! This browser is too old for this game. Please update it to play.</p>');
+  </script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+/* Music Time: this game's own styles (kit.css has the shared look) */
+
+/* ---------- Title ---------- */
+.title-panel { max-width: 600px; }
+.inst-grid {
+  grid-template-columns: repeat(3, 1fr);
+  width: min(560px, 92vw);
+}
+.inst-grid .tile { padding: 16px 6px 12px; }
+.inst-grid .tile-icon { font-size: 64px; }
+.inst-grid .tile:nth-child(2) { animation-delay: .08s; }
+.inst-grid .tile:nth-child(3) { animation-delay: .16s; }
+
+/* a little drawn rainbow xylophone for the first tile */
+.xylo-art {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 70px;
+  width: 92px;
+}
+.xylo-art::before, .xylo-art::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  height: 7px;
+  border-radius: 4px;
+  background: #c47a3f;
+  border: 2px solid #2d2442;
+}
+.xylo-art::before { top: 18px; transform: rotate(4deg); }
+.xylo-art::after { bottom: 18px; transform: rotate(-4deg); }
+.xylo-art i {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 12px;
+  margin: 0 1.5px;
+  border-radius: 5px;
+  border: 2.5px solid #2d2442;
+  box-shadow: inset 3px 0 0 rgba(255,255,255,.45);
+}
+.xylo-art i:nth-child(1) { height: 66px; background: #ff4d5e; }
+.xylo-art i:nth-child(2) { height: 60px; background: #ff9a2e; }
+.xylo-art i:nth-child(3) { height: 54px; background: #ffd93b; }
+.xylo-art i:nth-child(4) { height: 48px; background: #5cd65c; }
+.xylo-art i:nth-child(5) { height: 43px; background: #3d9bff; }
+.xylo-art i:nth-child(6) { height: 38px; background: #9d5cff; }
+
+/* floating music notes behind the title */
+.floaty { position: absolute; top: 0; right: 0; bottom: 0; left: 0; overflow: hidden; pointer-events: none; }
+.fn {
+  position: absolute;
+  font-size: 44px;
+  font-weight: 700;
+  color: #fff;
+  opacity: .75;
+  text-shadow: 0 3px 0 rgba(110, 40, 190, .5);
+  animation: note-float 6s ease-in-out infinite;
+}
+.fn.n1 { left: 8%; top: 18%; color: #fff3a6; }
+.fn.n2 { right: 10%; top: 24%; animation-delay: -1s; font-size: 52px; }
+.fn.n3 { left: 14%; bottom: 14%; animation-delay: -2s; color: #b9f3ff; }
+.fn.n4 { right: 16%; bottom: 10%; animation-delay: -3s; color: #ffd0ec; }
+.fn.n5 { left: 46%; top: 6%; animation-delay: -4s; font-size: 36px; }
+.fn.n6 { right: 4%; top: 55%; animation-delay: -5s; font-size: 38px; color: #d4ffb0; }
+@keyframes note-float {
+  0%, 100% { transform: translateY(0) rotate(-10deg); }
+  50% { transform: translateY(-22px) rotate(10deg); }
+}
+
+/* ---------- Play area ---------- */
+.play { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 4; }
+#stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+.area {
+  position: absolute;
+  top: calc(76px + var(--safe-top));
+  bottom: calc(12px + var(--safe-bottom));
+  left: calc(12px + var(--safe-left));
+  right: calc(12px + var(--safe-right));
+  pointer-events: none;
+}
+.hud .pill { display: flex; align-items: center; justify-content: center; }
+.pill-icon { font-size: 1.05em; }
+.pill-text { margin-left: 8px; overflow: hidden; text-overflow: ellipsis; }
+.pill.status { background: linear-gradient(180deg, rgba(255, 140, 210, .85), rgba(220, 60, 160, .78)); }
+.pill.turn { animation: bump .5s ease; }
+.dots { display: inline-flex; margin-left: 8px; }
+.dots i {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  margin: 0 2px;
+  border: 2.5px solid #fff;
+  background: rgba(255,255,255,.2);
+}
+.dots i.on { background: #ffe34d; box-shadow: 0 0 8px #fff3a6; }
+.dots i.now { animation: bump 1s ease infinite; }
+
+.glowy { animation: glowy 2.4s ease-in-out infinite; }
+@keyframes glowy {
+  0%, 100% { box-shadow: 0 5px 0 rgba(84, 32, 196, .7), 0 8px 16px rgba(40, 10, 90, .3); }
+  50% { box-shadow: 0 5px 0 rgba(84, 32, 196, .7), 0 0 0 5px rgba(255, 240, 140, .55), 0 0 22px 6px rgba(255, 240, 140, .8); }
+}
+.round-btn.wiggle { animation: wiggle .45s ease; }
+
+/* ---------- Song picker ---------- */
+.songs-card { max-width: 600px; width: 100%; max-height: 100%; }
+.songs-card .heading { font-size: max(26px, min(7vw, 38px)); padding: 0 40px; }
+.close-btn { position: absolute; top: -12px; right: -8px; width: 52px; height: 52px; z-index: 2; }
+.songs-scroll { width: 100%; padding: 4px 0 10px; }
+.song-grid {
+  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+}
+.song-grid .tile { padding: 10px 6px 10px; }
+.song-grid .tile-icon { font-size: 46px; }
+.song-grid .tile-name { font-size: 17px; }
+.tile .star-badge {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  font-size: 28px;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,.25));
+  animation: bump 1.6s ease-in-out infinite;
+}
+
+/* ---------- Done ---------- */
+.done-card { max-width: 380px; }
+.done-icon {
+  font-size: 84px;
+  line-height: 1;
+  animation: bob 2.2s ease-in-out infinite;
+  filter: drop-shadow(0 6px 0 rgba(110, 40, 190, .35));
+}
+#done-name { font-size: 22px; }
+
+/* narrow phones: the pill shows just its icon so the buttons fit */
+@media (max-width: 460px) {
+  .pill.free { visibility: hidden; }
+  .hud .round-btn { width: 50px; height: 50px; }
+  .hud > * + * { margin-left: 6px; }
+}
+@media (max-width: 370px) {
+  .hud .round-btn { width: 46px; height: 46px; font-size: 21px; }
+  .pill .pill-text { display: none; }
+}
+@media (max-height: 560px) {
+  .inst-grid .tile-icon { font-size: 46px; }
+  .xylo-art { height: 52px; transform: scale(.8); }
+  .inst-grid .tile { padding: 10px 6px 8px; }
+  .fn { font-size: 30px; }
+  .song-grid { grid-template-columns: repeat(4, 1fr); }
+  .song-grid .tile-icon { font-size: 34px; }
+  .song-grid .tile-name { font-size: 15px; }
+  .done-icon { font-size: 56px; }
+  .done-card .btn-col > * + * { margin-top: 6px; }
+  .done-card .heading { font-size: 30px; }
+}
+@media (max-height: 560px) and (min-aspect-ratio: 5/4) {
+  .done-card { max-width: 560px; }
+}
+@media (max-height: 560px) and (min-aspect-ratio: 5/4) {
+  .done-card .btn-col { flex-direction: row; width: min(560px, 90vw); }
+  .done-card .btn-col > * + * { margin-top: 0; margin-left: 10px; }
+  .done-card .btn-col .btn { flex: 1 1 0; padding-left: 8px; padding-right: 8px; }
+}

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Letter Tracing</title>
+  <meta name="description" content="Trace big letters and numbers with a magic paint brush that stays inside the lines.">
+  <meta name="theme-color" content="#ff6fb5">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Play Party">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+  <link rel="preload" href="../shared/fonts/fredoka-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../shared/css/kit.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Title -->
+  <section id="screen-title" class="screen active" data-start>
+    <button class="round-btn corner-left" data-action="hub" aria-label="All games">🏠</button>
+    <button class="round-btn corner-right" data-action="sound" aria-label="Toggle sound">🔊</button>
+    <div class="panel title-panel">
+      <div class="mascot" id="mascot" aria-hidden="true"></div>
+      <h1 class="logo"><span>Letter</span><span>Tracing</span></h1>
+      <div class="tagline">Paint along the dots!</div>
+      <div class="btn-col">
+        <button class="btn btn-pink" data-action="set" data-set="upper"><span class="btn-icon">🔠</span> ABC</button>
+        <button class="btn btn-blue" data-action="set" data-set="lower"><span class="btn-icon">🔡</span> abc</button>
+        <button class="btn btn-green" data-action="set" data-set="digits"><span class="btn-icon">🔢</span> 123</button>
+      </div>
+      <div class="best-line" id="title-stars"></div>
+    </div>
+  </section>
+
+  <!-- Pick a letter or number -->
+  <section id="screen-picker" class="screen">
+    <div class="panel picker-panel">
+      <div class="picker-head">
+        <button class="round-btn" data-action="title" aria-label="Back">⬅️</button>
+        <h2 class="heading" id="picker-title">ABC</h2>
+        <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
+      </div>
+      <div class="picker-scroll scroll-y" id="picker-scroll">
+        <div class="char-grid" id="char-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tracing -->
+  <section id="trace" class="trace" aria-label="Tracing">
+    <div class="topbar">
+      <button class="round-btn" data-action="picker" aria-label="Back to letters">⬅️</button>
+      <button class="round-btn" data-action="again" aria-label="Try again">↩️</button>
+      <div class="pill char-pill" id="char-pill"></div>
+      <button class="round-btn" data-action="next" aria-label="Next">➡️</button>
+      <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
+    </div>
+    <button class="word-strip" id="word-strip" data-action="word" data-quiet aria-label="Hear it again"></button>
+    <div class="stage" id="stage">
+      <div class="paper" id="paper">
+        <svg id="under" class="layer" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg"></svg>
+        <canvas id="paint" class="layer"></canvas>
+        <svg id="over" class="layer" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+    </div>
+    <div class="dock">
+      <div class="palette" id="palette"></div>
+    </div>
+  </section>
+
+  <!-- Finished! -->
+  <section id="screen-done" class="screen dim">
+    <div class="panel card done-card">
+      <h2 class="heading" id="done-title">Wow!</h2>
+      <div class="done-body">
+      <div class="done-left">
+        <div class="done-row">
+          <div class="done-thumb"><img id="done-img" alt="Your letter"></div>
+          <div class="done-pic" id="done-pic"></div>
+        </div>
+        <div class="result-stars" id="done-stars"><span class="rstar">★</span><span class="rstar">★</span><span class="rstar">★</span></div>
+      </div>
+      <div class="btn-col">
+        <button class="btn btn-green" data-action="next"><span class="btn-icon">➡️</span> Next</button>
+        <div class="btn-row">
+          <button class="btn btn-orange btn-small" data-action="again" aria-label="Try again"><span class="btn-icon">↩️</span> Again</button>
+          <button class="btn btn-purple btn-small" data-action="picker" aria-label="All letters"><span class="btn-icon">🔤</span> All</button>
+        </div>
+      </div>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="js/main.js"></script>
+  <script nomodule>
+    document.body.insertAdjacentHTML('beforeend',
+      '<p style="position:fixed;left:0;right:0;top:40%;padding:20px;text-align:center;font:600 22px sans-serif;color:#fff">' +
+      'Sorry! This browser is too old for this game. Please update it to play.</p>');
+  </script>
+</body>
+</html>

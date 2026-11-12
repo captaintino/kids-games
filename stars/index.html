@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Catch the Falling Stars</title>
+  <meta name="description" content="Slide the basket to catch the falling stars and dodge the rain clouds. A gentle catching game for kids.">
+  <meta name="theme-color" content="#211d63">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Play Party">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+  <link rel="preload" href="../shared/fonts/fredoka-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../shared/css/kit.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="game" aria-label="Star catching play area"></canvas>
+  <div id="safe-probe" aria-hidden="true"></div>
+
+  <!-- Title -->
+  <section id="screen-title" class="screen active" data-start>
+    <button class="round-btn corner-left" data-action="hub" aria-label="All games">🏠</button>
+    <button class="round-btn corner-right" data-action="sound" aria-label="Toggle sound">🔊</button>
+    <div class="panel title-panel">
+      <h1 class="logo"><span>Catch the</span><span>Falling</span><span>Stars!</span></h1>
+      <p class="tagline">Slide the basket and catch the stars!</p>
+      <div class="btn-col">
+        <button class="btn btn-pink" data-action="play"><span class="btn-icon">⭐</span> Play</button>
+        <div class="btn-row">
+          <button class="btn btn-blue btn-small" data-action="calm" aria-label="Calm: no rain clouds"><span class="btn-icon">🌙</span> Calm</button>
+          <button class="btn btn-purple btn-small" data-action="worlds" aria-label="Pick a world"><span class="btn-icon">🌍</span> World</button>
+        </div>
+      </div>
+      <div class="best-line" id="title-best"></div>
+    </div>
+  </section>
+
+  <!-- World picker -->
+  <section id="screen-worlds" class="screen">
+    <div class="panel themes-panel">
+      <h2 class="heading">Pick a World</h2>
+      <div class="theme-grid" id="theme-grid"></div>
+      <button class="btn btn-purple btn-small" data-action="home"><span class="btn-icon">👍</span> Done</button>
+    </div>
+  </section>
+
+  <!-- In-game HUD -->
+  <div id="hud" class="game-hud">
+    <div class="hud-row">
+      <button class="round-btn hud-btn" data-action="pause" aria-label="Pause"><span class="pause-icon"></span></button>
+      <div class="score-pill" id="score-pill"><span class="score-star" aria-hidden="true"></span><span id="hud-score">0</span></div>
+      <button class="round-btn hud-btn stop-btn" data-action="stop" aria-label="Stop">⏹️</button>
+    </div>
+    <div class="hud-sub">
+      <div class="chip" id="hud-best">🏆 <b id="hud-best-val">0</b></div>
+      <div class="chip moon-chip hidden" id="hud-moon">🌙 Slow</div>
+    </div>
+  </div>
+
+  <!-- Pause -->
+  <section id="screen-pause" class="screen dim">
+    <div class="panel card">
+      <h2 class="heading">Paused</h2>
+      <div class="btn-col">
+        <button class="btn btn-green" data-action="resume"><span class="btn-icon">▶️</span> Play</button>
+        <button class="btn btn-orange btn-small" data-action="stop"><span class="btn-icon">⏹️</span> Stop</button>
+        <button class="btn btn-purple btn-small" data-action="home"><span class="btn-icon">🏠</span> Home</button>
+      </div>
+      <button class="round-btn sound-btn inline" data-action="sound" aria-label="Toggle sound">🔊</button>
+    </div>
+  </section>
+
+  <!-- Result -->
+  <section id="screen-result" class="screen dim">
+    <div class="panel card result-card">
+      <h2 class="heading" id="result-title">Great catching!</h2>
+      <div class="result-big">
+        <span class="big-star" aria-hidden="true"></span>
+        <span class="result-num" id="result-num">0</span>
+      </div>
+      <div class="result-label">stars caught</div>
+      <div class="result-best" id="result-best"></div>
+      <div class="btn-col">
+        <button class="btn btn-green" data-action="again"><span class="btn-icon">🔄</span> Again</button>
+        <button class="btn btn-purple btn-small" data-action="home"><span class="btn-icon">🏠</span> Home</button>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="js/main.js"></script>
+  <script nomodule>
+    document.body.insertAdjacentHTML('beforeend',
+      '<p style="position:fixed;left:0;right:0;top:40%;padding:20px;text-align:center;font:600 22px sans-serif;color:#fff">' +
+      'Sorry! This browser is too old for this game. Please update it to play.</p>');
+  </script>
+</body>
+</html>

@@ -1,0 +1,249 @@
+/* Fishing Pond: this game's own styles (kit.css has the shared look) */
+html, body { background: #34b6e4; }
+
+/* the pond is drawn on the game canvas, so the shared world behind it stays hidden */
+canvas#bg { visibility: hidden; }
+
+canvas#game {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 1;
+  touch-action: none;
+}
+
+.title-panel .logo span:nth-child(2) {
+  background-image: linear-gradient(180deg, #e9fffd 0%, #7ff5ff 40%, #39b8ff 70%, #2f6bff 100%);
+}
+.title-panel .tagline { text-shadow: 0 2px 0 rgba(20, 70, 140, .55); }
+.title-panel .best-line { text-shadow: 0 2px 0 rgba(20, 70, 140, .55); }
+
+/* ---------- HUD ---------- */
+.hud .round-btn { width: 60px; height: 60px; flex: none; }
+.hud .catch-pill {
+  flex: 0 0 auto;
+  min-width: 100px;
+  font-size: 28px;
+  padding: 3px 18px 5px;
+  background: linear-gradient(180deg, rgba(90, 190, 255, .8), rgba(30, 110, 220, .75));
+  text-shadow: 0 2px 0 rgba(20, 60, 150, .7);
+}
+.pill-fish { font-size: .85em; }
+.catch-pill.bump { animation: bump .35s ease; }
+.book-btn { position: relative; font-size: 28px; }
+.book-btn.bump { animation: bump .45s ease; }
+.badge {
+  position: absolute;
+  right: -6px;
+  bottom: -4px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 13px;
+  background: linear-gradient(180deg, #ffd36b, #ff8a1f);
+  border: 2px solid #fff;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(0,0,0,.25);
+}
+
+/* ---------- Catch card ---------- */
+.catch-card {
+  width: min(360px, 92vw);
+  overflow: hidden;
+  padding-top: 18px;
+}
+.catch-card.gold {
+  border-color: #ffe34d;
+  background: linear-gradient(160deg, rgba(255, 240, 150, .55), rgba(255, 190, 40, .3));
+  box-shadow: 0 0 0 5px rgba(255, 210, 60, .55), 0 18px 40px rgba(120, 60, 0, .4), inset 0 2px 0 rgba(255,255,255,.7);
+}
+.catch-card.rainbow {
+  border-color: #fff;
+  background: linear-gradient(160deg, rgba(255, 120, 180, .45), rgba(255, 220, 90, .4), rgba(120, 220, 255, .45), rgba(170, 120, 255, .45));
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, .6), 0 18px 40px rgba(60, 20, 120, .45), inset 0 2px 0 rgba(255,255,255,.7);
+}
+.catch-rays {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  width: 640px;
+  height: 640px;
+  margin: -320px 0 0 -320px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(rgba(255, 245, 170, .55) 0deg 12deg, rgba(255, 245, 170, 0) 12deg 30deg);
+  -webkit-mask-image: radial-gradient(circle, #000 20%, transparent 65%);
+  mask-image: radial-gradient(circle, #000 20%, transparent 65%);
+  opacity: 0;
+  pointer-events: none;
+  animation: rays-spin 12s linear infinite;
+}
+.catch-card.gold .catch-rays, .catch-card.rainbow .catch-rays { opacity: 1; }
+@keyframes rays-spin { to { transform: rotate(360deg); } }
+.catch-pic {
+  position: relative;
+  display: block;
+  width: 240px;
+  height: 180px;
+  max-width: 70vw;
+  max-height: 52.5vw;
+  padding: 0;
+  border: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(255,255,255,.55), rgba(255,255,255,0) 68%);
+  cursor: pointer;
+  animation: fish-wiggle 1.6s ease-in-out infinite;
+}
+.catch-pic canvas { width: 100%; height: 100%; display: block; }
+@keyframes fish-wiggle {
+  0%, 100% { transform: rotate(-4deg) translateY(0); }
+  50% { transform: rotate(4deg) translateY(-6px); }
+}
+.panel > .catch-name { margin-top: 2px; position: relative; }
+.panel > .catch-count { margin-top: 0; position: relative; font-size: 22px; font-weight: 700; min-height: 26px; text-shadow: 0 2px 0 rgba(20, 60, 150, .5); }
+.catch-btns { width: 100%; position: relative; }
+.catch-btns .btn { font-size: 22px; }
+.new-badge {
+  position: absolute;
+  top: 16px;
+  right: -36px;
+  z-index: 2;
+  width: 150px;
+  padding: 4px 0 6px;
+  transform: rotate(35deg);
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  background: linear-gradient(180deg, #ff8bd1, #ff3d9a);
+  border-top: 3px solid #fff;
+  border-bottom: 3px solid #fff;
+  box-shadow: 0 4px 10px rgba(80, 0, 40, .3);
+  text-shadow: 0 2px 0 rgba(0,0,0,.2);
+}
+.new-badge.show { animation: badge-in .6s cubic-bezier(.2, 1.8, .4, 1) .25s both; }
+@keyframes badge-in { from { transform: rotate(35deg) scale(0); } to { transform: rotate(35deg) scale(1); } }
+
+/* the card flies into the fish book button when kept */
+.catch-card.to-book { animation: to-book .5s ease-in both; }
+@keyframes to-book { to { transform: translate(var(--tx), var(--ty)) scale(.1); opacity: 0; } }
+.catch-card.to-pond { animation: to-pond .45s ease-in both; }
+@keyframes to-pond { to { transform: translateY(40vh) scale(.3) rotate(20deg); opacity: 0; } }
+
+/* ---------- Fish book ---------- */
+.book-panel { max-width: 640px; height: 100%; }
+.book-panel > * + * { margin-top: 10px; }
+.book-progress {
+  display: flex;
+  align-items: center;
+  padding: 4px 14px 4px 6px;
+  border-radius: 999px;
+  background: rgba(20, 70, 160, .5);
+  border: 2px solid rgba(255,255,255,.75);
+  font-weight: 700;
+  font-size: 20px;
+}
+.book-bar {
+  margin-right: 10px;
+  width: 160px;
+  max-width: 38vw;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(10, 30, 80, .35);
+  overflow: hidden;
+}
+.book-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6fe0ff, #6bff8f, #ffe86b);
+  box-shadow: inset 0 3px 0 rgba(255,255,255,.5);
+  transition: width .4s ease;
+}
+.book-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-auto-rows: 150px;
+  grid-gap: 12px;
+  gap: 12px;
+  width: 100%;
+  padding: 6px 6px 12px;
+}
+.fish-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 6px 6px 8px;
+  border-radius: 22px;
+  border: 4px solid rgba(255,255,255,.9);
+  background: linear-gradient(170deg, #9be9ff, #3fa9ec);
+  box-shadow: 0 6px 0 #1f6fc0, 0 10px 18px rgba(10, 40, 100, .3);
+  font-family: inherit;
+  color: #fff;
+  cursor: pointer;
+  touch-action: manipulation;
+  animation: card-in .4s cubic-bezier(.2, 1.5, .4, 1) both;
+}
+.fish-card:active { transform: translateY(4px); box-shadow: 0 2px 0 #1f6fc0, 0 6px 10px rgba(10, 40, 100, .3); }
+.fish-card canvas { width: 100%; height: 92px; display: block; flex: 1 1 auto; min-height: 0; }
+.fish-card .fname { font-weight: 700; font-size: 17px; line-height: 1.1; text-align: center; text-shadow: 0 2px 0 rgba(10, 50, 130, .5); }
+.fish-card .fcount {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  padding: 0 8px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.85);
+  color: #1f5fb0;
+  font-weight: 700;
+  font-size: 16px;
+}
+.fish-card.locked { background: linear-gradient(170deg, #6c86b8, #4a5f94); box-shadow: 0 6px 0 #33467a, 0 10px 18px rgba(10, 30, 80, .3); }
+.fish-card.locked .fname { opacity: .8; }
+.fish-card.gold { border-color: #ffe34d; background: linear-gradient(170deg, #fff2a6, #ffb81f); box-shadow: 0 6px 0 #c98a00, 0 0 0 3px rgba(255, 220, 80, .6), 0 10px 18px rgba(100, 60, 0, .35); }
+.fish-card.gold .fname { text-shadow: 0 2px 0 rgba(150, 80, 0, .6); }
+.fish-card.gold.locked { background: linear-gradient(170deg, #c9b46a, #9c8538); box-shadow: 0 6px 0 #6e5a1c, 0 0 0 3px rgba(255, 220, 80, .45), 0 10px 18px rgba(60, 40, 0, .3); }
+.fish-card.rainbow { border-color: #fff; background: linear-gradient(170deg, #ff9ad6, #ffe86b, #8ff0ff, #c9a3ff); box-shadow: 0 6px 0 #8048ff, 0 0 0 3px rgba(255, 255, 255, .6), 0 10px 18px rgba(60, 20, 120, .35); }
+.fish-card.rainbow.locked { background: linear-gradient(170deg, #9a7fb8, #7a8fc0); }
+.fish-card.gold::after, .fish-card.rainbow::after {
+  content: "✨";
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  font-size: 18px;
+}
+.fish-card.wiggle { animation: wiggle .45s ease; }
+
+@media (max-height: 560px) {
+  .hud .round-btn { width: 56px; height: 56px; }
+  .hud .catch-pill { font-size: 24px; }
+  .catch-card { width: min(560px, 92vw); padding: 10px 16px 14px; }
+  .catch-pic { width: 160px; height: 120px; }
+  .catch-name { font-size: 30px; }
+  .panel > .catch-count { font-size: 18px; min-height: 20px; }
+  .book-grid { grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); grid-auto-rows: 124px; }
+  .fish-card canvas { height: 70px; }
+  .fish-card .fname { font-size: 15px; }
+  .book-panel > * + * { margin-top: 6px; }
+}
+@media (max-height: 560px) and (min-aspect-ratio: 5/4) {
+  .catch-card { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto auto; align-items: center; justify-items: center; }
+  .catch-card > .catch-pic { grid-row: 1 / span 3; grid-column: 1; margin-right: 10px; }
+  .catch-card > .catch-name { grid-column: 2; grid-row: 1; margin-top: 0; }
+  .catch-card > .catch-count { grid-column: 2; grid-row: 2; }
+  .catch-card > .catch-btns { grid-column: 2; grid-row: 3; margin-top: 8px; }
+  .catch-card > .new-badge { right: -40px; }
+}
+@media (min-height: 900px) and (min-width: 700px) {
+  .catch-card { width: 440px; }
+  .catch-pic { width: 320px; height: 240px; max-width: none; max-height: none; }
+  .book-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); grid-auto-rows: 180px; }
+  .fish-card canvas { height: 116px; }
+  .fish-card .fname { font-size: 20px; }
+}
