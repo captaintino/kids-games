@@ -151,7 +151,7 @@ ICE_SPECIES.forEach((sp) => { sp.place = 'ice'; });
 
 const JUNGLE_SPECIES = [
   {
-    id: 'piranha', name: 'Piranha', kind: 'fish', shape: 'tall', rx: 29, ry: 25, tail: 'fork', tl: 18, th: 16,
+    id: 'piranha', name: 'Piranha', kind: 'fish', shape: 'plump', rx: 30, ry: 23, tail: 'fork', tl: 18, th: 17,
     top: '#a6b8e0', belly: '#ff5a4a', fin: '#ff7a5a', pattern: { type: 'spots', color: 'rgba(255,255,255,0.4)' }, teeth: true,
     depth: [0.2, 0.8], speed: [55, 80],
   },
@@ -177,7 +177,7 @@ const JUNGLE_SPECIES = [
     depth: [0.3, 0.8], speed: [24, 34],
   },
   {
-    id: 'goldpiranha', name: 'Golden Piranha', rare: 'gold', kind: 'fish', shape: 'tall', rx: 29, ry: 25, tail: 'fancy', tl: 26, th: 22,
+    id: 'goldpiranha', name: 'Golden Piranha', rare: 'gold', kind: 'fish', shape: 'plump', rx: 30, ry: 23, tail: 'fancy', tl: 28, th: 24,
     top: GOLD.top, belly: GOLD.belly, fin: GOLD.fin, pattern: { type: 'scales', color: 'rgba(255,255,255,0.6)' }, teeth: true, crown: true,
     depth: [0.2, 0.75], speed: [45, 65],
   },
@@ -886,6 +886,248 @@ function paintCrab(c, sp, frame) {
 }
 
 // ---------------------------------------------------------------------------
+// Ocean (and river) creatures: stingray, turtles, seahorses, the lobster
+// ---------------------------------------------------------------------------
+function grad(c, y0, y1, a, b, d) {
+  const g = c.createLinearGradient(0, y0, 0, y1);
+  g.addColorStop(0, a);
+  g.addColorStop(0.5, b);
+  g.addColorStop(1, d || b);
+  return g;
+}
+
+/** A stingray swimming right, seen a little from above; k = how far the wings are spread. */
+function paintRay(c, sp, k, happy) {
+  const r = sp.r;
+  // the long tail
+  c.lineCap = 'round';
+  c.beginPath(); c.moveTo(-r * 0.6, 0); c.quadraticCurveTo(-r * 1.3, r * 0.12 * (k - 0.7), -r * 1.95, -r * 0.04);
+  c.strokeStyle = INK; c.lineWidth = 6; c.stroke();
+  c.strokeStyle = sp.dark; c.lineWidth = 2.6; c.stroke();
+  c.beginPath(); c.moveTo(-r * 1.95, -r * 0.04); c.lineTo(-r * 1.75, -r * 0.16); c.lineTo(-r * 1.8, r * 0.02); c.closePath();
+  c.fillStyle = sp.dark; c.fill(); inkStroke(c, 1.8);
+  const wy = r * 1.0 * k;
+  const body = () => {
+    c.beginPath();
+    c.moveTo(r * 0.95, 0);
+    c.bezierCurveTo(r * 0.8, -r * 0.42, r * 0.25, -wy * 0.85, -r * 0.1, -wy);
+    c.quadraticCurveTo(-r * 0.3, -wy * 0.45, -r * 0.72, 0);
+    c.quadraticCurveTo(-r * 0.3, wy * 0.45, -r * 0.1, wy);
+    c.bezierCurveTo(r * 0.25, wy * 0.85, r * 0.8, r * 0.42, r * 0.95, 0);
+    c.closePath();
+  };
+  body();
+  const g = c.createRadialGradient(r * 0.2, -r * 0.1, 2, 0, 0, r * 1.1);
+  g.addColorStop(0, sp.light);
+  g.addColorStop(0.55, sp.color);
+  g.addColorStop(1, sp.dark);
+  c.fillStyle = g;
+  c.fill();
+  c.save(); body(); c.clip();
+  c.fillStyle = sp.spots;
+  c.globalAlpha = 0.55;
+  for (const [x, y, q] of [[-0.25, -0.5, 0.08], [-0.05, 0.55, 0.07], [-0.4, 0.25, 0.06], [0.05, -0.75, 0.05], [-0.2, 0.8, 0.05], [-0.45, -0.2, 0.05]]) {
+    c.beginPath(); c.arc(x * r, y * wy, q * r, 0, TAU); c.fill();
+  }
+  c.globalAlpha = 1;
+  c.restore();
+  body(); inkStroke(c, 3.2);
+  c.fillStyle = 'rgba(255,255,255,0.6)';
+  c.beginPath(); c.ellipse(r * 0.3, -r * 0.22, r * 0.22, r * 0.08, -0.4, 0, TAU); c.fill();
+  eye(c, r * 0.45, -r * 0.2, r * 0.17, happy);
+  eye(c, r * 0.45, r * 0.2, r * 0.17, happy);
+  blush(c, r * 0.6, -r * 0.38, r * 0.11);
+  blush(c, r * 0.6, r * 0.38, r * 0.11);
+  c.strokeStyle = INK; c.lineWidth = 2.2; c.lineCap = 'round';
+  c.beginPath(); c.arc(r * 0.68, 0, r * 0.13, -Math.PI * 0.35, Math.PI * 0.35); c.stroke();
+  if (sp.rare) { c.fillStyle = '#ffffff'; starPath(c, -r * 0.2, -r * 0.35, 5, 1.2, 4, 0); c.fill(); }
+}
+
+function turtleShell(c, sp) {
+  const r = sp.r;
+  c.beginPath();
+  c.moveTo(-r * 0.98, r * 0.22);
+  c.bezierCurveTo(-r * 0.98, -r * 0.82, r * 0.88, -r * 0.82, r * 0.88, r * 0.22);
+  c.quadraticCurveTo(-r * 0.05, r * 0.36, -r * 0.98, r * 0.22);
+  c.closePath();
+}
+function paintTurtle(c, sp, happy) {
+  const r = sp.r;
+  // tail
+  c.beginPath(); c.moveTo(-r * 0.85, r * 0.05); c.lineTo(-r * 1.25, r * 0.2); c.lineTo(-r * 0.85, r * 0.3); c.closePath();
+  c.fillStyle = sp.skin; c.fill(); inkStroke(c, 2.4);
+  // neck and head
+  c.beginPath(); c.ellipse(r * 0.85, r * 0.06, r * 0.32, r * 0.22, -0.2, 0, TAU);
+  c.fillStyle = sp.skin; c.fill(); inkStroke(c, 2.8);
+  c.beginPath(); c.arc(r * 1.2, -r * 0.08, r * 0.38, 0, TAU);
+  c.fillStyle = grad(c, -r * 0.46, r * 0.3, '#ffffff', sp.skin, sp.skinDark);
+  c.fill(); inkStroke(c, 3);
+  if (sp.redEar) { c.fillStyle = '#ff5a4a'; c.beginPath(); c.ellipse(r * 1.0, -r * 0.02, r * 0.12, r * 0.07, -0.3, 0, TAU); c.fill(); }
+  eye(c, r * 1.27, -r * 0.16, r * 0.15, happy);
+  blush(c, r * 1.22, r * 0.08, r * 0.1);
+  c.strokeStyle = INK; c.lineWidth = 2; c.lineCap = 'round';
+  c.beginPath(); c.arc(r * 1.4, r * 0.0, r * 0.12, Math.PI * 0.15, Math.PI * 0.75); c.stroke();
+  // shell
+  turtleShell(c, sp);
+  c.fillStyle = grad(c, -r * 0.8, r * 0.3, sp.plate, sp.shell, sp.shellDark);
+  c.fill();
+  c.save(); turtleShell(c, sp); c.clip();
+  c.fillStyle = sp.plate;
+  c.strokeStyle = sp.shellDark;
+  c.lineWidth = 2.2;
+  const hex = (x, y, h) => {
+    c.beginPath();
+    for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU; const px = x + Math.cos(a) * h; const py = y + Math.sin(a) * h * 0.85; if (i) c.lineTo(px, py); else c.moveTo(px, py); }
+    c.closePath(); c.globalAlpha = 0.75; c.fill(); c.globalAlpha = 1; c.stroke();
+  };
+  hex(-r * 0.05, -r * 0.25, r * 0.26);
+  hex(-r * 0.62, -r * 0.05, r * 0.22);
+  hex(r * 0.52, -r * 0.05, r * 0.22);
+  c.fillStyle = sp.shellDark;
+  c.fillRect(-r, r * 0.12, r * 2, r * 0.3);
+  c.fillStyle = 'rgba(255,255,255,0.35)';
+  for (let x = -r * 0.8; x < r * 0.8; x += r * 0.3) { c.beginPath(); c.arc(x, r * 0.2, r * 0.05, 0, TAU); c.fill(); }
+  c.restore();
+  turtleShell(c, sp); inkStroke(c, 3.2);
+  c.fillStyle = 'rgba(255,255,255,0.6)';
+  c.beginPath(); c.ellipse(-r * 0.3, -r * 0.48, r * 0.25, r * 0.08, -0.3, 0, TAU); c.fill();
+  if (sp.rare) { c.fillStyle = '#ffffff'; starPath(c, r * 0.3, -r * 0.4, 5, 1.2, 4, 0); c.fill(); }
+}
+function paintFlipper(c, sp, big) {
+  const r = sp.r * (big ? 1 : 0.65);
+  c.beginPath();
+  c.moveTo(r * 0.12, -r * 0.08);
+  c.bezierCurveTo(r * 0.1, r * 0.5, -r * 0.35, r * 0.75, -r * 0.7, r * 0.62);
+  c.bezierCurveTo(-r * 0.45, r * 0.35, -r * 0.2, r * 0.1, -r * 0.18, -r * 0.05);
+  c.closePath();
+  c.fillStyle = grad(c, 0, r * 0.7, sp.skin, sp.skin, sp.skinDark);
+  c.fill(); inkStroke(c, 2.6);
+}
+
+function paintSeahorse(c, sp, fin, happy) {
+  const r = sp.r;
+  c.lineCap = 'round';
+  c.lineJoin = 'round';
+  // curly tail
+  const tail = () => {
+    c.beginPath();
+    c.moveTo(-r * 0.05, r * 0.5);
+    c.bezierCurveTo(-r * 0.15, r * 1.25, -r * 0.8, r * 1.3, -r * 0.68, r * 0.92);
+    c.quadraticCurveTo(-r * 0.58, r * 0.7, -r * 0.36, r * 0.86);
+  };
+  tail(); c.strokeStyle = INK; c.lineWidth = r * 0.34 + 5; c.stroke();
+  tail(); c.strokeStyle = sp.color; c.lineWidth = r * 0.34; c.stroke();
+  // back fin
+  c.save();
+  c.translate(-r * 0.42, -r * 0.08);
+  c.scale(fin, 1);
+  c.beginPath(); c.moveTo(0, -r * 0.32); c.quadraticCurveTo(-r * 0.45, -r * 0.1, -r * 0.05, r * 0.32); c.closePath();
+  c.fillStyle = sp.fin; c.globalAlpha = 0.9; c.fill(); c.globalAlpha = 1; inkStroke(c, 2);
+  c.strokeStyle = 'rgba(255,255,255,0.7)'; c.lineWidth = 1.2;
+  for (let k = -1; k <= 1; k++) { c.beginPath(); c.moveTo(-r * 0.02, k * r * 0.15); c.lineTo(-r * 0.24, k * r * 0.12); c.stroke(); }
+  c.restore();
+  // body
+  const body = () => {
+    c.beginPath();
+    c.moveTo(r * 0.05, -r * 0.78);
+    c.bezierCurveTo(r * 0.62, -r * 0.55, r * 0.62, r * 0.22, r * 0.22, r * 0.56);
+    c.quadraticCurveTo(r * 0.04, r * 0.72, -r * 0.16, r * 0.52);
+    c.bezierCurveTo(-r * 0.52, r * 0.2, -r * 0.48, -r * 0.5, -r * 0.16, -r * 0.76);
+    c.closePath();
+  };
+  body();
+  c.fillStyle = grad(c, -r * 0.8, r * 0.7, sp.light, sp.color, sp.dark);
+  c.fill();
+  c.save(); body(); c.clip();
+  c.strokeStyle = 'rgba(255,255,255,0.55)'; c.lineWidth = 1.8;
+  for (let k = 0; k < 5; k++) { const y = -r * 0.45 + k * r * 0.22; c.beginPath(); c.moveTo(r * 0.15, y); c.quadraticCurveTo(r * 0.45, y + r * 0.06, r * 0.65, y); c.stroke(); }
+  c.restore();
+  body(); inkStroke(c, 3);
+  // snout
+  c.beginPath(); c.moveTo(r * 0.2, -r * 1.0); c.lineTo(r * 0.92, -r * 0.88);
+  c.strokeStyle = INK; c.lineWidth = r * 0.3 + 5; c.stroke();
+  c.strokeStyle = sp.color; c.lineWidth = r * 0.3; c.stroke();
+  // crest
+  c.fillStyle = sp.dark;
+  for (const [x, y] of [[-r * 0.32, -r * 1.22], [-r * 0.12, -r * 1.36], [r * 0.08, -r * 1.36]]) {
+    c.beginPath(); c.moveTo(x - r * 0.1, y + r * 0.12); c.lineTo(x, y - r * 0.08); c.lineTo(x + r * 0.1, y + r * 0.12); c.closePath(); c.fill(); inkStroke(c, 1.8);
+  }
+  // head
+  c.beginPath(); c.arc(-r * 0.02, -r * 0.98, r * 0.42, 0, TAU);
+  c.fillStyle = grad(c, -r * 1.4, -r * 0.56, sp.light, sp.color, sp.color);
+  c.fill(); inkStroke(c, 3);
+  c.fillStyle = 'rgba(255,255,255,0.6)';
+  c.beginPath(); c.ellipse(-r * 0.15, -r * 1.2, r * 0.14, r * 0.07, -0.4, 0, TAU); c.fill();
+  eye(c, r * 0.07, -r * 1.02, r * 0.19, happy);
+  blush(c, r * 0.1, -r * 0.74, r * 0.12);
+  c.beginPath(); c.arc(r * 0.98, -r * 0.88, r * 0.07, 0, TAU); c.fillStyle = INK; c.fill();
+  if (sp.rare) { c.fillStyle = '#ffffff'; starPath(c, r * 0.18, -r * 0.1, 5, 1.2, 4, 0); c.fill(); }
+}
+
+function paintLobster(c, sp, frame) {
+  const r = sp.r;
+  c.lineCap = 'round';
+  c.lineJoin = 'round';
+  // antennae
+  c.strokeStyle = INK; c.lineWidth = 2.2;
+  c.beginPath(); c.moveTo(r * 0.75, -r * 0.2); c.bezierCurveTo(r * 0.9, -r * 0.9, r * 0.3, -r * 1.3, -r * 0.5, -r * 1.1); c.stroke();
+  c.beginPath(); c.moveTo(r * 0.8, -r * 0.15); c.bezierCurveTo(r * 1.2, -r * 0.8, r * 0.9, -r * 1.35, r * 0.3, -r * 1.38); c.stroke();
+  // legs
+  for (let i = 0; i < 4; i++) {
+    const lift = (frame === 'b' ? (i % 2 ? 1 : -1) : (i % 2 ? -1 : 1)) * 3;
+    const x = -r * 0.3 + i * r * 0.25;
+    c.beginPath(); c.moveTo(x, r * 0.25); c.lineTo(x - r * 0.08, r * 0.5 + lift * 0.4); c.lineTo(x - r * 0.18, r * 0.74 + lift);
+    c.strokeStyle = INK; c.lineWidth = 6.5; c.stroke();
+    c.strokeStyle = sp.dark; c.lineWidth = 3.2; c.stroke();
+  }
+  // tail segments and fan
+  const fill = (y0, y1) => grad(c, y0, y1, sp.light, sp.color, sp.dark);
+  c.beginPath();
+  c.moveTo(-r * 1.25, r * 0.1);
+  c.lineTo(-r * 1.68, -r * 0.18); c.quadraticCurveTo(-r * 1.8, r * 0.12, -r * 1.68, r * 0.42);
+  c.closePath();
+  c.fillStyle = fill(-r * 0.2, r * 0.4); c.fill(); inkStroke(c, 2.6);
+  for (let i = 2; i >= 0; i--) {
+    c.beginPath(); c.ellipse(-r * 0.62 - i * r * 0.24, r * 0.05 + i * r * 0.02, r * 0.2, r * 0.28 - i * r * 0.03, 0, 0, TAU);
+    c.fillStyle = fill(-r * 0.25, r * 0.35); c.fill(); inkStroke(c, 2.6);
+  }
+  // claws
+  const up = frame === 'wave';
+  const cx = up ? r * 1.15 : r * 1.3;
+  const cy = up ? -r * 0.72 : -r * 0.1;
+  c.beginPath(); c.moveTo(r * 0.55, r * 0.15); c.quadraticCurveTo(r * 1.0, r * 0.2, cx - r * 0.2, cy + r * 0.15);
+  c.strokeStyle = INK; c.lineWidth = 8; c.stroke();
+  c.strokeStyle = sp.color; c.lineWidth = 4.5; c.stroke();
+  c.save();
+  c.translate(cx, cy);
+  c.rotate(up ? -0.9 : -0.2);
+  c.beginPath();
+  c.ellipse(0, 0, r * 0.42, r * 0.24, 0, Math.PI * 0.15, Math.PI * 1.85);
+  c.lineTo(r * 0.05, 0);
+  c.closePath();
+  c.fillStyle = fill(-r * 0.24, r * 0.24); c.fill(); inkStroke(c, 2.8);
+  c.fillStyle = 'rgba(255,255,255,0.5)';
+  c.beginPath(); c.ellipse(-r * 0.12, -r * 0.08, r * 0.12, r * 0.05, -0.2, 0, TAU); c.fill();
+  c.restore();
+  // body
+  c.beginPath(); c.ellipse(r * 0.05, 0, r * 0.62, r * 0.38, 0, 0, TAU);
+  c.fillStyle = fill(-r * 0.38, r * 0.38); c.fill(); inkStroke(c, 3.2);
+  c.beginPath(); c.ellipse(r * 0.62, -r * 0.04, r * 0.3, r * 0.3, 0, 0, TAU);
+  c.fillStyle = fill(-r * 0.34, r * 0.26); c.fill(); inkStroke(c, 3);
+  c.fillStyle = 'rgba(255,255,255,0.55)';
+  c.beginPath(); c.ellipse(-r * 0.1, -r * 0.2, r * 0.25, r * 0.07, -0.1, 0, TAU); c.fill();
+  // eyes on little stalks
+  for (const [x, y] of [[r * 0.5, -r * 0.55], [r * 0.74, -r * 0.5]]) {
+    c.beginPath(); c.moveTo(r * 0.62, -r * 0.25); c.lineTo(x, y);
+    c.strokeStyle = INK; c.lineWidth = 4.5; c.stroke(); c.strokeStyle = sp.color; c.lineWidth = 2; c.stroke();
+  }
+  eye(c, r * 0.5, -r * 0.6, r * 0.17, false);
+  eye(c, r * 0.76, -r * 0.55, r * 0.17, false);
+  blush(c, r * 0.66, r * 0.1, r * 0.1);
+  grin(c, r * 0.8, r * 0.12, r * 0.12, 2);
+}
+
+// ---------------------------------------------------------------------------
 // Building the sprites
 // ---------------------------------------------------------------------------
 /** Size of the creature's drawing box (units), and where its center is. */
@@ -893,9 +1135,17 @@ export function boundsOf(sp) {
   switch (sp.kind) {
     case 'fish': {
       const tall = sp.shape === 'tall';
+      const shark = sp.shape === 'shark';
       const left = sp.rx * 0.85 + sp.tl;
-      return { left, right: sp.rx * 1.05, top: sp.ry * (tall ? 1.9 : 1.35) + (sp.crown ? 10 : 0), bottom: sp.ry * (tall ? 1.9 : 1.3) };
+      const right = sp.rx * (sp.sword ? 1.9 : sp.horn ? 1.55 : sp.whiskers === 'cat' ? 1.35 : 1.05);
+      const top = sp.ry * (tall ? 1.9 : shark ? 2.05 : sp.horn ? 1.6 : 1.35) + (sp.crown ? 10 : 0);
+      const bottom = sp.ry * (tall ? 1.9 : shark ? 1.6 : 1.3);
+      return { left, right, top, bottom };
     }
+    case 'ray': return { left: sp.r * 2.0, right: sp.r * 1.0, top: sp.r * 1.05, bottom: sp.r * 1.05 };
+    case 'turtle': return { left: sp.r * 1.3, right: sp.r * 1.62, top: sp.r * 0.85, bottom: sp.r * 0.95 };
+    case 'seahorse': return { left: sp.r * 0.9, right: sp.r * 1.1, top: sp.r * 1.5, bottom: sp.r * 1.45 };
+    case 'lobster': return { left: sp.r * 1.8, right: sp.r * 1.75, top: sp.r * 1.45, bottom: sp.r * 0.8 };
     case 'puffer': return { left: sp.r * 1.4 + sp.tl, right: sp.r * 1.4, top: sp.r * 1.45, bottom: sp.r * 1.4 };
     case 'eel': return { left: sp.len / 2 + 6, right: sp.len / 2 + 10, top: 26, bottom: 26 };
     case 'jelly': return { left: sp.r * 1.1, right: sp.r * 1.1, top: sp.r * 1.05, bottom: sp.r * 2.1 };
@@ -918,7 +1168,8 @@ function boxSprite(b, res, draw) {
 export function buildArt(sp, res) {
   const a = { sp };
   if (sp.kind === 'fish') {
-    const b = { left: sp.rx * 1.25, right: sp.rx * 1.05, top: sp.ry * (sp.shape === 'tall' ? 2.05 : 1.6) + (sp.crown ? 14 : 0), bottom: sp.ry * (sp.shape === 'tall' ? 2.05 : 1.5) };
+    const bb = boundsOf(sp);
+    const b = { left: sp.rx * 1.25, right: bb.right + 2, top: Math.max(sp.ry * (sp.shape === 'tall' ? 2.05 : 1.6) + (sp.crown ? 14 : 0), bb.top + 6), bottom: Math.max(sp.ry * (sp.shape === 'tall' ? 2.05 : 1.5), bb.bottom + 4) };
     a.body = boxSprite(b, res, (c) => paintBody(c, sp, false));
     a.bodyHappy = boxSprite(b, res, (c) => paintBody(c, sp, true));
     a.tail = boxSprite({ left: sp.tl * 1.25 + 4, right: 8, top: sp.th * 1.3 + 2, bottom: sp.th * 1.3 + 2 }, res, (c) => paintTail(c, sp));
@@ -931,13 +1182,29 @@ export function buildArt(sp, res) {
     const tsp = { tl: sp.tl, th: sp.th, tail: 'fan', fin: sp.fin };
     a.tail = boxSprite({ left: sp.tl * 1.25 + 4, right: 8, top: sp.th * 1.3 + 2, bottom: sp.th * 1.3 + 2 }, res, (c) => paintTail(c, tsp));
     a.joint = -sp.r * 0.95;
-  } else if (sp.kind === 'crab') {
+  } else if (sp.kind === 'crab' || sp.kind === 'lobster') {
     const b = boundsOf(sp);
+    const paint = sp.kind === 'crab' ? paintCrab : paintLobster;
     a.frames = {
-      a: boxSprite(b, res, (c) => paintCrab(c, sp, 'a')),
-      b: boxSprite(b, res, (c) => paintCrab(c, sp, 'b')),
-      wave: boxSprite(b, res, (c) => paintCrab(c, sp, 'wave')),
+      a: boxSprite(b, res, (c) => paint(c, sp, 'a')),
+      b: boxSprite(b, res, (c) => paint(c, sp, 'b')),
+      wave: boxSprite(b, res, (c) => paint(c, sp, 'wave')),
     };
+  } else if (sp.kind === 'ray') {
+    const b = boundsOf(sp);
+    a.frames = [1, 0.78, 0.56].map((k) => boxSprite(b, res, (c) => paintRay(c, sp, k, false)));
+    a.happyFrames = [1, 0.78, 0.56].map((k) => boxSprite(b, res, (c) => paintRay(c, sp, k, true)));
+  } else if (sp.kind === 'turtle') {
+    const b = boundsOf(sp);
+    a.body = boxSprite(b, res, (c) => paintTurtle(c, sp, false));
+    a.bodyHappy = boxSprite(b, res, (c) => paintTurtle(c, sp, true));
+    const fb = { left: sp.r * 0.8, right: sp.r * 0.25, top: sp.r * 0.2, bottom: sp.r * 0.8 };
+    a.front = boxSprite(fb, res, (c) => paintFlipper(c, sp, true));
+    a.back = boxSprite(fb, res, (c) => paintFlipper(c, sp, false));
+  } else if (sp.kind === 'seahorse') {
+    const b = boundsOf(sp);
+    a.frames = [1, 0.45].map((k) => boxSprite(b, res, (c) => paintSeahorse(c, sp, k, false)));
+    a.happyFrames = [1, 0.45].map((k) => boxSprite(b, res, (c) => paintSeahorse(c, sp, k, true)));
   }
   return a;
 }
@@ -968,8 +1235,31 @@ export function drawCreature(c, a, t, pose) {
     case 'eel': drawEel(c, sp, t, pose.happy); break;
     case 'jelly': drawJelly(c, sp, t, pose.happy, pose.squash || 1); break;
     case 'octopus': drawOctopus(c, sp, t, pose.happy, pose.squash || 1); break;
-    case 'crab': {
+    case 'crab':
+    case 'lobster': {
       const f = pose.wave ? a.frames.wave : (Math.floor(pose.step || 0) % 2 ? a.frames.b : a.frames.a);
+      c.drawImage(f, -f.cx, -f.cy, f.w, f.h);
+      break;
+    }
+    case 'ray': {
+      const w = pose.wag || 0;
+      const set = pose.happy ? a.happyFrames : a.frames;
+      const f = set[w > 0.1 ? 0 : w < -0.1 ? 2 : 1];
+      c.drawImage(f, -f.cx, -f.cy, f.w, f.h);
+      break;
+    }
+    case 'turtle': {
+      const r = sp.r;
+      const w = pose.wag || 0;
+      c.save(); c.translate(-r * 0.55, r * 0.2); c.rotate(-w * 1.2); c.drawImage(a.back, -a.back.cx, -a.back.cy, a.back.w, a.back.h); c.restore();
+      const body = pose.happy ? a.bodyHappy : a.body;
+      c.drawImage(body, -body.cx, -body.cy, body.w, body.h);
+      c.save(); c.translate(r * 0.42, r * 0.22); c.rotate(w * 1.5); c.drawImage(a.front, -a.front.cx, -a.front.cy, a.front.w, a.front.h); c.restore();
+      break;
+    }
+    case 'seahorse': {
+      const set = pose.happy ? a.happyFrames : a.frames;
+      const f = set[(pose.wag || 0) > 0 ? 0 : 1];
       c.drawImage(f, -f.cx, -f.cy, f.w, f.h);
       break;
     }
@@ -991,7 +1281,7 @@ export function portrait(a, size, silhouette, happy) {
   const c = cv.getContext('2d');
   c.translate(W / 2 + ((b.left - b.right) / 2) * scale, H / 2 + ((b.top - b.bottom) / 2) * scale);
   c.scale(scale, scale);
-  drawCreature(c, a, 0.7, { wag: 0.12, happy: !!happy, step: 0, wave: sp.kind === 'crab' && happy });
+  drawCreature(c, a, 0.7, { wag: 0.12, happy: !!happy, step: 0, wave: (sp.kind === 'crab' || sp.kind === 'lobster') && happy });
   if (silhouette) {
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.globalCompositeOperation = 'source-in';

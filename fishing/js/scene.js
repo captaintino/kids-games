@@ -273,7 +273,7 @@ export const BOAT_H = 150;
 export const BOAT_WATER = 124;
 export const PAWS = [108, 84];
 
-function paintBoat(c, face) {
+function paintBoat(c, face, v = {}) {
   // cat body in a yellow raincoat
   c.beginPath();
   c.ellipse(86, 88, 25, 24, 0, 0, TAU);
@@ -320,22 +320,55 @@ function paintBoat(c, face) {
   c.strokeStyle = 'rgba(200, 100, 30, 0.6)';
   c.lineWidth = 3;
   c.beginPath(); c.moveTo(hx - 4, hy - 21); c.lineTo(hx - 3, hy - 13); c.moveTo(hx + 4, hy - 21); c.lineTo(hx + 3, hy - 13); c.stroke();
-  // fisherman's hat
-  c.beginPath();
-  c.ellipse(hx, hy - 19, 30, 7, -0.05, 0, TAU);
-  c.fillStyle = '#ffd23a';
-  c.fill();
-  ink(c, 3);
-  c.beginPath();
-  c.moveTo(hx - 17, hy - 20);
-  c.quadraticCurveTo(hx - 15, hy - 40, hx, hy - 40);
-  c.quadraticCurveTo(hx + 15, hy - 40, hx + 17, hy - 20);
-  c.closePath();
-  c.fillStyle = vgrad(c, hy - 40, hy - 20, [[0, '#fff07a'], [1, '#ffc21f']]);
-  c.fill();
-  ink(c, 3);
-  c.fillStyle = '#ff7ac6';
-  c.fillRect(hx - 16, hy - 27, 32, 5);
+  if (v.hat === 'beanie') {
+    // a cozy knitted hat
+    c.beginPath();
+    c.moveTo(hx - 24, hy - 14);
+    c.quadraticCurveTo(hx - 24, hy - 44, hx, hy - 44);
+    c.quadraticCurveTo(hx + 24, hy - 44, hx + 24, hy - 14);
+    c.closePath();
+    c.fillStyle = vgrad(c, hy - 44, hy - 14, [[0, '#8fd8ff'], [1, '#3d9bff']]);
+    c.fill();
+    ink(c, 3);
+    c.strokeStyle = 'rgba(255,255,255,0.7)';
+    c.lineWidth = 2.4;
+    c.beginPath(); c.moveTo(hx - 20, hy - 30); c.lineTo(hx + 20, hy - 30); c.stroke();
+    roundRectPath(c, hx - 27, hy - 21, 54, 10, 5);
+    c.fillStyle = '#ff7ac6'; c.fill(); ink(c, 2.6);
+    c.beginPath(); c.arc(hx, hy - 47, 7, 0, TAU);
+    c.fillStyle = '#ffffff'; c.fill(); ink(c, 2.6);
+  } else if (v.hat === 'safari') {
+    // an explorer's helmet
+    c.beginPath(); c.ellipse(hx, hy - 18, 32, 7, -0.05, 0, TAU);
+    c.fillStyle = '#e8cf8a'; c.fill(); ink(c, 3);
+    c.beginPath();
+    c.moveTo(hx - 21, hy - 19);
+    c.quadraticCurveTo(hx - 20, hy - 46, hx, hy - 46);
+    c.quadraticCurveTo(hx + 20, hy - 46, hx + 21, hy - 19);
+    c.closePath();
+    c.fillStyle = vgrad(c, hy - 46, hy - 19, [[0, '#fff0c0'], [1, '#d9b860']]);
+    c.fill(); ink(c, 3);
+    c.fillStyle = '#5cd65c';
+    c.fillRect(hx - 20, hy - 27, 40, 5);
+    c.beginPath(); c.arc(hx, hy - 47, 3, 0, TAU); c.fillStyle = '#d9b860'; c.fill(); ink(c, 2);
+  } else {
+    // fisherman's hat
+    c.beginPath();
+    c.ellipse(hx, hy - 19, 30, 7, -0.05, 0, TAU);
+    c.fillStyle = '#ffd23a';
+    c.fill();
+    ink(c, 3);
+    c.beginPath();
+    c.moveTo(hx - 17, hy - 20);
+    c.quadraticCurveTo(hx - 15, hy - 40, hx, hy - 40);
+    c.quadraticCurveTo(hx + 15, hy - 40, hx + 17, hy - 20);
+    c.closePath();
+    c.fillStyle = vgrad(c, hy - 40, hy - 20, [[0, '#fff07a'], [1, '#ffc21f']]);
+    c.fill();
+    ink(c, 3);
+    c.fillStyle = '#ff7ac6';
+    c.fillRect(hx - 16, hy - 27, 32, 5);
+  }
   // face (looking a little toward the front)
   const fx = hx + 5;
   if (face === 'joy') {
@@ -381,6 +414,60 @@ function paintBoat(c, face) {
   c.beginPath(); c.arc(PAWS[0], PAWS[1], 7, 0, TAU);
   c.fillStyle = '#ffc98a'; c.fill(); ink(c, 2.6);
 
+  if (v.hull === 'canoe') {
+    // a long wooden canoe with a paddle
+    c.save();
+    c.translate(36, 66);
+    c.rotate(0.55);
+    roundRectPath(c, -3, 0, 6, 70, 3);
+    c.fillStyle = '#c9824a'; c.fill(); ink(c, 2.4);
+    c.beginPath(); c.ellipse(0, 76, 8, 14, 0, 0, TAU);
+    c.fillStyle = '#e0a060'; c.fill(); ink(c, 2.4);
+    c.restore();
+    const hull = () => {
+      c.beginPath();
+      c.moveTo(-2, 92);
+      c.quadraticCurveTo(90, 108, 182, 92);
+      c.quadraticCurveTo(170, 136, 130, 138);
+      c.lineTo(50, 138);
+      c.quadraticCurveTo(10, 136, -2, 92);
+      c.closePath();
+    };
+    hull();
+    c.fillStyle = vgrad(c, 92, 138, [[0, '#d9935a'], [1, '#9a5a2e']]);
+    c.fill();
+    c.save(); hull(); c.clip();
+    c.strokeStyle = 'rgba(90, 45, 15, 0.45)';
+    c.lineWidth = 2;
+    for (const y of [112, 124]) { c.beginPath(); c.moveTo(0, y); c.quadraticCurveTo(90, y + 8, 182, y); c.stroke(); }
+    c.fillStyle = '#ffd23a';
+    for (const x of [40, 90, 140]) { c.beginPath(); c.moveTo(x - 6, 116); c.lineTo(x, 110); c.lineTo(x + 6, 116); c.lineTo(x, 122); c.closePath(); c.fill(); }
+    c.restore();
+    hull(); ink(c, 3.6);
+    c.strokeStyle = INK; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(-2, 92); c.quadraticCurveTo(90, 108, 182, 92); c.stroke();
+    return;
+  }
+  if (v.hull === 'sled') {
+    // a little wooden sled on the ice
+    c.lineCap = 'round';
+    c.beginPath(); c.moveTo(22, 124); c.lineTo(156, 124); c.quadraticCurveTo(172, 124, 170, 110);
+    c.strokeStyle = INK; c.lineWidth = 8; c.stroke();
+    c.strokeStyle = '#ff5f7a'; c.lineWidth = 4; c.stroke();
+    for (const x of [44, 90, 134]) {
+      c.fillStyle = '#c9824a';
+      c.fillRect(x - 3, 108, 6, 16);
+      c.strokeStyle = INK; c.lineWidth = 2; c.strokeRect(x - 3, 108, 6, 16);
+    }
+    roundRectPath(c, 20, 98, 140, 12, 5);
+    c.fillStyle = vgrad(c, 98, 110, [[0, '#e8a868'], [1, '#b86e36']]);
+    c.fill(); ink(c, 3);
+    c.strokeStyle = 'rgba(110, 60, 30, 0.5)'; c.lineWidth = 1.6;
+    for (let x = 40; x < 160; x += 22) { c.beginPath(); c.moveTo(x, 99); c.lineTo(x, 109); c.stroke(); }
+    return;
+  }
+  const top = v.hullTop || '#ff7a6a';
+  const bottom = v.hullBottom || '#d93a3a';
   // hull
   c.beginPath();
   c.moveTo(8, 100);
@@ -389,7 +476,7 @@ function paintBoat(c, face) {
   c.lineTo(46, 140);
   c.quadraticCurveTo(16, 134, 8, 100);
   c.closePath();
-  c.fillStyle = vgrad(c, 100, 140, [[0, '#ff7a6a'], [1, '#d93a3a']]);
+  c.fillStyle = vgrad(c, 100, 140, [[0, top], [1, bottom]]);
   c.fill();
   c.save();
   c.clip();
@@ -416,10 +503,11 @@ function paintBoat(c, face) {
   c.fillStyle = '#bfefff'; c.fill(); ink(c, 2.2);
 }
 
-export function buildBoat(res) {
+/** The cat's boat for a place: v = { hull: 'boat' | 'canoe' | 'sled', hat, hullTop, hullBottom }. */
+export function buildBoat(res, v) {
   return {
-    calm: makeSprite(BOAT_W, BOAT_H, (c) => paintBoat(c, 'calm'), res),
-    joy: makeSprite(BOAT_W, BOAT_H, (c) => paintBoat(c, 'joy'), res),
+    calm: makeSprite(BOAT_W, BOAT_H, (c) => paintBoat(c, 'calm', v), res),
+    joy: makeSprite(BOAT_W, BOAT_H, (c) => paintBoat(c, 'joy', v), res),
   };
 }
 

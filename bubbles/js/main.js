@@ -1436,7 +1436,7 @@ function learnHint(b) {
   if (now - lastHint < 2500) return;
   lastHint = now;
   if (state.mode === 'shapes') say(`That's a ${SHAPES[b.sym].name.toLowerCase()}. Pop the ${SHAPES[state.sym].plural}!`);
-  else say(`That's ${b.sym}. ${letterPrompt(state.sym)}`);
+  else say(`That's ${b.sym === 'A' ? 'the letter A' : b.sym}. ${letterPrompt(state.sym)}`);
 }
 
 function learnPop(b, chain) {
