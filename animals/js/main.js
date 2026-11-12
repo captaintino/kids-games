@@ -52,10 +52,11 @@ function perform(tile, a, move) {
 
 /** Choose columns/rows so n tiles are as big as possible in the box. */
 function fitGrid(box, n, maxSize) {
+  const cs = window.getComputedStyle(box);
   const w = box.clientWidth;
-  const h = box.clientHeight;
+  const h = box.clientHeight - (parseFloat(cs.paddingTop) || 0);
   const gap = Math.min(W, H) > 600 ? 18 : 10;
-  const tall = 1.14; // tile height / width (room for the name)
+  const tall = 1.2; // tile height / width (room for the name)
   let best = null;
   for (let cols = 1; cols <= n; cols++) {
     const rows = Math.ceil(n / cols);
@@ -245,7 +246,7 @@ function tapQuiz(tile, a) {
 // ---------------------------------------------------------------------------
 function layout() {
   if (mode === 'play') fitGrid($('#barn'), ANIMALS.length, 260);
-  if (mode === 'quiz') fitGrid($('#choices'), $$('#choices .animal').length, 300);
+  if (mode === 'quiz') fitGrid($('#choices'), $$('#choices .animal').length, 380);
 }
 
 // ---------------------------------------------------------------------------

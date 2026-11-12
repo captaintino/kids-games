@@ -323,7 +323,7 @@ export function createEngine(canvas, opts = {}) {
           break;
         }
         case 'bubble': {
-          ctx.globalAlpha = Math.min(1, k * 2) * 0.85;
+          ctx.globalAlpha = Math.min(1, p.life * 4) * 0.85;
           ctx.drawImage(p.img, p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
           break;
         }

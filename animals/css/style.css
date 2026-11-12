@@ -259,9 +259,11 @@
   .replay { width: 54px; height: 54px; font-size: 25px; margin-right: 10px; }
   .q-text { font-size: 28px; }
   .choices { top: calc(76px + var(--safe-top)); padding-top: 10px; bottom: calc(8px + var(--safe-bottom)); }
-  .parade { display: none; }
+  .parade { margin-bottom: 0; }
+  .p-head { width: 50px; height: 50px; }
+  .p-head .bubble { font-size: 13px; top: -22px; }
 }
 @media (max-height: 500px) and (min-aspect-ratio: 5/4) {
   /* the question sits in the top bar, between back and the star pill */
-  #quiz .hud .star-pill { flex: 0 0 auto; margin-left: auto; }
+  #quiz .hud .star-pill { flex: 0 0 auto; margin-left: auto; margin-right: 0; }
 }

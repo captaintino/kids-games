@@ -77,6 +77,7 @@ canvas#game {
   height: 640px;
   margin: -320px 0 0 -320px;
   border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 245, 170, .7), rgba(255, 245, 170, 0) 60%);
   background: repeating-conic-gradient(rgba(255, 245, 170, .55) 0deg 12deg, rgba(255, 245, 170, 0) 12deg 30deg);
   -webkit-mask-image: radial-gradient(circle, #000 20%, transparent 65%);
   mask-image: radial-gradient(circle, #000 20%, transparent 65%);
@@ -105,6 +106,21 @@ canvas#game {
   50% { transform: rotate(4deg) translateY(-6px); }
 }
 .panel > .catch-name { margin-top: 2px; position: relative; }
+.panel > .catch-tag {
+  position: relative;
+  margin-top: 0;
+  padding: 2px 16px 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff27a, #ffb000);
+  border: 3px solid #fff;
+  color: #8a4b00;
+  font-weight: 700;
+  font-size: 20px;
+  text-shadow: 0 1px 0 rgba(255,255,255,.6);
+  box-shadow: 0 4px 10px rgba(120, 60, 0, .3);
+  animation: bump .8s ease infinite;
+}
+.rainbow .catch-tag { background: linear-gradient(90deg, #ff9ad6, #ffe86b, #8ff0ff, #c9a3ff); color: #5420c4; }
 .panel > .catch-count { margin-top: 0; position: relative; font-size: 22px; font-weight: 700; min-height: 26px; text-shadow: 0 2px 0 rgba(20, 60, 150, .5); }
 .catch-btns { width: 100%; position: relative; }
 .catch-btns .btn { font-size: 22px; }
@@ -235,9 +251,12 @@ canvas#game {
 @media (max-height: 560px) and (min-aspect-ratio: 5/4) {
   .catch-card { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto auto; align-items: center; justify-items: center; }
   .catch-card > .catch-pic { grid-row: 1 / span 3; grid-column: 1; margin-right: 10px; }
-  .catch-card > .catch-name { grid-column: 2; grid-row: 1; margin-top: 0; }
-  .catch-card > .catch-count { grid-column: 2; grid-row: 2; }
-  .catch-card > .catch-btns { grid-column: 2; grid-row: 3; margin-top: 8px; }
+  .catch-card { grid-template-rows: auto auto auto auto; }
+  .catch-card > .catch-pic { grid-row: 1 / span 4; }
+  .catch-card > .catch-tag { grid-column: 2; grid-row: 1; }
+  .catch-card > .catch-name { grid-column: 2; grid-row: 2; margin-top: 0; }
+  .catch-card > .catch-count { grid-column: 2; grid-row: 3; }
+  .catch-card > .catch-btns { grid-column: 2; grid-row: 4; margin-top: 8px; }
   .catch-card > .new-badge { right: -40px; }
 }
 @media (min-height: 900px) and (min-width: 700px) {

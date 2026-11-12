@@ -52,7 +52,7 @@
   line-height: 1.05;
   text-shadow: 0 3px 0 rgba(0,0,0,.18);
 }
-.set-lower .cglyph { font-size: 60px; }
+.set-lower .cglyph { font-size: 60px; line-height: .9; padding-bottom: .16em; }
 .cstars { font-size: 17px; line-height: 1; letter-spacing: 1px; }
 .cstars i { font-style: normal; color: rgba(255,255,255,.45); }
 .cstars i.on { color: #fff36b; text-shadow: 0 0 6px rgba(255, 240, 120, .9), 0 2px 0 rgba(150, 70, 0, .5); }

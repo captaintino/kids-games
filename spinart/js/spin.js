@@ -161,10 +161,16 @@ export function createSpin(P) {
   }
 
   S.down = function (id, x, y, colorKey, tool) {
+    const on = S.onDisc(x, y);
     const d = toDisc(x, y);
-    const f = { colorKey, tool, last: d, lastT: S.t, sx: x, sy: y };
+    const f = { colorKey, tool, last: on ? d : null, lastT: S.t, sx: x, sy: y };
     S.fingers[id] = f;
-    drip(f, d, true);
+    if (on) drip(f, d, true);
+    return on;
+  };
+  S.busy = function () {
+    for (const id in S.fingers) return true;
+    return S.omega > 0.001 || S.blobs.length > 0 || S.t - S.dropT < 0.7;
   };
   S.move = function (id, x, y) {
     const f = S.fingers[id];
