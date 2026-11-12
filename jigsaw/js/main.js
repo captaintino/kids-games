@@ -531,7 +531,7 @@ const fitCount = (R, fw, fh) => Math.max(0, Math.floor(R.w / fw)) * Math.max(0, 
 // little, so the board (and every piece) can be bigger.
 function fitBoard(A, asp, cols, rows, n) {
   const g = 10;
-  const ov = n >= 12 ? 0.8 : 1;
+  const ov = n >= 12 ? 0.88 : 1;
   const maxW = Math.floor(Math.min(A.w, A.h * asp, asp >= 1 ? 700 : 700 * asp));
   const minW = 90 * Math.min(1, asp);
   const make = (bw, t) => {

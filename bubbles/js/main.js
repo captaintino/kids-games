@@ -1,8 +1,11 @@
 import * as sfx from '../../shared/js/audio.js';
 import { say, numberWord, setSpeechMuted, unlockSpeech } from '../../shared/js/speech.js';
 import { COLORS, THEMES, LEVELS, endlessParams, immortalParams, countParams, countRound } from './levels.js';
-import { buildSprites, buildSparkle, SPRITE_SIZE, SPRITE_R } from './sprites.js';
+import { buildSprites, buildSparkle, buildLearnSprite, drawShape, SPRITE_SIZE, SPRITE_R } from './sprites.js';
 import { SCENES, paintScene, createAnimator } from './scenes.js';
+import { SHAPES, LETTER_WORDS, shapeRound, letterRound, letterPrompt } from './learn.js';
+import { earnSticker } from '../../shared/js/rewards.js';
+import { startGrownups } from '../../shared/js/grownups.js';
 
 // ---------------------------------------------------------------------------
 // Save data
@@ -164,8 +167,8 @@ function dropSprite(hue) {
 
 // Floating "+10" style text, rendered once per distinct text/color/size.
 const textCache = new Map();
-function textSprite(text, color, size) {
-  const key = `${text}|${color}|${size | 0}`;
+function textSprite(text, color, size, plain = false) {
+  const key = `${text}|${color}|${size | 0}|${plain ? 1 : 0}`;
   let cv = textCache.get(key);
   if (cv) return cv;
   if (textCache.size > 80) textCache.clear();
@@ -186,7 +189,7 @@ function textSprite(text, color, size) {
   c.lineJoin = 'round';
   c.lineWidth = lw;
   c.strokeStyle = 'rgba(110, 40, 190, 0.85)';
-  c.strokeText(text, wpx / 2, hpx / 2);
+  if (!plain) c.strokeText(text, wpx / 2, hpx / 2);
   c.fillStyle = color;
   c.fillText(text, wpx / 2, hpx / 2);
   cv.cssW = wpx;
@@ -203,7 +206,7 @@ let bubbles = [];
 let particles = [];
 
 const state = {
-  mode: 'menu', // 'menu' | 'level' | 'endless' | 'immortal' | 'count'
+  mode: 'menu', // 'menu' | 'level' | 'endless' | 'immortal' | 'count' | 'shapes' | 'letters'
   levelIndex: 0,
   paused: false,
   over: false,
@@ -228,10 +231,21 @@ const state = {
   countStars: 0,
   countNext: 0,
   countColors: [],
+  // Shape Pop / Letter Pop: the shape key or letter to pop, and the others mixed in
+  sym: null,
+  syms: [],
+  roundColors: [],
+  sinceTarget: 0,
+  lastShape: null,
 };
 
+// The gentle learning modes: no hearts, rounds that start by themselves.
+function isLearn(mode = state.mode) {
+  return mode === 'count' || mode === 'shapes' || mode === 'letters';
+}
+
 function isPlaying() {
-  return (state.mode === 'level' || state.mode === 'endless' || state.mode === 'immortal' || state.mode === 'count') && !state.over;
+  return (state.mode === 'level' || state.mode === 'endless' || state.mode === 'immortal' || isLearn()) && !state.over;
 }
 
 function currentParams() {
@@ -239,6 +253,7 @@ function currentParams() {
   if (state.mode === 'immortal') return immortalParams(state.time);
   if (state.mode === 'level') return state.params;
   if (state.mode === 'count') return countParams(state.countGoal);
+  if (state.mode === 'shapes' || state.mode === 'letters') return learnParams();
   return { rise: 9, spawn: 1.1, size: 1.15, burst: 0, specials: { star: 0.05 } };
 }
 
@@ -248,6 +263,8 @@ function currentParams() {
 function baseRadius() { return 38 * unit; }
 
 function chooseKind(specials = {}) {
+  if (state.mode === 'shapes' && isPlaying()) return 'shape';
+  if (state.mode === 'letters' && isPlaying()) return 'letter';
   let roll = Math.random();
   for (const k of ['rainbow', 'heart', 'snow', 'star', 'big']) {
     const p = specials[k] || 0;
@@ -270,7 +287,58 @@ function chooseColor() {
 
 function spriteFor(b) {
   if (b.kind === 'normal' || b.kind === 'big' || b.kind === 'small') return sprites.bubbles[b.color];
+  if (b.kind === 'shape' || b.kind === 'letter') return learnSprite(b.kind, b.sym, b.color);
   return sprites[b.kind];
+}
+
+// Shape and letter bubbles: each (shape or letter, color) sprite is drawn once,
+// when a round first needs it, and kept while it is still in use.
+const learnSprites = new Map();
+function learnSprite(kind, sym, color) {
+  const key = `${kind}|${sym}|${color}`;
+  let cv = learnSprites.get(key);
+  if (!cv) {
+    cv = buildLearnSprite(kind, sym, COLORS[color].hue);
+    learnSprites.set(key, cv);
+  }
+  return cv;
+}
+// Draws this round's sprites up front (during the intro banner), and lets go of
+// old ones so a long session doesn't pile up canvases on an old tablet.
+function prepareLearnSprites(kind) {
+  const keep = new Set();
+  for (const sym of state.syms) {
+    for (const c of state.roundColors) {
+      keep.add(`${kind}|${sym}|${c}`);
+      learnSprite(kind, sym, c);
+    }
+  }
+  if (learnSprites.size > 30) {
+    learnSprites.forEach((cv, key) => {
+      if (!keep.has(key)) { cv.width = cv.height = 0; learnSprites.delete(key); }
+    });
+  }
+}
+// Letters are drawn with the game font: if it wasn't ready yet, draw them again.
+function redrawLetterSprites() {
+  let any = false;
+  learnSprites.forEach((cv, key) => {
+    if (key.indexOf('letter|') === 0) { learnSprites.delete(key); any = true; }
+  });
+  if (!any) return;
+  for (const b of bubbles) if (b.kind === 'letter') b.sprite = spriteFor(b);
+}
+
+// Which shape or letter the next bubble carries: the one to pop about half the
+// time (never more than two others in a row), otherwise one of the others.
+function chooseSym() {
+  const others = state.syms.filter((x) => x !== state.sym);
+  if (!others.length || state.sinceTarget >= 2 || Math.random() < 0.45) {
+    state.sinceTarget = 0;
+    return state.sym;
+  }
+  state.sinceTarget++;
+  return pick(others);
 }
 
 function makeBubble(kind, opts = {}) {
@@ -290,10 +358,16 @@ function makeBubble(kind, opts = {}) {
       if (!close) break;
     }
   }
-  const color = opts.color != null ? opts.color : (kind === 'normal' || kind === 'big' ? chooseColor() : randInt(0, COLORS.length - 1));
+  let color = opts.color != null ? opts.color : (kind === 'normal' || kind === 'big' ? chooseColor() : randInt(0, COLORS.length - 1));
+  let sym = null;
+  if (kind === 'shape' || kind === 'letter') {
+    sym = chooseSym();
+    color = pick(state.roundColors);
+  }
   const b = {
     kind,
     color,
+    sym,
     x0: x,
     x,
     y: opts.y != null ? opts.y : H + r * 1.3,
@@ -316,6 +390,7 @@ function makeBubble(kind, opts = {}) {
 function counts(b) {
   if (state.mode === 'menu') return false;
   if (b.kind === 'star') return true;
+  if (b.kind === 'shape' || b.kind === 'letter') return b.sym === state.sym;
   if (b.kind === 'normal' || b.kind === 'big' || b.kind === 'small') {
     return state.target == null || b.color === state.target;
   }
@@ -367,10 +442,15 @@ function burst(x, y, r, hue, big = false, light = false) {
   }
 }
 
-function floatText(x, y, text, color = '#fff', size = 30, life = 0.9) {
+function floatText(x, y, text, color = '#fff', size = 30, life = 0.9, plain = false) {
   // text is important feedback: make room for it even when particles are maxed out
   if (particles.length >= maxParticles()) particles.shift();
-  addParticle({ type: 'text', x, y, vy: -70, img: textSprite(text, color, size * unit), life, max: life });
+  addParticle({ type: 'text', x, y, vy: -70, img: textSprite(text, color, size * unit, plain), life, max: life });
+}
+
+// A text size (before `unit`) that keeps a line of big text inside the screen.
+function fitSize(text, max) {
+  return Math.min(max, (W * 0.9) / (text.length * 0.58 * unit));
 }
 
 function confetti(count = 80) {
@@ -438,6 +518,10 @@ function popBubble(b, { chain = false } = {}) {
     countPop(b, chain);
     return;
   }
+  if (state.mode === 'shapes' || state.mode === 'letters') {
+    learnPop(b, chain);
+    return;
+  }
 
   const mult = 1 + Math.min(Math.floor(state.combo / 5), 4);
   let pts = 10;
@@ -487,6 +571,10 @@ function popBubble(b, { chain = false } = {}) {
     if (!chain && state.popped % (state.mode === 'immortal' ? 25 : 10) === 0 && (state.mode === 'endless' || state.mode === 'immortal')) {
       floatText(W / 2, H * 0.25, pick(PRAISE), '#fff', 46, 1.2);
     }
+    // Endless milestones earn a sticker for the sticker book
+    if ((state.mode === 'endless' && state.popped % 50 === 0) || (state.mode === 'immortal' && state.popped % 100 === 0)) {
+      earnSticker('bubbles', { delay: 300 });
+    }
     if (state.mode === 'level' && state.popped >= state.goal) winLevel();
   }
 }
@@ -504,7 +592,8 @@ function boingBubble(b) {
   b.y += b.r * 0.15;
   sfx.boing();
   vibrate([8, 30, 8]);
-  const chip = $('#hud-target');
+  if (state.mode === 'shapes' || state.mode === 'letters') learnHint(b);
+  const chip = $(state.mode === 'shapes' || state.mode === 'letters' ? '#hud-learn' : '#hud-target');
   chip.classList.remove('flash');
   void chip.offsetWidth;
   chip.classList.add('flash');
@@ -527,7 +616,7 @@ function addScore(n) {
 function flushHud() {
   if (!hudDirty) return;
   hudDirty = false;
-  scoreEl.textContent = state.mode === 'count' ? `⭐ ${state.countStars}` : state.score;
+  scoreEl.textContent = isLearn() ? `⭐ ${state.countStars}` : state.score;
   if (state.mode === 'immortal') $('#hud-best-val').textContent = save.bestImmortal;
   if (state.mode === 'level') {
     const n = Math.min(state.popped, state.goal);
@@ -542,7 +631,7 @@ function flushHud() {
 }
 
 function bubbleEscaped(b) {
-  if (!isPlaying() || state.intro > 0 || state.mode === 'immortal' || state.mode === 'count') return;
+  if (!isPlaying() || state.intro > 0 || state.mode === 'immortal' || isLearn()) return;
   if (!counts(b) || b.kind === 'star') return;
   state.hearts--;
   state.heartsLost++;
@@ -603,6 +692,10 @@ function fingerDown(id, clientX, clientY) {
   }
 
   if (isPlaying() && state.target != null && (best.kind === 'normal' || best.kind === 'big' || best.kind === 'small') && best.color !== state.target) {
+    boingBubble(best);
+    return;
+  }
+  if (isPlaying() && (best.kind === 'shape' || best.kind === 'letter') && best.sym !== state.sym && !state.countDone) {
     boingBubble(best);
     return;
   }
@@ -708,11 +801,13 @@ function update(dt) {
   clock += dt;
   if (state.paused) return;
 
-  if (state.mode === 'count' && state.countNext > 0) {
+  if (isLearn() && state.countNext > 0) {
     state.countNext -= dt;
     if (state.countNext <= 0) {
       state.countRound++;
-      startCountRound();
+      if (state.mode === 'count') startCountRound();
+      else if (state.mode === 'shapes') startShapeRound();
+      else startLetterRound();
     }
   }
 
@@ -979,11 +1074,14 @@ function setupHud() {
   renderHearts();
   const level = state.mode === 'level';
   const immortal = state.mode === 'immortal';
-  const count = state.mode === 'count';
+  const count = isLearn();
+  const learn = state.mode === 'shapes' || state.mode === 'letters';
   $('#hud-hearts').classList.toggle('invisible', immortal || count);
   $('#hud-goal').classList.toggle('hidden', !level);
   $('#hud-best').classList.toggle('hidden', level || count);
   $('#hud-count').classList.toggle('hidden', !count);
+  $('#hud-learn').classList.toggle('hidden', !learn);
+  if (learn) setLearnIcon($('#hud-learn-icon'), 46);
   if (count) {
     $('#hud-score').textContent = `⭐ ${state.countStars}`;
     renderCountRow();
@@ -1005,15 +1103,45 @@ function setupHud() {
 // ---------------------------------------------------------------------------
 // Screens & flow
 // ---------------------------------------------------------------------------
+let currentScreen = 'screen-title';
 function showScreen(id) {
+  currentScreen = id;
   $$('.screen').forEach((s) => s.classList.toggle('active', s.id === id));
   $('#hud').classList.toggle('active', id === null || id === 'screen-pause' || id === 'screen-result');
+  if (id !== 'screen-title') armBack();
 }
 
-function showBanner(title, sub) {
+// Android's back button (and the back swipe in Safari) would leave the game.
+// Keep one extra history entry while away from the title screen and turn
+// "back" into a step back: out of a game to its menu, out of a menu to the title.
+let backArmed = false;
+function armBack() {
+  if (backArmed) return;
+  try { history.pushState({ bubbles: 1 }, ''); backArmed = true; } catch (err) { /* ignore */ }
+}
+window.addEventListener('popstate', () => {
+  backArmed = false;
+  if (currentScreen === 'screen-title') { persist(); window.location.href = '../'; return; }
+  sfx.click();
+  const inGame = currentScreen === null || currentScreen === 'screen-pause' || currentScreen === 'screen-result';
+  const mode = state.mode;
+  goHome();
+  if (inGame && isLearn(mode)) openLearn(false);
+  else if (inGame && mode === 'level') { buildLevelGrid(); showScreen('screen-levels'); }
+});
+
+function openLearn(talk = true) {
+  showScreen('screen-learn');
+  if (talk) say('Count, shapes, or letters?');
+}
+
+function showBanner(title, sub, icon = false) {
   const el = $('#banner');
   $('#banner-title').textContent = title;
   $('#banner-sub').textContent = sub;
+  $('#banner-sub').classList.toggle('hidden', !sub);
+  $('#banner-icon').classList.toggle('hidden', !icon);
+  if (icon) setLearnIcon($('#banner-icon'), 110);
   el.classList.remove('show');
   void el.offsetWidth;
   el.classList.add('show');
@@ -1183,7 +1311,166 @@ function finishCountRound() {
     const what = color != null ? `${COLORS[color].name.toLowerCase()} ${goal === 1 ? 'bubble' : 'bubbles'}` : (goal === 1 ? 'bubble' : 'bubbles');
     say(`${numberWord(goal)} ${what}! ${cheer}`, { queue: true });
   }, 450);
-  state.countNext = 3.6; // counted down in update(), so it waits while paused
+  const sticker = earnSticker('bubbles', { delay: 1500 });
+  // counted down in update(), so it waits while paused (longer when a sticker is shown)
+  state.countNext = sticker ? 5.2 : 3.6;
+}
+
+// ---------------------------------------------------------------------------
+// Shape Pop ("Pop the stars!") and Letter Pop ("Pop the B!"): bubbles carry a
+// shape or a big letter. The right one pops and is counted, the others boing.
+// Gentle like Count & Pop: no hearts, and the next round starts by itself.
+// ---------------------------------------------------------------------------
+function learnParams() {
+  return { rise: 9.5, spawn: 0.95, size: 1.3, burst: 0.12, specials: {} };
+}
+
+function startShapes() {
+  sfx.unlock();
+  unlockSpeech();
+  goFullscreen();
+  state.mode = 'shapes';
+  state.countRound = 0;
+  state.countStars = 0;
+  state.lastShape = null;
+  startShapeRound();
+}
+
+function startLetters() {
+  sfx.unlock();
+  unlockSpeech();
+  goFullscreen();
+  state.mode = 'letters';
+  state.countRound = 0;
+  state.countStars = 0;
+  startLetterRound();
+}
+
+function beginLearnRound(round, kind) {
+  state.countGoal = round.goal;
+  state.sym = round.target;
+  state.syms = [round.target].concat(round.others);
+  state.target = null;
+  state.countDone = false;
+  state.countNext = 0;
+  state.countColors = [];
+  state.sinceTarget = 0;
+  // four bubble colors per round, so the color never gives the answer away
+  const cols = COLORS.map((c, i) => i);
+  for (let i = cols.length - 1; i > 0; i--) {
+    const j = randInt(0, i);
+    const t = cols[i]; cols[i] = cols[j]; cols[j] = t;
+  }
+  state.roundColors = cols.slice(0, 4);
+  resetRun();
+  state.intro = 1.8;
+  setTheme(round.theme);
+  prepareLearnSprites(kind);
+  setupHud();
+  showScreen(null);
+  sfx.chime([0, 4, 7], 660, 0.1);
+}
+
+function learnPrompt() {
+  return state.mode === 'shapes' ? `Pop the ${SHAPES[state.sym].plural}!` : letterPrompt(state.sym);
+}
+
+function startShapeRound() {
+  const round = shapeRound(state.countRound, state.lastShape);
+  state.lastShape = round.target;
+  beginLearnRound(round, 'shape');
+  showBanner(`Pop the ${SHAPES[round.target].plural}!`, '', true);
+  say(learnPrompt());
+}
+
+function startLetterRound() {
+  const round = letterRound(state.countRound);
+  beginLearnRound(round, 'letter');
+  showBanner(`Pop the ${round.target}!`, '', true);
+  say(learnPrompt());
+}
+
+// The shape or letter to pop, drawn into a HUD chip or the round banner.
+function setLearnIcon(el, fallback) {
+  const shape = state.mode === 'shapes';
+  const size = el.clientWidth || fallback; // the CSS decides (smaller on short screens)
+  const cv = el.querySelector('canvas');
+  const letter = el.querySelector('.learn-letter');
+  cv.classList.toggle('hidden', !shape);
+  letter.classList.toggle('hidden', shape);
+  if (shape) {
+    const k = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = cv.height = Math.round(size * k);
+    cv.style.width = cv.style.height = `${size}px`;
+    const c = cv.getContext('2d');
+    c.setTransform(k, 0, 0, k, 0, 0);
+    drawShape(c, state.sym, size / 2, size / 2, size * 0.42, '#ffffff', '#ffe28a');
+  } else {
+    letter.textContent = state.sym;
+  }
+  const name = el.parentNode.querySelector('.learn-name');
+  if (name) {
+    name.textContent = shape ? SHAPES[state.sym].plural : '';
+    name.classList.toggle('hidden', !shape);
+  }
+}
+
+// After a wrong tap: say what it was and what to look for (not too often).
+let lastHint = 0;
+function learnHint(b) {
+  const now = performance.now();
+  if (now - lastHint < 2500) return;
+  lastHint = now;
+  if (state.mode === 'shapes') say(`That's a ${SHAPES[b.sym].name.toLowerCase()}. Pop the ${SHAPES[state.sym].plural}!`);
+  else say(`That's ${b.sym}. ${letterPrompt(state.sym)}`);
+}
+
+function learnPop(b, chain) {
+  // celebration pops and the rest of a finished round don't count
+  if (chain || state.countDone || !counts(b)) return;
+  state.popped++;
+  const n = state.popped;
+  state.countColors[n - 1] = COLORS[b.color].css;
+  renderCountRow();
+  const dotEl = $('#hud-count').children[n - 1];
+  if (dotEl) { dotEl.classList.remove('pop'); void dotEl.offsetWidth; dotEl.classList.add('pop'); }
+  floatText(b.x, b.y - b.r * 0.1, String(n), '#ffffff', 64, 1.1);
+  sfx.chime([[0, 2, 4, 5, 7, 9, 11, 12, 14, 16][Math.min(n - 1, 9)]], 523, 0);
+  sfx.sparkle();
+  say(`${state.mode === 'shapes' ? SHAPES[b.sym].name : b.sym}!`, { rate: 1 });
+  if (n >= state.countGoal) finishLearnRound();
+}
+
+const LEARN_CHEERS = ['Great job!', 'You did it!', 'Super!', 'Hooray!', 'Wow!', 'Amazing!', 'Well done!'];
+function finishLearnRound() {
+  state.countDone = true;
+  state.countStars++;
+  hudDirty = true;
+  const goal = state.countGoal;
+  const sym = state.sym;
+  const shapes = state.mode === 'shapes';
+  later(() => {
+    for (const o of bubbles) if (o.popT < 0) o.chainDelay = rand(0.05, 0.5);
+    confetti(80);
+    sfx.win();
+    const cheer = pick(LEARN_CHEERS);
+    if (shapes) {
+      const sh = SHAPES[sym];
+      const big = `${goal} ${sh.plural}!`;
+      floatText(W / 2, H * 0.36, big, '#ffe86b', fitSize(big, 72), 1.8);
+      floatText(W / 2, H * 0.36 + 76 * unit, cheer, '#ffffff', 40, 1.8);
+      say(`${numberWord(goal)} ${sh.plural}! ${cheer}`, { queue: true });
+    } else {
+      const w = LETTER_WORDS[sym];
+      const line = `${sym} is for ${w[0]}!`;
+      if (w[1]) floatText(W / 2, H * 0.3, w[1], '#ffffff', 84, 2.2, true);
+      floatText(W / 2, H * 0.3 + 86 * unit, line, '#ffe86b', fitSize(line, 46), 2.2);
+      floatText(W / 2, H * 0.3 + 140 * unit, cheer, '#ffffff', 36, 2.2);
+      say(`${line} ${cheer}`, { queue: true });
+    }
+  }, 450);
+  const sticker = earnSticker('bubbles', { delay: 1700 });
+  state.countNext = sticker ? 5.6 : (shapes ? 3.8 : 4.4);
 }
 
 function goHome() {
@@ -1195,6 +1482,7 @@ function goHome() {
   state.paused = false;
   state.over = false;
   state.target = null;
+  state.sym = null;
   state.slowTimer = 0;
   setTheme(0);
   updateTitle();
@@ -1223,6 +1511,8 @@ function winLevel() {
   confetti(90);
   sfx.win();
   floatText(W / 2, H * 0.4, pick(PRAISE), '#ffe86b', 56, 1.3);
+  // finishing the very last level is a big win: always a sticker
+  earnSticker('bubbles', state.levelIndex >= LEVELS.length - 1 ? { cooldown: 0 } : {});
 
   later(() => {
     const last = state.levelIndex >= LEVELS.length - 1;
@@ -1424,7 +1714,13 @@ document.addEventListener('click', (e) => {
     case 'endless': startEndless(); break;
     case 'themes': buildThemeGrid(); showScreen('screen-themes'); break;
     case 'immortal': startImmortal(); break;
+    case 'learn': openLearn(); break;
     case 'count': startCount(); break;
+    case 'shapes': startShapes(); break;
+    case 'letters': startLetters(); break;
+    case 'hint':
+      if (state.mode === 'shapes' || state.mode === 'letters') say(learnPrompt());
+      break;
     case 'hub': persist(); window.location.href = '../'; break;
     case 'home': goHome(); break;
     case 'pause': pause(); break;
@@ -1433,6 +1729,8 @@ document.addEventListener('click', (e) => {
       if (state.mode === 'endless') startEndless();
       else if (state.mode === 'immortal') startImmortal();
       else if (state.mode === 'count') startCount();
+      else if (state.mode === 'shapes') startShapes();
+      else if (state.mode === 'letters') startLetters();
       else startLevel(state.levelIndex);
       break;
     case 'next':
@@ -1486,8 +1784,14 @@ window.addEventListener('appinstalled', () => {
 window.addEventListener('resize', () => { perf.hold = 1.5; resize(); });
 resize();
 // the Wild West sign uses the game font: repaint once it has loaded
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => rebuildBackground(false));
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { rebuildBackground(false); redrawLetterSprites(); });
+// letter bubbles are drawn with the game font: make sure it loads, then redraw them
+try {
+  if (document.fonts && document.fonts.load) document.fonts.load('700 100px Fredoka').then(redrawLetterSprites, () => {});
+} catch (err) { /* ignore */ }
 sfx.setMuted(save.muted);
+// the grown-up corner's volumes and daily play limit
+startGrownups();
 setSpeechMuted(save.muted);
 updateSoundButtons();
 updateTitle();
@@ -1501,11 +1805,17 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   });
 }
 
-// Opened from the game list's "Count & Pop" tile: go straight into that mode.
-if (location.hash === '#count') {
+// Opened from the game list's "Count & Pop", "Shape Pop" or "Letter Pop" tile:
+// go straight into that mode.
+const DEEP_LINKS = { '#count': startCount, '#shapes': startShapes, '#letters': startLetters, '#learn': openLearn };
+if (DEEP_LINKS[location.hash]) {
+  const start = DEEP_LINKS[location.hash];
   try { history.replaceState(null, '', location.pathname + location.search); } catch (err) { /* ignore */ }
-  startCount();
+  start();
 }
 
 // expose a tiny hook for automated testing
-window.__bubbles = { get quality() { return quality; }, state, get bubbles() { return bubbles; }, startLevel, startEndless, startImmortal, startCount };
+window.__bubbles = {
+  get quality() { return quality; }, state, get bubbles() { return bubbles; }, get screen() { return currentScreen; },
+  startLevel, startEndless, startImmortal, startCount, startShapes, startLetters, learnSprites,
+};

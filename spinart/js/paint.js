@@ -211,3 +211,117 @@ export function loadInto(cv, url, done) {
   img.onerror = () => { if (done) done(false); };
   img.src = url;
 }
+
+// ---------------------------------------------------------------------------
+// Splatter paint
+// ---------------------------------------------------------------------------
+/** One tapered spike of paint from (x, y) out along angle a, with a round drop at its tip. */
+function spike(c, x, y, a, len, w) {
+  const ux = Math.cos(a);
+  const uy = Math.sin(a);
+  const nx = -uy;
+  const ny = ux;
+  const tx = x + ux * len;
+  const ty = y + uy * len;
+  c.beginPath();
+  c.moveTo(x + nx * w, y + ny * w);
+  c.quadraticCurveTo(x + ux * len * 0.55 + nx * w * 0.35, y + uy * len * 0.55 + ny * w * 0.35, tx, ty);
+  c.quadraticCurveTo(x + ux * len * 0.55 - nx * w * 0.35, y + uy * len * 0.55 - ny * w * 0.35, x - nx * w, y - ny * w);
+  c.closePath();
+  c.fill();
+  c.beginPath();
+  c.arc(tx, ty, w * rand(0.45, 0.8), 0, Math.PI * 2);
+  c.fill();
+}
+
+/** A round splat: a wobbly puddle with spiky rays and little drops all around it. */
+export function splat(c, x, y, r, color, glitter) {
+  blob(c, x, y, r, color, Math.random() * 10);
+  c.fillStyle = color;
+  const rays = 7 + Math.floor(Math.random() * 6);
+  for (let i = 0; i < rays; i++) {
+    const a = (i / rays) * Math.PI * 2 + rand(-0.3, 0.3);
+    spike(c, x, y, a, r * rand(1.15, 1.9), r * rand(0.16, 0.32));
+  }
+  const drops = 6 + Math.floor(Math.random() * 7);
+  for (let i = 0; i < drops; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const d = r * rand(1.5, 2.9);
+    const s = r * rand(0.05, 0.2) * (2.9 - d / r + 0.6) / 2;
+    c.beginPath();
+    c.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, Math.max(1.2, s), 0, Math.PI * 2);
+    c.fill();
+  }
+  if (glitter) specks(c, x, y, r * 1.6, 9);
+}
+
+/**
+ * A thrown splat: paint hits at (x, y) moving along (ux, uy), stretching into a long
+ * tapering streak of length len that ends in a bulb, with droplets flying on ahead.
+ */
+export function streak(c, x, y, ux, uy, len, r, color, glitter) {
+  const nx = -uy;
+  const ny = ux;
+  const seed = Math.random() * 10;
+  const n = 14;
+  const L = [];
+  const Rt = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const w = r * (1 - 0.72 * Math.pow(t, 0.8)) * (1 + 0.14 * Math.sin(t * 11 + seed));
+    const px = x + ux * len * t;
+    const py = y + uy * len * t;
+    L.push([px + nx * w, py + ny * w]);
+    Rt.push([px - nx * w, py - ny * w]);
+  }
+  c.fillStyle = color;
+  c.beginPath();
+  c.moveTo(L[0][0], L[0][1]);
+  for (let i = 1; i <= n; i++) c.lineTo(L[i][0], L[i][1]);
+  for (let i = n; i >= 0; i--) c.lineTo(Rt[i][0], Rt[i][1]);
+  c.closePath();
+  c.fill();
+  // round where it landed, a bulb where it stopped
+  blob(c, x, y, r * 1.08, color, seed);
+  c.beginPath();
+  c.arc(x + ux * len, y + uy * len, r * 0.42, 0, Math.PI * 2);
+  c.fill();
+  // a few short spikes splashing out sideways and back
+  for (let i = 0; i < 5; i++) {
+    const a = Math.atan2(uy, ux) + Math.PI * rand(0.45, 1.55);
+    spike(c, x, y, a, r * rand(1.1, 1.7), r * rand(0.14, 0.26));
+  }
+  // droplets ahead, smaller and more spread out the further they flew
+  const drops = 7 + Math.floor(Math.random() * 7);
+  for (let i = 0; i < drops; i++) {
+    const k = rand(0.15, 1);
+    const d = len * (0.6 + k * 0.9) + r;
+    const side = rand(-1, 1) * d * 0.22;
+    const s = Math.max(1.4, r * rand(0.12, 0.34) * (1.15 - k * 0.7));
+    const px = x + ux * d + nx * side;
+    const py = y + uy * d + ny * side;
+    c.beginPath();
+    c.ellipse(px, py, s * 1.7, s, Math.atan2(uy, ux), 0, Math.PI * 2);
+    c.fill();
+  }
+  if (glitter) {
+    specks(c, x, y, r * 1.3, 5);
+    specks(c, x + ux * len * 0.6, y + uy * len * 0.6, r, 4);
+  }
+}
+
+/** True when a canvas has paint on it that is not plain white paper. */
+export function hasColor(cv) {
+  const s = document.createElement('canvas');
+  s.width = 48;
+  s.height = Math.max(1, Math.round(48 * cv.height / cv.width));
+  const c = s.getContext('2d');
+  c.fillStyle = '#fff';
+  c.fillRect(0, 0, s.width, s.height);
+  c.drawImage(cv, 0, 0, s.width, s.height);
+  const d = c.getImageData(0, 0, s.width, s.height).data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (255 - Math.min(d[i], d[i + 1], d[i + 2]) > 30) return true;
+  }
+  return false;
+}

@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Template Game</title>
-  <meta name="description" content="A starting point for a new game.">
+  <title>Dot to Dot</title>
+  <meta name="description" content="Connect the numbered dots to reveal a picture.">
   <meta name="theme-color" content="#7b5cff">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -18,27 +18,88 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <!-- Title screen: data-start marks it as the game's home (back from here = game list) -->
+  <!-- Title -->
   <section id="screen-title" class="screen active" data-start>
     <button class="round-btn corner-left" data-action="hub" aria-label="All games">🏠</button>
     <button class="round-btn corner-right" data-action="sound" aria-label="Toggle sound">🔊</button>
-    <div class="panel">
-      <h1 class="logo"><span>Template</span><span>Game</span></h1>
-      <div class="btn-col">
-        <button class="btn btn-pink" data-action="play"><span class="btn-icon">▶️</span> Play</button>
+    <div class="panel title-panel">
+      <div class="mascot" id="mascot" aria-hidden="true"></div>
+      <h1 class="logo"><span>Dot to</span><span>Dot</span></h1>
+      <div class="tagline">Connect the dots!</div>
+      <div class="mode-grid">
+        <button class="btn btn-green" data-action="mode" data-mode="easy" aria-label="Easy: 1 to 10"><span class="lvl l1"><i></i></span> 1–10</button>
+        <button class="btn btn-blue" data-action="mode" data-mode="medium" aria-label="Medium: 1 to 15"><span class="lvl l2"><i></i><i></i></span> 1–15</button>
+        <button class="btn btn-pink" data-action="mode" data-mode="hard" aria-label="Hard: 1 to 25"><span class="lvl l3"><i></i><i></i><i></i></span> 1–25</button>
+        <button class="btn btn-orange" data-action="mode" data-mode="abc" aria-label="Letters: A to Z"><span class="btn-icon">🔤</span> A–Z</button>
+      </div>
+      <div class="best-line" id="title-stars"></div>
+    </div>
+  </section>
+
+  <!-- Pick a picture -->
+  <section id="screen-picker" class="screen">
+    <div class="panel picker-panel">
+      <div class="picker-head">
+        <button class="round-btn" data-action="title" aria-label="Back">⬅️</button>
+        <h2 class="heading" id="picker-title">1–10</h2>
+        <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
+      </div>
+      <div class="picker-scroll scroll-y" id="picker-scroll">
+        <div class="pic-grid" id="pic-grid"></div>
       </div>
     </div>
   </section>
 
-  <!-- Play area (not a .screen: shown while no screen is active) -->
-  <div id="play" class="play hidden">
-    <div class="hud">
-      <button class="round-btn" data-action="back" aria-label="Back">⬅️</button>
-      <div class="pill" id="score">Taps: 0</div>
+  <!-- Connecting the dots -->
+  <section id="play" class="play" aria-label="Dot to dot">
+    <div class="bar bar-l">
+      <button class="round-btn" data-action="picker" aria-label="Back to pictures">⬅️</button>
+      <button class="round-btn eye-btn" id="eye-btn" data-action="hint" aria-label="Show the picture">👁️</button>
+    </div>
+    <div class="bar bar-r">
+      <button class="next-badge" id="next-badge" data-action="where" data-quiet aria-label="Which dot is next?">
+        <span class="nb-num" id="nb-num">1</span>
+      </button>
       <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
     </div>
-    <div id="target" class="target">Tap me!</div>
-  </div>
+    <div class="stage" id="stage">
+      <div class="paper" id="paper">
+        <svg id="sheet" class="sheet" viewBox="-16 -16 432 432" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <clipPath id="frame-clip"><rect x="0" y="0" width="400" height="400" rx="26"/></clipPath>
+          </defs>
+          <g id="ghost" class="ghost" clip-path="url(#frame-clip)"></g>
+          <g id="final" class="final" clip-path="url(#frame-clip)"></g>
+          <g id="lines"></g>
+          <line id="rubber" class="rubber" x1="0" y1="0" x2="0" y2="0"/>
+          <circle id="pulse" class="pulse" cx="0" cy="0" r="16"/>
+          <circle id="glow" class="glow" cx="0" cy="0" r="16"/>
+          <g id="dots"></g>
+        </svg>
+      </div>
+    </div>
+    <div class="progress" id="progress"><div class="progress-fill" id="progress-fill"></div></div>
+  </section>
+
+  <!-- Finished! -->
+  <section id="screen-done" class="screen dim">
+    <div class="panel card done-card">
+      <h2 class="heading" id="done-title">Kitty!</h2>
+      <div class="done-body">
+        <div class="done-left">
+          <div class="done-thumb" id="done-thumb"></div>
+          <div class="result-stars" id="done-stars"><span class="rstar">★</span><span class="rstar">★</span><span class="rstar">★</span></div>
+        </div>
+        <div class="btn-col">
+          <button class="btn btn-green" data-action="next"><span class="btn-icon">➡️</span> Next</button>
+          <div class="btn-row">
+            <button class="btn btn-orange btn-small" data-action="again" aria-label="Again"><span class="btn-icon">↩️</span> Again</button>
+            <button class="btn btn-purple btn-small" data-action="picker" aria-label="All pictures"><span class="btn-icon">🖼️</span> All</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <script type="module" src="js/main.js"></script>
   <script nomodule>

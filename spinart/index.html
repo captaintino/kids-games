@@ -30,7 +30,9 @@
         <button class="btn btn-pink" data-action="mode" data-mode="spin"><span class="btn-icon">🌀</span> Spin Paint</button>
         <button class="btn btn-blue" data-action="mode" data-mode="fly"><span class="btn-icon">🦋</span> Butterfly Fold</button>
         <button class="btn btn-purple" data-action="mode" data-mode="bub"><span class="btn-icon"><i class="bub-ico"></i></span> Bubble Print</button>
+        <button class="btn btn-orange" data-action="mode" data-mode="splat"><span class="btn-icon">💥</span> Splatter</button>
       </div>
+      <button class="btn btn-green btn-small gallery-btn" data-action="gallery"><span class="btn-icon">🖼️</span> Gallery</button>
     </div>
   </section>
 
@@ -40,6 +42,7 @@
       <button class="round-btn" data-action="back" aria-label="Back">⬅️</button>
       <div class="pill" id="pill"><span id="pill-icon">🌀</span><span class="pill-text" id="pill-text">Spin Paint</span></div>
       <button class="round-btn" data-action="new" aria-label="New paper">🆕</button>
+      <button class="hang-btn" id="hang-btn" data-action="hang" data-quiet aria-label="Hang it in the gallery"><span class="hang-ico">📌</span><span class="hang-text">Hang it!</span></button>
       <button class="round-btn" data-action="save" aria-label="Save my picture">📷</button>
       <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
     </div>
@@ -80,9 +83,48 @@
         </div>
         <button class="btn btn-blue btn-small blow-btn" data-action="blow"><span class="btn-icon">💨</span> Blow</button>
       </div>
+      <div class="tools tools-splat">
+        <div class="hints" aria-hidden="true">
+          <span class="hint hint-tap">👆<b>💥</b></span>
+          <span class="hint hint-flick">👉<b>💨</b></span>
+          <span class="hint hint-hold">✋<b>💧</b></span>
+        </div>
+        <button class="btn btn-orange btn-small splat-btn" data-action="splat"><span class="btn-icon">💥</span> Splat!</button>
+      </div>
       <div class="palette" id="palette"></div>
     </div>
   </div>
+
+  <!-- Gallery wall -->
+  <section id="screen-gallery" class="screen gallery-screen">
+    <div class="gal-top">
+      <button class="round-btn" data-action="gal-back" aria-label="Back">⬅️</button>
+      <div class="gal-sign"><span class="gal-sign-ico">🖼️</span><span class="gal-sign-text">My Gallery</span></div>
+      <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
+    </div>
+    <div class="gal-scroll" id="gal-scroll"><div class="gal-rows" id="gal-rows"></div></div>
+    <div class="gal-floor" aria-hidden="true"></div>
+  </section>
+
+  <!-- One picture, big -->
+  <section id="screen-view" class="screen dim">
+    <div class="panel view-panel">
+      <div class="view-pic" id="view-pic"></div>
+      <div class="plate view-plate" id="view-title"></div>
+      <div class="view-btns" id="view-btns">
+        <button class="round-btn big-round" data-action="view-close" aria-label="Back to the wall">⬅️</button>
+        <button class="round-btn big-round" data-action="view-save" aria-label="Save the picture">📷</button>
+        <button class="round-btn big-round" data-action="view-remove" aria-label="Take it down">🗑️</button>
+      </div>
+      <div class="view-confirm hidden" id="view-confirm">
+        <div class="confirm-q">Take it down?</div>
+        <div class="view-btns">
+          <button class="round-btn big-round yes-btn" data-action="remove-yes" aria-label="Yes, take it down">✔️</button>
+          <button class="round-btn big-round no-btn" data-action="remove-no" aria-label="No, keep it">✖️</button>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <script type="module" src="js/main.js"></script>
   <script nomodule>

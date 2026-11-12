@@ -119,7 +119,7 @@
   padding-bottom: 100%;
   border-radius: 16px;
   overflow: hidden;
-  background: #fff;
+  background-color: #fff;
 }
 .pic-card .thumb svg {
   position: absolute;
@@ -131,10 +131,73 @@
 }
 .pic-name {
   margin-top: 4px;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-weight: 700;
   font-size: 18px;
   text-shadow: 0 2px 0 rgba(110, 40, 190, .6);
 }
+
+/* The kid's own art (spin paintings, monsters...): shown whole on a candy backdrop */
+.art-thumb {
+  background-color: #ffe9f4;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, .85) 16%, rgba(255, 255, 255, 0) 19%),
+    radial-gradient(rgba(255, 122, 198, .3) 16%, rgba(255, 122, 198, 0) 19%),
+    linear-gradient(160deg, #fff4c9, #ffe2f2 55%, #dff1ff);
+  background-size: 24px 24px, 24px 24px, 100% 100%;
+  background-position: 0 0, 12px 12px, 0 0;
+}
+.art-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.done-thumb.art-thumb { position: relative; }
+.pic-card .thumb.art-thumb, .size-pic.art-thumb, .done-thumb.art-thumb { background-color: #ffe9f4; }
+.size-pic.art-thumb svg { -webkit-filter: drop-shadow(0 2px 3px rgba(40, 10, 90, .25)); filter: drop-shadow(0 2px 3px rgba(40, 10, 90, .25)); }
+.pic-card.art { background: linear-gradient(170deg, rgba(150, 230, 255, .55), rgba(140, 120, 255, .3)); }
+.src-badge {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff, #ffeaf7);
+  border: 3px solid #fff;
+  box-shadow: 0 3px 0 rgba(110, 40, 190, .35), 0 5px 10px rgba(40, 10, 90, .25);
+  font-size: 22px;
+  line-height: 34px;
+  text-align: center;
+  pointer-events: none;
+}
+.group-head {
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin-top: 6px;
+  padding: 4px 16px 6px 10px;
+  border-radius: 999px;
+  background: rgba(90, 40, 190, .4);
+  border: 3px solid rgba(255, 255, 255, .7);
+  color: #fff;
+  font-weight: 700;
+  font-size: 20px;
+  text-shadow: 0 2px 0 rgba(80, 30, 150, .5);
+  -webkit-animation: card-in .4s cubic-bezier(.2, 1.5, .4, 1) both;
+  animation: card-in .4s cubic-bezier(.2, 1.5, .4, 1) both;
+}
+.group-head:first-child { margin-top: 0; }
+.group-icon { font-size: 24px; }
 .pic-stars, .done-name {
   display: flex;
   align-items: center;
@@ -169,7 +232,13 @@
 }
 .mine-art svg { width: 100%; height: 100%; display: block; }
 .mine-empty .card-text { margin: 0; font-size: 22px; line-height: 1.3; }
-.mine-empty .btn { width: min(280px, 80vw); }
+.go-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 560px;
+}
+.go-row .btn { margin: 5px 6px; width: auto; min-width: 150px; }
 
 /* ---------- How many pieces? ---------- */
 .size-card { max-width: 760px; width: auto; }
@@ -183,15 +252,17 @@
 }
 .size-tiles {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  margin: 4px -6px 0;
   pointer-events: auto;
 }
 .size-tile {
-  width: min(160px, 27vw, 30vh);
+  width: min(150px, 36vw, 19vh);
+  margin: 6px;
   padding: 8px 8px 6px;
   border-radius: 24px;
 }
-.size-tile + .size-tile { margin-left: 12px; }
 .size-tile.last { box-shadow: 0 7px 0 var(--t3), 0 0 0 5px rgba(255, 240, 120, .85), 0 14px 22px rgba(40, 10, 90, .3); }
 .size-pic {
   position: relative;
@@ -201,7 +272,7 @@
   padding-bottom: 100%;
   border-radius: 16px;
   overflow: hidden;
-  background: #fff;
+  background-color: #fff;
   box-shadow: inset 0 0 0 3px rgba(255,255,255,.8);
 }
 .size-pic svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; }
@@ -284,6 +355,7 @@
   transition: transform .15s ease;
 }
 .piece.lifted canvas { transform: scale(1.07); }
+.small-pieces .piece.lifted canvas { transform: scale(1.16); }
 .snap-pop { animation: snap-pop .42s cubic-bezier(.2, 1.8, .4, 1); }
 @keyframes snap-pop {
   0% { transform: scale(1); }
@@ -299,18 +371,22 @@
   border-radius: 22px;
   overflow: hidden;
   border: 4px solid #fff;
-  background: #fff;
+  background-color: #fff;
   box-shadow: 0 8px 18px rgba(40, 10, 90, .3);
   animation: wobble 2.6s ease-in-out infinite;
 }
 .done-thumb svg { width: 100%; height: 100%; display: block; }
 @keyframes wobble { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
 .done-name {
+  flex-direction: column;
+  max-width: 100%;
   font-size: 26px;
   font-weight: 700;
   text-shadow: 0 3px 0 rgba(90, 30, 170, .6);
 }
-.done-name i { margin-left: 4px; font-size: 28px; }
+.done-title { max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.done-stars { display: flex; margin-top: 4px; }
+.done-name i { margin: 0 2px; font-size: 28px; }
 
 /* ---------- Short screens (phones on their side) ---------- */
 @media (max-height: 560px) {
@@ -318,11 +394,15 @@
   .hero { display: none; }
   .done-thumb { width: 120px; height: 120px; }
   .size-tile .tile-name { font-size: 28px; }
+  .size-tile { width: min(130px, 15vw, 33vh); margin: 4px 5px; padding: 6px 6px 4px; }
+  .size-card { padding-top: 12px; padding-bottom: 14px; }
   .size-card .heading { font-size: 30px; }
+  .group-head { display: none; } /* the badges on the cards still show where art came from */
   .mine-empty { padding: 4px; }
   .mine-empty > * + * { margin-top: 8px; }
   .mine-art { width: 120px; height: 96px; }
   .mine-empty .card-text { font-size: 18px; }
+  .go-row .btn { min-width: 0; margin: 3px 4px; }
 }
 @media (max-height: 560px) and (min-aspect-ratio: 5/4) {
   .title-panel { max-width: 760px; }
@@ -358,6 +438,6 @@
 .hud .pill { flex: 0 1 380px; margin-left: auto !important; margin-right: auto; }
 .hud .round-btn { flex: none; }
 @media (min-width: 700px) and (min-height: 700px) {
-  .size-tile { width: min(210px, 27vw, 30vh); }
+  .size-tile { width: min(200px, 26vw, 19vh); }
   .size-tile .tile-name { font-size: 40px; }
 }

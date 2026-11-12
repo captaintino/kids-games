@@ -679,6 +679,15 @@ canvas#game {
   .level-grid { grid-template-columns: repeat(6, 1fr); grid-auto-rows: calc((min(560px, 90vw) - 80px) / 6); width: min(560px, 90vw); }
   .card { padding: 16px; }
   .result-stars { font-size: 44px; }
+  .learn-panel .learn-col {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 12px;
+    gap: 12px;
+    width: min(760px, 94vw);
+  }
+  .learn-panel .learn-col > * + * { margin-top: 0; }
+  .learn-panel .learn-col .btn { font-size: max(20px, min(5.8vw, 26px)); padding: 14px 12px 16px; }
 }
 
 /* (kept last so it overrides the base sizes above) */
@@ -730,4 +739,63 @@ canvas#game {
 @keyframes count-pop { from { transform: scale(.2); } 60% { transform: scale(1.35); } }
 @media (min-width: 600px) {
   .count-dot { width: 40px; height: 40px; font-size: 22px; }
+}
+
+/* ---------- Shape Pop & Letter Pop ---------- */
+.learn-panel > * + * { margin-top: 18px; }
+.learn-chip {
+  display: flex;
+  align-items: center;
+  min-height: 58px;
+  padding: 4px 18px 4px 14px;
+  border-radius: 999px;
+  background: rgba(90, 40, 190, .5);
+  border: 2px solid rgba(255,255,255,.75);
+  color: #fff;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 20px;
+  text-shadow: 0 2px 0 rgba(60, 10, 120, .5);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.learn-chip .learn-name { font-weight: 700; font-size: 22px; text-transform: capitalize; }
+.learn-chip.flash { animation: bump .4s ease 2; }
+.learn-chip .learn-icon { width: 46px; height: 46px; margin: 0 8px; }
+.learn-icon {
+  display: -webkit-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.learn-icon canvas { display: block; filter: drop-shadow(0 3px 2px rgba(40, 10, 90, .35)); }
+/* the letter to pop, in a little glossy bubble */
+.learn-letter {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,.95);
+  background: radial-gradient(circle at 35% 28%, #fff 0 10%, rgba(255,255,255,0) 26%),
+    radial-gradient(circle at 50% 50%, #ffc4ea 0%, #ff74c8 62%, #e33f9f 100%);
+  box-shadow: 0 4px 10px rgba(40, 10, 90, .35);
+  display: -webkit-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 1;
+  color: #fff;
+  text-shadow: -2px -2px 0 #2d2442, 2px -2px 0 #2d2442, -2px 2px 0 #2d2442, 2px 2px 0 #2d2442, 0 -2px 0 #2d2442, 0 2px 0 #2d2442, -2px 0 0 #2d2442, 2px 0 0 #2d2442, 0 4px 0 rgba(45, 36, 66, .5);
+}
+.banner-icon { width: 110px; height: 110px; margin: 0 auto 6px; }
+.banner-icon .learn-letter {
+  font-size: 80px;
+  border-width: 4px;
+  text-shadow: -3px -3px 0 #2d2442, 3px -3px 0 #2d2442, -3px 3px 0 #2d2442, 3px 3px 0 #2d2442, 0 -3px 0 #2d2442, 0 3px 0 #2d2442, -3px 0 0 #2d2442, 3px 0 0 #2d2442, 0 6px 0 rgba(45, 36, 66, .5);
+}
+@media (max-height: 560px) and (orientation: landscape) {
+  .banner-icon { width: 80px; height: 80px; }
+  .banner-icon .learn-letter { font-size: 58px; }
+  .learn-panel > * + * { margin-top: 12px; }
 }

@@ -19,7 +19,7 @@ export const STAR_COLORS = [
 // ---------------------------------------------------------------------------
 // Faces
 // ---------------------------------------------------------------------------
-function eyes(c, x, y, gap, r, kind) {
+export function eyes(c, x, y, gap, r, kind) {
   c.lineCap = 'round';
   c.lineJoin = 'round';
   for (const s of [-1, 1]) {
@@ -46,11 +46,11 @@ function eyes(c, x, y, gap, r, kind) {
     }
   }
 }
-function cheeks(c, x, y, gap, r, color = 'rgba(255, 90, 140, 0.45)') {
+export function cheeks(c, x, y, gap, r, color = 'rgba(255, 90, 140, 0.45)') {
   c.fillStyle = color;
   for (const s of [-1, 1]) { c.beginPath(); c.ellipse(x + s * gap, y, r, r * 0.62, 0, 0, TAU); c.fill(); }
 }
-function smile(c, x, y, r, lw, open) {
+export function smile(c, x, y, r, lw, open) {
   c.strokeStyle = INK;
   c.lineWidth = lw;
   c.lineCap = 'round';
@@ -120,7 +120,7 @@ function colorFill(c, col) {
   return g;
 }
 
-function hexA(hex, a) {
+export function hexA(hex, a) {
   const n = parseInt(hex.slice(1), 16);
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
 }
@@ -266,7 +266,7 @@ export const CLOUD_W = 170;
 export const CLOUD_H = 110;
 const PUFFS = [[42, 66, 26], [70, 48, 30], [104, 44, 32], [134, 62, 25], [88, 74, 26], [58, 78, 20], [118, 80, 20]];
 
-function cloudBody(c, top, bottom, face) {
+export function cloudBody(c, top, bottom, face) {
   c.lineJoin = 'round';
   c.strokeStyle = INK;
   c.lineWidth = 7;
@@ -336,10 +336,10 @@ export const BASKET_W = 150;
 export const BASKET_H = 120;
 export const RIM_Y = 34;
 export const BOTTOM_Y = 108;
-const BX = BASKET_W / 2;
-const HALF = 62; // half width at the rim
+export const BX = BASKET_W / 2;
+export const HALF = 62; // half width at the rim
 
-function bodyPath(c, sag) {
+export function bodyPath(c, sag) {
   c.beginPath();
   c.moveTo(BX - HALF, RIM_Y);
   c.quadraticCurveTo(BX, RIM_Y + sag, BX + HALF, RIM_Y);
@@ -470,7 +470,7 @@ export function buildBasket() {
 // ---------------------------------------------------------------------------
 // The game's own night sky (shown when the Paint Party world is picked)
 // ---------------------------------------------------------------------------
-function rng(seed) {
+export function rng(seed) {
   return () => {
     seed = (seed + 0x6d2b79f5) | 0;
     let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);

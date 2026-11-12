@@ -35,6 +35,11 @@ Stars are generous: **3 stars** unless it took many extra tries. Extra tries are
 number of pairs; up to about one and a half extra tries per pair still gives 3 stars, up to three per pair
 gives 2 stars, and finishing always gives at least 1. The best stars for each level are saved.
 
+## Sticker book
+
+Winning a level earns a sticker for the sticker book on the home screen (`earnSticker('memory')` from
+`shared/js/rewards.js`, at most one every 45 seconds).
+
 ## Tech
 
 - Card faces are the shared pictures (`shared/js/pictures.js`) turned into SVG images once and cached,

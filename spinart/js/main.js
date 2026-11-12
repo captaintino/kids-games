@@ -1,14 +1,18 @@
-// Spin Art: Spin Paint, Butterfly Fold and Bubble Print.
+// Spin Art: Spin Paint, Butterfly Fold, Bubble Print and Splatter, plus the gallery wall.
 import * as sfx from '../../shared/js/audio.js';
 import { say } from '../../shared/js/speech.js';
 import {
   boot, $, $$, fx, showScreen, celebrate, onPointer, createStore, replayClass, setPartyColors,
-  saveImage, pickOne, centerOf, unit, DPR,
+  saveImage, pickOne, centerOf, unit, DPR, showBackground, currentScreen,
 } from '../../shared/js/kit.js';
-import { COLORS } from './paint.js';
+import { addArt, listArt, removeArt } from '../../shared/js/gallery.js';
+import { earnSticker } from '../../shared/js/rewards.js';
+import { COLORS, hasColor } from './paint.js';
 import { createSpin } from './spin.js';
 import { createButterfly } from './butterfly.js';
 import { createBubbles } from './bubbles.js';
+import { createSplatter } from './splatter.js';
+import { buildWall, wallItems, frameOf, frameHTML, frameBox } from './wall.js';
 
 const store = createStore('spinart', {
   color: 'pink', speed: 2, spinTool: 'drip', flyTool: 'blob', mirror: false, bsize: 'm',
@@ -18,13 +22,17 @@ const pics = {
   spin: createStore('spinart-spin', { img: '' }),
   fly: createStore('spinart-butterfly', { img: '' }),
   bub: createStore('spinart-bubbles', { img: '' }),
+  splat: createStore('spinart-splatter', { img: '' }),
 };
 
 const MODES = {
   spin: { name: 'Spin Paint', icon: '🌀', party: ['#ff6fb5', '#ffb347', '#7b5cff'], hello: 'Touch the spinning paper!' },
   fly: { name: 'Butterfly Fold', icon: '🦋', party: ['#4fc3ff', '#9d7bff', '#ff8fd0'], hello: 'Paint the butterfly, then fold!' },
   bub: { name: 'Bubble Print', icon: '<i class="bub-ico"></i>', party: ['#8a6bff', '#5ad1ff', '#ff9ad5'], hello: 'Blow bubbles, then pop them!' },
+  splat: { name: 'Splatter', icon: '💥', party: ['#ff9a2e', '#ff5fa8', '#7b5cff'], hello: 'Tap, flick or hold to splat the paint!' },
 };
+const FILE_NAMES = { spin: 'spin-art', fly: 'butterfly', bub: 'bubble-print', splat: 'splatter' };
+const HANG_TITLES = { spin: 'Spin painting', bub: 'Bubble print', splat: 'Splatter' };
 const COLOR_NAMES = {
   red: 'Red', orange: 'Orange', yellow: 'Yellow', green: 'Green', teal: 'Teal', blue: 'Blue', purple: 'Purple',
   pink: 'Pink', magenta: 'Magenta', ink: 'Dark', rainbow: 'Rainbow!', glitter: 'Glitter!',
@@ -47,6 +55,7 @@ function mode(id) {
     if (id === 'spin') made[id] = createSpin(P);
     if (id === 'fly') made[id] = createButterfly(flyHooks);
     if (id === 'bub') made[id] = createBubbles(bubHooks);
+    if (id === 'splat') made[id] = createSplatter(splatHooks);
     made[id].restore(pics[id].data.img);
   }
   return made[id];
@@ -89,7 +98,7 @@ function tool() {
 }
 function setModeClass() {
   const p = $('#play');
-  p.classList.remove('mode-spin', 'mode-fly', 'mode-made', 'mode-bub');
+  p.classList.remove('mode-spin', 'mode-fly', 'mode-made', 'mode-bub', 'mode-splat');
   if (!modeId) return;
   p.classList.add(`mode-${modeId}`);
   if (modeId === 'fly' && M.state === 'made') p.classList.add('mode-made');
@@ -105,6 +114,7 @@ onPointer(stage, {
     if (!M) return false;
     const x = p.x - rect.left;
     const y = p.y - rect.top;
+    if (!(modeId === 'fly' && M.state !== 'paint')) hung[modeId] = '';
     if (modeId === 'spin') {
       if (M.down(p.id, x, y, store.data.color, tool())) {
         sfx.splash(store.data.spinTool === 'bubble' ? 1.4 : 1);
@@ -152,6 +162,7 @@ const flyHooks = {
     say('Snip, snip!');
   },
   made() {
+    hung['fly-made'] = '';
     setModeClass();
     persist();
     celebrate('Ta-da!', 'A butterfly!');
@@ -173,6 +184,33 @@ const bubHooks = {
   },
   blow() {
     if (sfx.ready()) sfx.tone({ f0: 500, f1: 900, dur: 0.12, vol: 0.06 });
+  },
+};
+
+// Splatter sounds, made from the synth's building blocks: a wet splat, a swish, a drip
+let lastSplat = 0;
+const splatHooks = {
+  splat(x, y, size) {
+    const sx = x + rect.left;
+    const sy = y + rect.top;
+    fx.ring(sx, sy, '#ffffff');
+    if (!sfx.ready() || soundClock - lastSplat < 0.05) return;
+    lastSplat = soundClock;
+    const p = Math.max(0.6, Math.min(1.5, 1.2 / (size || 1))) * (0.9 + Math.random() * 0.2);
+    sfx.noise({ dur: 0.13, vol: 0.38, freq: 650 * p });
+    sfx.tone({ type: 'sine', f0: 300 * p, f1: 70, dur: 0.16, vol: 0.32 });
+    sfx.tone({ type: 'triangle', f0: 900 * p, f1: 300 * p, dur: 0.06, vol: 0.06, delay: 0.02 });
+    [0.06, 0.1, 0.15].forEach((d) => sfx.noise({ dur: 0.025, vol: 0.07, freq: 2600 + Math.random() * 2000, delay: d }));
+  },
+  throw(power) {
+    if (!sfx.ready()) return;
+    sfx.noise({ dur: 0.12 + power * 0.08, vol: 0.12, freq: 1800 + power * 1400 });
+    sfx.tone({ f0: 380, f1: 900 + power * 500, dur: 0.1, vol: 0.05 });
+  },
+  drip() {
+    if (!sfx.ready()) return;
+    const f = 700 + Math.random() * 500;
+    sfx.tone({ type: 'sine', f0: f, f1: f * 1.8, dur: 0.07, vol: 0.12 });
   },
 };
 
@@ -223,6 +261,7 @@ function newPaper() {
   pics[modeId].data.img = '';
   pics[modeId].persistNow();
   M.changed = false;
+  hung[modeId] = '';
   setModeClass();
   $('.fold-btn').classList.remove('ready');
   sfx.whoosh();
@@ -255,6 +294,159 @@ function pickColor(el) {
   replayClass(el, 'bounce');
   say(COLOR_NAMES[el.dataset.color]);
   if (modeId === 'fly' && M && M.state === 'made') { M.unmake(); setModeClass(); }
+}
+
+// ---------------------------------------------------------------------------
+// 📌 Hang it! The painting flies to the gallery wall
+// ---------------------------------------------------------------------------
+const hung = {};       // what is already on the wall: mode (or 'fly-made') -> gallery item id
+let hangLock = false;
+function hangKey() { return modeId === 'fly' && M.state === 'made' ? 'fly-made' : modeId; }
+function isBlank() {
+  if (modeId === 'spin') return !hasColor(M.paint);
+  if (modeId === 'fly') return M.state !== 'made' && M.isEmpty();
+  return !hasColor(M.paper);
+}
+function hangIt() {
+  const btn = $('#hang-btn');
+  if (!M || hangLock) return;
+  if (modeId === 'fly' && (M.state === 'fold' || M.state === 'cut')) return;
+  if (isBlank()) {
+    sfx.boing();
+    replayClass(btn, 'wiggle');
+    say(pickOne(['Paint something first!', 'Add some paint first!']));
+    return;
+  }
+  const key = hangKey();
+  if (hung[key] && listArt('spinart').some((it) => it.id === hung[key])) {
+    sfx.boing();
+    replayClass(btn, 'wiggle');
+    say(pickOne(["It's already on the wall!", 'That one is hanging up already!']));
+    return;
+  }
+  persist();
+  const title = modeId === 'fly' ? (M.state === 'made' ? 'Butterfly' : 'Butterfly painting') : HANG_TITLES[modeId];
+  const item = addArt(M.exportCanvas(), { game: 'spinart', title });
+  if (!item) { sfx.boing(); say('Oops! Try again.'); return; }
+  hung[key] = item.id;
+  flyToWall(item.img, btn);
+}
+
+function flyToWall(src, btn) {
+  hangLock = true;
+  const r = $('#stage-wrap').getBoundingClientRect();
+  const s = Math.max(80, Math.min(r.width, r.height) * 0.78);
+  const x0 = r.left + r.width / 2;
+  const y0 = r.top + r.height / 2;
+  const el = document.createElement('div');
+  el.className = 'hang-fly';
+  el.style.width = `${s}px`;
+  el.style.height = `${s}px`;
+  el.style.left = `${x0 - s / 2}px`;
+  el.style.top = `${y0 - s / 2}px`;
+  el.innerHTML = `<div class="hang-in"><img src="${src}" alt=""></div>`;
+  document.body.appendChild(el);
+  sfx.chime([0, 4, 7], 660, 0.06);
+  const b = centerOf(btn);
+  const dx = b.x - x0;
+  const dy = b.y - y0;
+  setTimeout(() => {
+    sfx.whoosh();
+    el.classList.add('go');
+    el.style.webkitTransform = el.style.transform = `translate3d(${dx.toFixed(0)}px,${dy.toFixed(0)}px,0) scale(.1) rotate(-30deg)`;
+    // a trail of sparkles behind it
+    for (let i = 1; i <= 6; i++) {
+      setTimeout(() => {
+        const k = i / 7;
+        const e = k * k;
+        fx.sparkle(x0 + dx * e, y0 + dy * e, 18);
+      }, i * 95);
+    }
+  }, 520);
+  setTimeout(() => {
+    if (el.parentNode) el.parentNode.removeChild(el);
+    fx.sparkles(b.x, b.y, 12, 40);
+    fx.burst(b.x, b.y, '#ffd36b');
+    sfx.sparkle();
+    replayClass(btn, 'bounce');
+    say(pickOne(['Into the gallery!', 'What a masterpiece!', "It's on the wall!", 'Hung up in the gallery!']));
+    earnSticker('spinart');
+    hangLock = false;
+  }, 520 + 720);
+}
+
+// ---------------------------------------------------------------------------
+// The gallery wall and the big picture viewer
+// ---------------------------------------------------------------------------
+let viewing = null;
+function renderWall() {
+  return buildWall($('#gal-rows'), $('#gal-scroll').clientWidth || window.innerWidth);
+}
+function openGallery() {
+  showScreen('screen-gallery');
+  $('#gal-scroll').scrollTop = 0;
+  const n = renderWall();
+  setTimeout(() => showBackground(false), 320);
+  say(n ? pickOne(['My gallery!', 'Look at all my pictures!', 'Welcome to the gallery!']) : "No pictures yet. Let's paint one!");
+}
+function closeGallery() {
+  showBackground(true);
+  showScreen('screen-title');
+}
+function openView(id) {
+  const it = wallItems().filter((x) => x.id === id)[0];
+  if (!it) return;
+  viewing = it;
+  const fr = frameOf(it);
+  const box = frameBox(it, fr.style, 100);
+  const aw = Math.min(window.innerWidth - 90, 560);
+  const ah = window.innerHeight - (window.innerHeight < 560 ? 190 : 300);
+  const w = Math.max(120, Math.min(aw, ah * 100 / box.h));
+  $('#view-pic').innerHTML = frameHTML(it, fr.style, w);
+  $('#view-pic').classList.remove('falling');
+  $('#view-title').textContent = it.title;
+  $('#view-confirm').classList.add('hidden');
+  $('#view-btns').classList.remove('hidden');
+  showScreen('screen-view');
+  sfx.pop(0.8);
+  say(it.title);
+}
+function saveViewed() {
+  const it = viewing;
+  if (!it) return;
+  const img = new Image();
+  img.onload = () => {
+    const cv = document.createElement('canvas');
+    cv.width = img.naturalWidth || it.w;
+    cv.height = img.naturalHeight || it.h;
+    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+    saveImage(cv, it.game === 'coloring' ? 'my-picture' : 'my-painting', it.title);
+  };
+  img.src = it.img;
+}
+function askRemove() {
+  $('#view-btns').classList.add('hidden');
+  $('#view-confirm').classList.remove('hidden');
+  replayClass($('#view-pic'), 'wiggle');
+  say('Take this picture down?');
+}
+function removeViewed() {
+  const it = viewing;
+  if (!it) return;
+  removeArt(it.id);
+  viewing = null;
+  $('#view-confirm').classList.add('hidden');
+  $('#view-pic').classList.add('falling');
+  sfx.whoosh();
+  say(pickOne(['Bye bye, picture!', 'All gone!']));
+  setTimeout(() => {
+    showScreen('screen-gallery');
+    renderWall();
+  }, 650);
+}
+function closeView() {
+  viewing = null;
+  showScreen('screen-gallery');
 }
 
 // ---------------------------------------------------------------------------
@@ -311,7 +503,24 @@ boot({
       case 'back': leave(); break;
       case 'new': newPaper(); break;
       case 'save':
-        if (M) { persist(); saveImage(M.exportCanvas(), modeId === 'fly' ? 'butterfly' : modeId === 'bub' ? 'bubble-print' : 'spin-art', 'My painting'); }
+        if (M) { persist(); saveImage(M.exportCanvas(), FILE_NAMES[modeId], 'My painting'); }
+        break;
+      case 'hang': hangIt(); break;
+      case 'splat':
+        if (M && modeId === 'splat') { M.randomFling(store.data.color); hung.splat = ''; }
+        break;
+      case 'gallery': openGallery(); break;
+      case 'gal-back': closeGallery(); break;
+      case 'gal-paint': showBackground(true); openMode('spin'); break;
+      case 'gal-open': openView(el.dataset.id); break;
+      case 'view-close': closeView(); break;
+      case 'view-save': saveViewed(); break;
+      case 'view-remove': askRemove(); break;
+      case 'remove-yes': removeViewed(); break;
+      case 'remove-no':
+        $('#view-confirm').classList.add('hidden');
+        $('#view-btns').classList.remove('hidden');
+        say(pickOne(['Keep it!', 'It stays on the wall!']));
         break;
       case 'color': pickColor(el); break;
       case 'speed': {
@@ -362,6 +571,8 @@ boot({
   },
   onBack(screen) {
     if (screen === null && modeId) { leave(); return true; }
+    if (screen === 'screen-view') { closeView(); return true; }
+    if (screen === 'screen-gallery') { closeGallery(); return true; }
     return false;
   },
   onFrame(dt) {
@@ -377,7 +588,7 @@ boot({
     }
     let need = redraw;
     if (modeId === 'spin') need = need || M.busy();
-    else if (modeId === 'fly') need = need || M.busy();
+    else if (modeId === 'fly' || modeId === 'splat') need = need || M.busy();
     else need = need || M.bubbles.length > 0 || M.changed;
     if (need) {
       sc.setTransform(1, 0, 0, 1, 0, 0);
@@ -389,7 +600,10 @@ boot({
     saveClock += dt;
     if (saveClock > 20) { saveClock = 0; persist(); }
   },
-  onResize() { if (M) sizeStage(); },
+  onResize() {
+    if (M) sizeStage();
+    if (currentScreen() === 'screen-gallery') renderWall();
+  },
 });
 
 window.addEventListener('pagehide', persist);
@@ -401,5 +615,8 @@ window.__spinart = {
   get id() { return modeId; },
   rect: () => rect,
   open: openMode,
+  hang: hangIt,
+  gallery: openGallery,
+  view: openView,
   P,
 };

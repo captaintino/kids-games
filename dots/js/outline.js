@@ -180,53 +180,108 @@ export function area(pts) {
 }
 
 /**
- * Keep the n most important points of a closed outline (Visvalingam-Whyatt):
- * repeatedly drop the point whose triangle with its neighbours is smallest.
- * opts.minGap: points closer than this are merged first, so dots never sit on
- * top of each other.
+ * Choose n dots on a closed outline: the corners that make the shape (found by
+ * Visvalingam-Whyatt simplification, which keeps the points that matter most),
+ * and the rest spread evenly along the outline between them, so curves get
+ * evenly spaced dots and no dot sits on top of another.
  */
 export function pickDots(outline, n, opts = {}) {
-  const pts = outline.map((p) => ({ x: p.x, y: p.y }));
-  let len = pts.length;
-  if (len <= n) return orderFromTop(pts);
+  const pts = outline;
+  const len = pts.length;
+  if (len <= n) return orderFromTop(pts.slice());
+  // arc length along the outline
+  const cum = new Float64Array(len + 1);
+  for (let i = 1; i <= len; i++) cum[i] = cum[i - 1] + dist(pts[i - 1], pts[i % len]);
+  const total = cum[len];
+
+  // 1. simplify to n points
   const prev = new Int32Array(len);
   const next = new Int32Array(len);
   const alive = new Uint8Array(len);
   for (let i = 0; i < len; i++) { prev[i] = (i - 1 + len) % len; next[i] = (i + 1) % len; alive[i] = 1; }
   const tri = (i) => {
-    const a = pts[prev[i]];
-    const b = pts[i];
-    const c = pts[next[i]];
-    return Math.abs((b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y)) / 2;
+    const p = pts[prev[i]];
+    const q = pts[i];
+    const r = pts[next[i]];
+    return Math.abs((q.x - p.x) * (r.y - p.y) - (r.x - p.x) * (q.y - p.y)) / 2;
   };
-  const gap = (i) => Math.min(dist(pts[i], pts[prev[i]]), dist(pts[i], pts[next[i]]));
-  const minGap = opts.minGap || 0;
   const score = new Float64Array(len);
   for (let i = 0; i < len; i++) score[i] = tri(i);
   let count = len;
   while (count > n) {
     let best = -1;
     let bestScore = Infinity;
-    for (let i = 0; i < len; i++) {
-      if (!alive[i]) continue;
-      // crowded points go first, then the least important ones
-      const s = gap(i) < minGap ? score[i] - 1e9 : score[i];
-      if (s < bestScore) { bestScore = s; best = i; }
-    }
+    for (let i = 0; i < len; i++) if (alive[i] && score[i] < bestScore) { bestScore = score[i]; best = i; }
     alive[best] = 0;
-    const a = prev[best];
-    const c = next[best];
-    next[a] = c;
-    prev[c] = a;
-    score[a] = tri(a);
-    score[c] = tri(c);
+    const p = prev[best];
+    const r = next[best];
+    next[p] = r;
+    prev[r] = p;
+    score[p] = tri(p);
+    score[r] = tri(r);
     count--;
   }
+  let kept = [];
+  for (let i = 0; i < len; i++) if (alive[i]) kept.push(i);
+
+  // 2. keep only real corners (the outline turns sharply there) that are not crowded
+  const turn = (i, k) => {
+    const p = pts[k[(i - 1 + k.length) % k.length]];
+    const q = pts[k[i]];
+    const r = pts[k[(i + 1) % k.length]];
+    const a1 = Math.atan2(q.y - p.y, q.x - p.x);
+    const a2 = Math.atan2(r.y - q.y, r.x - q.x);
+    let d = Math.abs(a2 - a1);
+    if (d > Math.PI) d = 2 * Math.PI - d;
+    return d;
+  };
+  const sharp = opts.corner || 0.8; // radians
+  let keys = kept.filter((k, i) => turn(i, kept) > sharp);
+  const minGap = opts.minGap || Math.min(28, total / n * 0.55);
+  // drop the gentler of two corners that are too close together
+  let changed = true;
+  while (changed && keys.length > 2) {
+    changed = false;
+    for (let i = 0; i < keys.length; i++) {
+      const j = (i + 1) % keys.length;
+      const gap = (cum[keys[j]] - cum[keys[i]] + total) % total;
+      if (gap < minGap) {
+        keys.splice(turn(i, keys) < turn(j, keys) ? i : j, 1);
+        changed = true;
+        break;
+      }
+    }
+  }
+  if (!keys.length) keys = [kept[0]];
+
+  // 3. spread the other dots evenly between the corners
+  const gaps = keys.map((k, i) => {
+    const nx = keys[(i + 1) % keys.length];
+    let g = cum[nx] - cum[k];
+    if (g <= 0) g += total;
+    return { from: cum[k], len: g, extra: 0 };
+  });
+  for (let c = keys.length; c < n; c++) {
+    let best = gaps[0];
+    for (const g of gaps) if (g.len / (g.extra + 1) > best.len / (best.extra + 1)) best = g;
+    best.extra++;
+  }
+  const at = (s) => {
+    s = ((s % total) + total) % total;
+    let lo = 0;
+    let hi = len;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (cum[mid + 1] < s) lo = mid + 1; else hi = mid; }
+    const a = pts[lo];
+    const b = pts[(lo + 1) % len];
+    const seg = cum[lo + 1] - cum[lo] || 1;
+    const t = (s - cum[lo]) / seg;
+    return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+  };
   const out = [];
-  let i = 0;
-  while (!alive[i]) i++;
-  const first = i;
-  do { out.push(pts[i]); i = next[i]; } while (i !== first);
+  gaps.forEach((g, i) => {
+    out.push({ x: pts[keys[i]].x, y: pts[keys[i]].y });
+    for (let e = 1; e <= g.extra; e++) out.push(at(g.from + (g.len * e) / (g.extra + 1)));
+  });
   return orderFromTop(out);
 }
 

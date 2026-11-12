@@ -8,6 +8,7 @@ import {
 } from '../../shared/js/kit.js';
 import { PICTURES, INK, star } from '../../shared/js/pictures.js';
 import { pictureMarkup, svgOpen } from '../../shared/js/art.js';
+import { earnSticker } from '../../shared/js/rewards.js';
 
 const LEVELS = [3, 4, 5, 6, 7, 8];
 const store = createStore('memory', { best: {}, level: 3 });
@@ -299,6 +300,7 @@ async function win() {
   game.cards.forEach((c, i) => setTimeout(() => { if (my === token) replayClass(c.el, 'happy'); }, i * 50));
   celebrate(pickOne(['Hooray!', 'You did it!', 'All found!', 'Super!']), `${numberWord(pairs)} pairs!`.replace(/^./, (s) => s.toUpperCase()));
   say(pickOne(PRAISE));
+  earnSticker('memory'); // a sticker for the sticker book
   await wait(2000);
   if (my !== token) return;
   showWin(stars);
