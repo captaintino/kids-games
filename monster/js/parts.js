@@ -350,10 +350,36 @@ export const EXTRAS = [
 ];
 
 // ---------------------------------------------------------------------------
+// Eating (Feed me!): a wide-open mouth and a silly tongue, hidden until needed
+// ---------------------------------------------------------------------------
+const TOOTHY = { Fangs: 'fangs', 'Sharp teeth': 'sharp', 'Buck teeth': 'buck' };
+function openMouth(kind) {
+  let teeth = '';
+  if (kind === 'fangs') teeth = '<path d="M-24 -6L-16 14L-8 -4Z M24 -6L16 14L8 -4Z" fill="#fff"/>';
+  if (kind === 'sharp') teeth = '<path d="M-34 -4L-27 10L-19 -2L-11 12L-3 -1L5 12L13 -1L21 11L29 -3L34 -4Z" fill="#fff"/>';
+  if (kind === 'buck') teeth = '<path d="M-15 -6H-1V14Q-1 17 -4 17H-12Q-15 17 -15 14Z M1 -6H15V14Q15 17 12 17H4Q1 17 1 14Z" fill="#fff" stroke="#2d2442" stroke-width="3.5"/>';
+  return path('M-40 -6Q-42 46 0 50Q42 46 40 -6Q0 -14 -40 -6Z', DARK, 6) +
+    `<ellipse cx="0" cy="34" rx="22" ry="11" fill="${TONGUE}"/>` + teeth +
+    path('M-40 -6Q-42 46 0 50Q42 46 40 -6Q0 -14 -40 -6Z', 'none', 6);
+}
+const BLEH = path('M-15 2Q-18 44 0 46Q18 44 15 2Z', TONGUE, 5) + line('M0 10V32', 3.5);
+
+// ---------------------------------------------------------------------------
 // The whole monster
 // ---------------------------------------------------------------------------
 let uid = 0;
 const GROUND = 450;
+
+/** Where the mouth is on the monster's sheet (400 wide, ground at y = 450). */
+export function mouthSpot(m) {
+  const lay = layout(m);
+  return { x: 200, y: lay.headCY + HEADS[m.head].mouthY + 12 };
+}
+/** Where the eyes are on the sheet. */
+export function eyeSpot(m) {
+  const lay = layout(m);
+  return { x: 200, y: lay.headCY + HEADS[m.head].eyeY };
+}
 
 /** Where everything goes (handy for zooming a thumbnail on the face). */
 export function layout(m) {
@@ -370,7 +396,8 @@ export function layout(m) {
  * The monster as an SVG string.
  * o.id: prefix for element ids (the live monster uses them to animate);
  * o.focus: 'head' zooms on the face (for eye and mouth thumbnails);
- * o.parts: add data-part="..." so taps can find the part.
+ * o.parts: add data-part="..." so taps can find the part;
+ * o.feed: add the wide-open mouth and the tongue (hidden) for Feed me!
  */
 export function monsterSVG(m, o = {}) {
   const P = o.id || `mz${++uid}`;
@@ -410,10 +437,14 @@ export function monsterSVG(m, o = {}) {
     : '';
   // body
   const [bx, by, brx, bry] = B.belly;
-  const body = `<g${tag('body')}>${path(B.d, c.body)}` +
+  const body = `<g${tag('body')}${id('body')}>${path(B.d, c.body)}` +
     (pat ? `<g clip-path="url(#${P}-bc)">${patternShapes(m.pattern, shade(c.body))}</g>` : '') +
-    `<ellipse cx="${bx}" cy="${by}" rx="${brx}" ry="${bry}" fill="${belly(c.body)}"/>` +
+    `<ellipse cx="${bx}" cy="${by}" rx="${brx}" ry="${bry}" fill="${belly(c.body)}"${id('belly')}/>` +
     `<path d="${B.d}" fill="none" ${S()}/></g>`;
+  const mouth = o.feed
+    ? `<g${id('mshut')}>${MOUTHS[m.mouth].svg}</g><g${id('bleh')} style="display:none">${BLEH}</g>` +
+      `<g${id('mopen')} style="display:none">${openMouth(TOOTHY[MOUTHS[m.mouth].name])}</g>`
+    : MOUTHS[m.mouth].svg;
   // head
   const eyes = EYES[m.eyes].draw(c);
   const head = `<g transform="translate(0 ${B.neckY})"><g${id('head')}>` +
@@ -421,7 +452,7 @@ export function monsterSVG(m, o = {}) {
     (pat ? `<g clip-path="url(#${P}-hc)">${patternShapes(m.pattern, shade(c.head))}</g><path d="${Hd.d}" fill="none" ${S()}/>` : '') +
     `${Hd.front ? Hd.front(c) : ''}</g>` +
     `<g transform="translate(0 ${Hd.eyeY})"${tag('eyes')}><g${id('eyes')}>${eyes.whites}<g${id('pupils')}>${eyes.pupils}</g>${eyes.lids || ''}</g></g>` +
-    `<g transform="translate(0 ${Hd.mouthY})"${tag('mouth')}><g${id('mouth')}>${MOUTHS[m.mouth].svg}</g></g>` +
+    `<g transform="translate(0 ${Hd.mouthY})"${tag('mouth')}><g${id('mouth')}>${mouth}</g></g>` +
     `</g></g>`;
   const extra = Ex.draw(c) ? `<g${tag('extra')}>${Ex.draw(c)}</g>` : '';
 

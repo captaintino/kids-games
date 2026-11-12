@@ -135,7 +135,9 @@ export function createSplatter(hooks) {
       }
       if (f.colorKey === 'glitter' && Math.random() < 0.5) specks(pc, p.x, p.y, 10, 2);
       f.lastP = p;
+      // a new little puddle starts wherever the finger stops next
       f.puddle = 10;
+      f.held = 0;
     } else if (grow > f.puddle + 1.5) {
       f.puddle = grow;
       blob(pc, p.x, p.y, grow, col, f.seed);
@@ -148,7 +150,7 @@ export function createSplatter(hooks) {
       const w = 4 + Math.random() * 5 + f.puddle * 0.08;
       U.drips.push({
         x: p.x + (Math.random() - 0.5) * f.puddle * 1.1, y: p.y + f.puddle * 0.5,
-        w, v: 30 + Math.random() * 40, left: 70 + Math.random() * 150, color: col, glitter: f.colorKey === 'glitter',
+        w, v: 45 + Math.random() * 45, left: 110 + Math.random() * 170, color: col, glitter: f.colorKey === 'glitter',
       });
       if (hooks.drip) hooks.drip();
     }
@@ -171,7 +173,7 @@ export function createSplatter(hooks) {
       pc.lineTo(d.x, d.y);
       pc.stroke();
       d.left -= step;
-      d.v *= 1 - dt * 0.6;
+      d.v *= 1 - dt * 0.35;
       U.changed = true;
       if (d.left <= 0.5 || d.v < 6 || d.y > SP) {
         // a little bead where the drip stops

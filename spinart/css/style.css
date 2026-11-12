@@ -586,6 +586,9 @@
 .empty-ico { font-size: 56px; -webkit-animation: bob 2.4s ease-in-out infinite; animation: bob 2.4s ease-in-out infinite; }
 .gal-paint { margin-top: 18px; }
 
+/* the wall stays up behind the big picture */
+.gallery-screen.behind { opacity: 1; visibility: visible; -webkit-transition: none; transition: none; }
+
 /* ---------- One picture, big ---------- */
 .view-panel { max-width: 640px; }
 .view-panel > * + * { margin-top: 16px; }

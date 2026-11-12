@@ -407,6 +407,7 @@ function openView(id) {
   $('#view-title').textContent = it.title;
   $('#view-confirm').classList.add('hidden');
   $('#view-btns').classList.remove('hidden');
+  $('#screen-gallery').classList.add('behind');
   showScreen('screen-view');
   sfx.pop(0.8);
   say(it.title);
@@ -441,12 +442,14 @@ function removeViewed() {
   say(pickOne(['Bye bye, picture!', 'All gone!']));
   setTimeout(() => {
     showScreen('screen-gallery');
+    $('#screen-gallery').classList.remove('behind');
     renderWall();
   }, 650);
 }
 function closeView() {
   viewing = null;
   showScreen('screen-gallery');
+  $('#screen-gallery').classList.remove('behind');
 }
 
 // ---------------------------------------------------------------------------

@@ -10,6 +10,7 @@ import {
   HEADS, EYES, MOUTHS, BODIES, LEGS, ARMS, EXTRAS, PATTERNS, COLORS, shade,
   monsterSVG, layout, randomMonster, cleanMonster, monsterName,
 } from './parts.js';
+import { createBeat } from './beat.js';
 
 const PARTY = ['#5cd65c', '#2fc6b0', '#7b5cff'];
 const MAX_SHELF = 12;
@@ -88,7 +89,7 @@ function animate(t) {
   const kb = t - A.blinkT;
   if (kb < 0.18) { eyeS = 1 - Math.sin((kb / 0.18) * Math.PI) * 0.92; active = true; }
 
-  if (dancing && danceStart != null) {
+  if (dancing && danceBeat.on) {
     const b = beatNow();
     const hop = Math.abs(Math.sin(Math.PI * b));
     const loopBeat = b % 16;
@@ -314,7 +315,6 @@ function surprise() {
 // ---------------------------------------------------------------------------
 const BPM = 124;
 const STEP = 60 / BPM / 4; // one sixteenth note
-const LOOPS = 2;
 const BASS = [130.81, 110, 87.31, 98]; // C, A, F, G
 const MELODY = [
   [[0, 4], [2, 7], [4, 9], [6, 7], [8, 4], [12, 0], [14, 2]],
@@ -322,20 +322,8 @@ const MELODY = [
   [[0, 5], [2, 9], [4, 12], [6, 9], [8, 7], [10, 5], [12, 4], [14, 2]],
   [[0, 2], [2, 7], [4, 11], [6, 14], [8, 12], [11, 7], [12, 12]],
 ];
-let danceStart = null; // clock time of beat 0 (audio clock when sound is on)
-let sched = 0;
-let nextStep = 0;
-let stepIdx = 0;
-let danceEndTimer = 0;
-const useAudio = () => sfx.ready() && sfx.context();
-function clockNow() { return useAudio() ? sfx.context().currentTime : performance.now() / 1000; }
-function beatNow() {
-  if (danceStart == null) return 0;
-  return Math.max(0, (clockNow() - danceStart) / (STEP * 4));
-}
-function playStep(i, when) {
-  const ctx = sfx.context();
-  const d = Math.max(0, when - ctx.currentTime);
+const LOOPS = 2;
+function playStep(i, d) {
   const s = i % 16;
   const bar = Math.floor(i / 16) % 4;
   const T = sfx.tone;
@@ -355,18 +343,11 @@ function playStep(i, when) {
   // a silly boing at the end of each loop, sparkles on the bar
   if (i % 64 === 60) T({ type: 'sine', f0: 200, f1: 900, dur: 0.25, vol: 0.18, delay: d });
 }
-function scheduler() {
-  if (!useAudio()) return;
-  const ctx = sfx.context();
-  while (nextStep < ctx.currentTime + 0.12 && stepIdx < LOOPS * 64) {
-    playStep(stepIdx, nextStep);
-    nextStep += STEP;
-    stepIdx++;
-  }
-}
+const danceBeat = createBeat({ bpm: BPM, loopSteps: 64, play: playStep });
+const beatNow = () => danceBeat.beat();
 let lastBar = -1;
 function danceFrame() {
-  if (!dancing || danceStart == null) return;
+  if (!dancing || !danceBeat.on) return;
   const b = beatNow();
   const bar = Math.floor(b / 4);
   if (bar !== lastBar && b < LOOPS * 16) {
@@ -379,26 +360,11 @@ function danceFrame() {
   }
 }
 function startMusic() {
-  stopMusic();
   lastBar = -1;
-  if (useAudio()) {
-    danceStart = sfx.context().currentTime + 0.08;
-    nextStep = danceStart;
-    stepIdx = 0;
-    scheduler();
-    sched = setInterval(scheduler, 40);
-  } else {
-    danceStart = performance.now() / 1000;
-  }
-  const ms = LOOPS * 16 * 4 * STEP * 1000 + 150;
-  danceEndTimer = setTimeout(endDance, ms);
+  danceBeat.start(endDance, LOOPS);
 }
 function stopMusic() {
-  clearInterval(sched);
-  clearTimeout(danceEndTimer);
-  sched = 0;
-  stepIdx = LOOPS * 64;
-  danceStart = null;
+  danceBeat.stop();
 }
 function endDance() {
   stopMusic();

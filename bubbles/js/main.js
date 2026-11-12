@@ -313,11 +313,13 @@ function prepareLearnSprites(kind) {
       learnSprite(kind, sym, c);
     }
   }
-  if (learnSprites.size > 30) {
-    learnSprites.forEach((cv, key) => {
-      if (!keep.has(key)) { cv.width = cv.height = 0; learnSprites.delete(key); }
-    });
-  }
+  if (learnSprites.size > 24) freeLearnSprites(keep);
+}
+// (Only drops the cache's hold: bubbles still floating keep theirs until they go.)
+function freeLearnSprites(keep) {
+  learnSprites.forEach((cv, key) => {
+    if (!keep || !keep.has(key)) learnSprites.delete(key);
+  });
 }
 // Letters are drawn with the game font: if it wasn't ready yet, draw them again.
 function redrawLetterSprites() {
@@ -1484,6 +1486,7 @@ function goHome() {
   state.target = null;
   state.sym = null;
   state.slowTimer = 0;
+  freeLearnSprites(null);
   setTheme(0);
   updateTitle();
   showScreen('screen-title');

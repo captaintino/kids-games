@@ -4,6 +4,13 @@ import { SCENES, paintScene, createAnimator } from '../../shared/js/scenes.js';
 import {
   SIZE, paint, pictureMarkup, strokePath, svgOpen, installDefs, analyze, svgToCanvas, canvasToBlob,
 } from '../../shared/js/art.js';
+import { say, setSpeechMuted, unlockSpeech } from '../../shared/js/speech.js';
+import { earnSticker } from '../../shared/js/rewards.js';
+import { startGrownups } from '../../shared/js/grownups.js';
+import { addArt } from '../../shared/js/gallery.js';
+import {
+  PX as DRAW_PX, STAMPS, beginLine, lineSegment, drawOp, stampIcon, blank, inkAmount,
+} from './draw.js';
 
 // ---------------------------------------------------------------------------
 // Save data
@@ -12,10 +19,17 @@ const SAVE_KEY = 'color-splash-party.v1';
 const save = loadSave();
 
 function loadSave() {
-  const def = { muted: false, scene: 'party', cat: 'all', art: {}, num: {}, done: { free: {}, number: {}, magic: {} } };
+  const def = {
+    muted: false, scene: 'party', cat: 'all', art: {}, num: {}, done: { free: {}, number: {}, magic: {} },
+    pages: [], // free drawings, newest first: [{ id, t }] (each picture is saved under its own key)
+  };
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
-    if (s && typeof s === 'object') return { ...def, ...s, done: { ...def.done, ...(s.done || {}) } };
+    if (s && typeof s === 'object') {
+      const out = { ...def, ...s, done: { ...def.done, ...(s.done || {}) } };
+      if (!Array.isArray(out.pages)) out.pages = [];
+      return out;
+    }
   } catch (err) { /* storage blocked: color without saving */ }
   return def;
 }
@@ -103,7 +117,7 @@ function resize() {
 // copied to the screen each frame; only small moving bits are drawn live.
 // ---------------------------------------------------------------------------
 if (!SCENES.some((sc) => sc.id === save.scene)) save.scene = 'party';
-const MODE_PALETTE = { title: 0, fill: 1, paint: 2, number: 3, magic: 4 };
+const MODE_PALETTE = { title: 0, fill: 1, paint: 2, number: 3, magic: 4, draw: ['#ffb347', '#ff7ac6', '#a98bff'] };
 let bgCur = document.createElement('canvas');
 let bgPrev = document.createElement('canvas');
 let bgFade = 1;
@@ -388,6 +402,10 @@ const MODE_INFO = {
   paint: { name: 'Paint', icon: '🖌️', done: 'free' },
   number: { name: 'Color by Number', icon: '🔢', done: 'number' },
   magic: { name: 'Magic Reveal', icon: '✨', done: 'magic' },
+  draw: { name: 'Draw', icon: '✏️', done: null },
+};
+const MODE_SAY = {
+  fill: 'Tap and fill!', paint: "Let's paint!", number: 'Color by number!', magic: 'Magic colors!', draw: "Let's draw!",
 };
 
 // ---------------------------------------------------------------------------
@@ -416,18 +434,39 @@ function openGallery(mode) {
   const fresh = !!mode;
   if (mode) ed.mode = mode;
   const info = MODE_INFO[ed.mode];
+  const draw = ed.mode === 'draw';
   $('#mode-chip').textContent = `${info.icon} ${info.name}`;
-  $('#tabs').innerHTML = CATEGORIES.map((c) =>
+  $('#gallery-heading').textContent = draw ? 'My Drawings' : 'Pick a Picture';
+  $('#tabs').classList.toggle('hidden', draw);
+  $('#tabs').innerHTML = draw ? '' : CATEGORIES.map((c) =>
     `<button class="tab${save.cat === c.key ? ' on' : ''}" data-cat="${c.key}">${c.icon} ${c.name}</button>`).join('');
   buildGrid(!fresh);
   setTheme(ed.mode);
   showEditor(false);
   showScreen('screen-gallery');
+  if (!draw) scrollTabIntoView();
+  if (fresh) say(MODE_SAY[ed.mode]);
+}
+
+// With more packs the tabs scroll sideways: keep the chosen one in view.
+function scrollTabIntoView() {
+  const tabs = $('#tabs');
+  const on = tabs.querySelector('.tab.on');
+  if (!on || tabs.scrollWidth <= tabs.clientWidth) return;
+  const left = on.offsetLeft - tabs.offsetLeft;
+  if (left < tabs.scrollLeft || left + on.offsetWidth > tabs.scrollLeft + tabs.clientWidth) {
+    tabs.scrollLeft = Math.max(0, left - (tabs.clientWidth - on.offsetWidth) / 2);
+  }
 }
 
 function buildGrid(keepPlace) {
   const scroller = $('.gallery-scroll');
   const top = scroller.scrollTop;
+  if (ed.mode === 'draw') {
+    buildPages();
+    scroller.scrollTop = keepPlace ? top : 0;
+    return;
+  }
   const cat = save.cat;
   galleryList = PICTURES.filter((p) => cat === 'all' || p.cat === cat);
   const doneSet = save.done[MODE_INFO[ed.mode].done];
@@ -462,6 +501,13 @@ $('#tabs').addEventListener('click', (e) => {
 });
 
 $('#pic-grid').addEventListener('click', (e) => {
+  const page = e.target.closest('[data-page]');
+  if (page) {
+    sfx.unlock();
+    sfx.click();
+    openDrawing(page.dataset.page === 'new' ? null : page.dataset.page);
+    return;
+  }
   const card = e.target.closest('[data-pic]');
   if (!card) return;
   sfx.unlock();

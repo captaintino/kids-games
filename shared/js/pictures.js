@@ -149,6 +149,25 @@ function tube(pts, w) {
     `L${right.slice(0, -1).reverse().join('L')}A${r0} ${r0} 0 0 0 ${left[0]}Z`;
 }
 
+// One stripe of a decorated egg (ellipse at cx, cy), from y0 down to y1. z0 / z1 make the
+// top / bottom edge zigzag (0 = straight). Bands that share an edge use the same zigzag.
+function eggBand(cx, cy, rx, ry, y0, y1, z0 = 0, z1 = 0) {
+  const half = (y) => rx * Math.sqrt(Math.max(0, 1 - ((y - cy) / ry) * ((y - cy) / ry)));
+  const edge = (y, z) => {
+    const w = half(y);
+    const steps = z ? Math.max(2, Math.round((w * 2) / 24)) : 1;
+    const pts = [];
+    for (let i = 0; i <= steps; i++) {
+      const yy = z && i > 0 && i < steps ? y + (i % 2 ? -z : z) : y;
+      pts.push(`${n(cx - w + (2 * w * i) / steps)} ${n(yy)}`);
+    }
+    return pts;
+  };
+  const top = edge(y0, z0);
+  const bot = edge(y1, z1).reverse();
+  return `M${top.join('L')}A${rx} ${ry} 0 0 1 ${bot[0]}L${bot.slice(1).join('L')}A${rx} ${ry} 0 0 1 ${top[0]}Z`;
+}
+
 // A pointed leaf / plate / petal: base `w` wide each side, `h` tall, standing on (x, y), turned by `rot` degrees.
 function leaf(x, y, w, h, rot = 0) {
   const a = (rot * Math.PI) / 180;
@@ -1114,7 +1133,7 @@ export const PICTURES = [
       S(circle(300, 252, 13), 'red'),
       S(rect(170, 280, 38, 74, 14), 'orange'),
       S(rect(276, 280, 38, 74, 14), 'orange'),
-      S(cloud(160, 182, 72, 72, 10), 'yellow'),
+      S(cloud(158, 182, 74, 74, 8, 22), 'yellow'),
       S('M120 146L96 74Q128 102 146 144Z', 'white'),
       S('M164 144L168 70Q188 104 186 150Z', 'white'),
       S('M176 196Q178 148 128 146Q72 146 56 196Q46 244 92 258Q150 266 168 236Z', 'orange'),
@@ -1315,7 +1334,7 @@ export const PICTURES = [
       S('M76 196L18 132Q34 186 30 200Q34 214 18 266Z', 'gray'),
       S('M160 152Q178 98 228 74Q222 120 236 146Z', 'gray'),
       S('M44 200Q64 150 152 140Q262 130 340 178Q372 196 370 212Q342 252 240 256Q120 260 44 200Z', 'gray'),
-      S('M108 226Q220 262 356 216Q332 250 240 256Q164 258 108 226Z', 'white'),
+      S('M100 216Q220 224 360 206Q334 252 240 256Q164 258 100 216Z', 'white'),
       S('M190 236Q186 284 150 306Q210 300 240 244Z', 'gray'),
       D('M262 188Q256 202 262 216M276 186Q270 200 276 214', 4),
       ...eye(306, 178, 9),
@@ -1350,5 +1369,149 @@ export const PICTURES = [
       S(circle(70, 70, 10), 'white'),
     ],
   },
-//@@NEW@@
+  // ======================= Party & holidays =======================
+  {
+    id: 'cake', name: 'Birthday Cake', cat: 'holidays',
+    shapes: [
+      BG('sky'),
+      D('M0 34Q200 96 400 34', 4),
+      ...[[14, 'red'], [62, 'yellow'], [110, 'green'], [250, 'purple'], [298, 'orange'], [346, 'pink']].map(([x, c]) => {
+        const y = 31 + 62 * (1 - Math.pow((x + 20 - 200) / 200, 2));
+        return S(poly(x, y - 3, x + 40, y + 3, x + 20, y + 42), c);
+      }),
+      S(ellipse(200, 352, 160, 26), 'white'),
+      S(rect(76, 252, 248, 100, 16), 'pink'),
+      S('M76 268Q76 252 92 252H308Q324 252 324 268V282Q310 300 294 284Q278 304 262 286Q246 304 230 286Q214 304 198 286Q182 304 166 286Q150 304 134 286Q118 304 102 286Q88 300 76 284Z', 'white'),
+      S(circle(112, 322, 13), 'red'),
+      S(circle(166, 326, 13), 'red'),
+      S(circle(222, 322, 13), 'red'),
+      S(circle(278, 326, 13), 'red'),
+      S(rect(148, 120, 22, 64, 6), 'blue'),
+      S(rect(189, 108, 22, 76, 6), 'green'),
+      S(rect(230, 120, 22, 64, 6), 'purple'),
+      S('M159 118Q138 98 159 66Q180 98 159 118Z', 'orange'),
+      S('M200 106Q179 86 200 54Q221 86 200 106Z', 'orange'),
+      S('M241 118Q220 98 241 66Q262 98 241 118Z', 'orange'),
+      S(rect(116, 176, 168, 78, 14), 'yellow'),
+      S('M116 190Q116 176 130 176H270Q284 176 284 190V200Q272 216 258 202Q244 220 230 204Q216 220 202 204Q188 220 174 204Q160 220 146 204Q132 218 116 202Z', 'white'),
+      S(star(200, 232, 20, 9), 'pink'),
+      S(circle(148, 232, 11), 'blue'),
+      S(circle(252, 232, 11), 'blue'),
+    ],
+  },
+  {
+    id: 'gift', name: 'Present', cat: 'holidays',
+    shapes: [
+      BG('green'),
+      ...[[52, 70, 'yellow'], [340, 60, 'pink'], [60, 300, 'pink'], [350, 300, 'yellow'], [330, 160, 'white'], [70, 180, 'white']]
+        .map(([x, y, c]) => S(star(x, y, 16, 7), c)),
+      S(ellipse(200, 366, 140, 18), 'dkgreen'),
+      S(rect(92, 196, 216, 168, 10), 'red'),
+      S(circle(130, 240, 13), 'white'),
+      S(circle(270, 240, 13), 'white'),
+      S(circle(150, 320, 13), 'white'),
+      S(circle(250, 320, 13), 'white'),
+      S(circle(124, 286, 9), 'white'),
+      S(circle(276, 286, 9), 'white'),
+      S(rect(180, 196, 40, 168), 'yellow'),
+      S('M200 160Q148 92 120 120Q100 150 200 160Z', 'yellow'),
+      S('M200 160Q252 92 280 120Q300 150 200 160Z', 'yellow'),
+      S(rect(78, 152, 244, 50, 10), 'red'),
+      S(rect(180, 152, 40, 50), 'yellow'),
+      S(circle(200, 152, 18), 'yellow'),
+    ],
+  },
+  {
+    id: 'pumpkin', name: 'Pumpkin', cat: 'holidays',
+    shapes: [
+      BG('blue'),
+      S(circle(330, 70, 32), 'yellow'),
+      S(star(60, 60, 16, 7), 'yellow'),
+      S(star(120, 30, 10, 4.5), 'yellow'),
+      S(star(370, 170, 11, 5), 'yellow'),
+      S(star(40, 190, 11, 5), 'yellow'),
+      S('M0 344Q100 326 200 340T400 336V400H0Z', 'green'),
+      S('M190 176Q186 140 200 118L220 124Q208 148 212 178Z', 'brown'),
+      S(ellipse(132, 264, 72, 92), 'orange'),
+      S(ellipse(268, 264, 72, 92), 'orange'),
+      S(ellipse(200, 262, 78, 98), 'orange'),
+      S(leaf(218, 150, 15, 50, 68), 'green'),
+      D('M210 136Q240 112 252 128Q260 140 246 144', 4),
+      S(poly(150, 254, 172, 214, 194, 254), 'yellow'),
+      S(poly(206, 254, 228, 214, 250, 254), 'yellow'),
+      S('M138 284Q200 336 262 284Q232 296 216 292L210 306L190 306L184 292Q168 296 138 284Z', 'yellow'),
+    ],
+  },
+  {
+    id: 'snowpal', name: 'Snow Pal', cat: 'holidays',
+    shapes: [
+      BG('sky'),
+      S('M0 322Q100 302 200 320T400 314V400H0Z', 'white'),
+      D('M140 270L84 226M260 270L316 226', 7),
+      S(circle(78, 220, 18), 'red'),
+      S(circle(322, 220, 18), 'red'),
+      S(circle(200, 300, 78), 'white'),
+      S(circle(200, 172, 62), 'white'),
+      I(circle(200, 280, 8)), I(circle(200, 316, 8)),
+      S(rect(214, 228, 32, 78, 8), 'red'),
+      D('M220 306V318M230 306V318M240 306V318', 4),
+      S('M140 222Q200 246 260 222L258 248Q200 270 142 248Z', 'red'),
+      S('M144 140Q144 82 200 80Q256 82 256 140Z', 'blue'),
+      S(rect(136, 128, 128, 28, 14), 'yellow'),
+      S(circle(200, 76, 17), 'yellow'),
+      S('M200 180L246 192L200 200Z', 'orange'),
+      ...eye(180, 172, 7),
+      ...eye(220, 172, 7),
+      D('M180 210Q200 222 220 210'),
+      S(circle(162, 196, 9), 'pink'),
+      S(circle(238, 196, 9), 'pink'),
+      ...[[40, 60], [110, 110], [330, 50], [360, 130], [60, 140], [300, 110]].map(([x, y]) => S(circle(x, y, 8), 'white')),
+    ],
+  },
+  {
+    id: 'xmastree', name: 'Christmas Tree', cat: 'holidays',
+    shapes: [
+      BG('sky'),
+      ...[[44, 60], [350, 60], [70, 150], [340, 170], [30, 250], [370, 260]].map(([x, y]) => S(circle(x, y, 8), 'white')),
+      S('M0 338Q100 322 200 336T400 330V400H0Z', 'white'),
+      S(rect(180, 316, 40, 50, 6), 'brown'),
+      S('M76 330L200 168L324 330Q262 344 200 336Q138 344 76 330Z', 'dkgreen'),
+      S('M106 252L200 118L294 252Q248 264 200 256Q152 264 106 252Z', 'dkgreen'),
+      S('M138 182L200 80L262 182Q230 192 200 186Q170 192 138 182Z', 'dkgreen'),
+      S(star(200, 74, 36, 16), 'yellow'),
+      S(circle(150, 300, 13), 'red'),
+      S(circle(250, 306, 13), 'blue'),
+      S(circle(200, 280, 12), 'yellow'),
+      S(circle(166, 224, 12), 'purple'),
+      S(circle(236, 230, 12), 'red'),
+      S(circle(200, 160, 11), 'blue'),
+      S(circle(178, 130, 9), 'yellow'),
+      S(rect(54, 330, 60, 48, 6), 'red'),
+      S(rect(78, 330, 12, 48), 'yellow'),
+      S(rect(290, 336, 62, 42, 6), 'purple'),
+      S(rect(290, 350, 62, 12), 'yellow'),
+    ],
+  },
+  {
+    id: 'easteregg', name: 'Easter Egg', cat: 'holidays',
+    shapes: [
+      BG('sky'),
+      ...sun(62, 60, 26),
+      S(cloud(330, 64, 44, 20, 7), 'white'),
+      GRASS,
+      S(eggBand(200, 214, 112, 146, 68, 122, 0, 0), 'pink'),
+      S(eggBand(200, 214, 112, 146, 122, 160, 0, 10), 'yellow'),
+      S(eggBand(200, 214, 112, 146, 160, 248, 10, 10), 'sky'),
+      S(eggBand(200, 214, 112, 146, 248, 296, 10, 0), 'green'),
+      S(eggBand(200, 214, 112, 146, 296, 360, 0, 0), 'purple'),
+      S(circle(150, 204, 12), 'white'),
+      S(circle(200, 204, 12), 'white'),
+      S(circle(250, 204, 12), 'white'),
+      D('M56 370V330M344 374V334', 5),
+      S(cloud(56, 320, 24, 24, 6), 'white'),
+      S(circle(56, 320, 10), 'yellow'),
+      S(cloud(344, 324, 24, 24, 6), 'pink'),
+      S(circle(344, 324, 10), 'yellow'),
+    ],
+  },
 ];
