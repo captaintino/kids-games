@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Fishing Pond</title>
-  <meta name="description" content="Tap the water to drop your line and catch colorful fish. Can you find the golden ones?">
+  <meta name="description" content="Tap the water to drop your line and catch colorful fish at the pond, the ocean, the ice and the jungle river. Keep them in your own aquarium!">
   <meta name="theme-color" content="#34b6e4">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -29,11 +29,34 @@
       <p class="tagline">Tap the water to catch a fish!</p>
       <div class="btn-col">
         <button class="btn btn-pink" data-action="play"><span class="btn-icon">🎣</span> Fish!</button>
-        <button class="btn btn-blue btn-small" data-action="book"><span class="btn-icon">📖</span> Fish Book</button>
+        <div class="btn-row">
+          <button class="btn btn-blue btn-small" data-action="book" aria-label="Fish book"><span class="btn-icon">📖</span> Fish Book</button>
+          <button class="btn btn-green btn-small" data-action="tank" aria-label="Aquarium"><span class="btn-icon">🐠</span> Aquarium</button>
+        </div>
       </div>
       <div class="best-line" id="title-best"></div>
     </div>
   </section>
+
+  <!-- Where to fish? -->
+  <section id="screen-places" class="screen">
+    <button class="round-btn corner-left" data-action="home" aria-label="Back">⬅️</button>
+    <button class="round-btn corner-right" data-action="sound" aria-label="Toggle sound">🔊</button>
+    <div class="panel places-panel">
+      <h2 class="heading">Where to fish?</h2>
+      <div class="place-grid" id="place-grid"></div>
+    </div>
+  </section>
+
+  <!-- Aquarium top bar -->
+  <div id="tank-hud" class="hud hidden">
+    <button class="round-btn" data-action="tank-home" aria-label="Back">⬅️</button>
+    <div class="hud-spacer"></div>
+    <div class="pill tank-pill"><span aria-hidden="true">🐠</span> <span id="tank-count">0</span></div>
+    <div class="hud-spacer"></div>
+    <button class="btn btn-orange btn-small feed-btn" id="feed-btn" data-action="feed" aria-label="Feed the fish"><span class="btn-icon">🍤</span> Feed</button>
+    <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
+  </div>
 
   <!-- In-game top bar -->
   <div id="hud" class="hud hidden">
@@ -65,6 +88,7 @@
   <section id="screen-book" class="screen dim">
     <div class="panel book-panel">
       <h2 class="heading">Fish Book</h2>
+      <div class="book-tabs" id="book-tabs"></div>
       <div class="book-progress"><div class="book-bar"><div class="book-fill" id="book-fill"></div></div><span id="book-text">0 / 15</span></div>
       <div class="book-grid scroll-y" id="book-grid"></div>
       <button class="btn btn-purple btn-small" data-action="book-done"><span class="btn-icon">👍</span> Done</button>
