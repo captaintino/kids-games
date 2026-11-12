@@ -26,11 +26,14 @@ Tap the little animals on the title screen too.
   `shared/js/art.js`, so they have the same thick ink outlines as the coloring pages. The cat, dog, pig,
   frog, owl and bee reuse the coloring pictures (scenery dropped, cropped with a `viewBox`); the others are
   drawn here. Shapes wrapped in `shut(...)` show while the animal is quiet and `open(...)` while it sings.
-- `js/sounds.js`: every sound is synthesized with Web Audio: oscillators with pitch envelopes, vibrato and
-  tremolo LFOs, formant filters, and filtered noise (a moo is a low sawtooth through a sweeping resonant
-  low-pass, a quack is a nasal square chirp through a narrow band-pass, the bee is a detuned buzzy saw with
-  vibrato...). Each animal lists its syllables, which drive the mouth flaps. Levels were balanced by
-  rendering each sound offline. `render(id, ctx, out)` can play into any `AudioContext`.
+- `sounds/`: real recordings of each animal, trimmed to a short call, cleaned up (rumble filtered out,
+  soft fades), evened out in loudness and saved as small mono MP3s (6 to 17 KB each; MP3 so that Safari 12
+  can play them). They are free to use: most are CC0 from BigSoundBank, the rest are public domain or
+  Creative Commons from Wikimedia Commons and OpenGameArt. `sounds/CREDITS.md` lists the source, author
+  and license of every one.
+- `js/sounds.js` loads and plays them with Web Audio (all are fetched on the first tap, and the service
+  worker keeps them for offline play). `js/sound-data.js` holds each sound's length and when the animal's
+  mouth should be open, measured from the loudness of the recording, so the mouth flaps in time.
 - The grid picks the number of columns that gives the biggest tiles for the screen (3 × 5 on a phone,
   8 × 2 in landscape, 4 × 4 on a tablet).
 - Saved with `createStore('animals')`: the star count.

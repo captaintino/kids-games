@@ -1,7 +1,7 @@
 // Service worker: caches every game so the whole collection works offline.
 // Run `python3 tools/update-sw.py` after changing files: it refreshes ASSETS and
 // bumps VERSION, so installed copies download the new files.
-const VERSION = 'v3';
+const VERSION = 'v4';
 const CACHE = `play-party-${VERSION}`;
 
 const ASSETS = [
@@ -11,7 +11,23 @@ const ASSETS = [
   './animals/index.html',
   './animals/js/animals.js',
   './animals/js/main.js',
+  './animals/js/sound-data.js',
   './animals/js/sounds.js',
+  './animals/sounds/bee.mp3',
+  './animals/sounds/cat.mp3',
+  './animals/sounds/chicken.mp3',
+  './animals/sounds/cow.mp3',
+  './animals/sounds/dog.mp3',
+  './animals/sounds/duck.mp3',
+  './animals/sounds/elephant.mp3',
+  './animals/sounds/frog.mp3',
+  './animals/sounds/horse.mp3',
+  './animals/sounds/lion.mp3',
+  './animals/sounds/monkey.mp3',
+  './animals/sounds/mouse.mp3',
+  './animals/sounds/owl.mp3',
+  './animals/sounds/pig.mp3',
+  './animals/sounds/sheep.mp3',
   './bubbles/css/style.css',
   './bubbles/icons/apple-touch-icon.png',
   './bubbles/icons/icon-192.png',

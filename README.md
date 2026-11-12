@@ -27,7 +27,7 @@ It's an installable **Progressive Web App**: once it has loaded, every game work
 - 🔢 **Count & Pop**: the counting mode of Bubble Pop (the tile opens it directly).
 - ✏️ **Letter Tracing** (`tracing/`): trace A–Z, a–z and 0–9 along dotted paths with a brush that stays
   inside the letter. "B! B is for ball!"
-- 🐮 **Animal Sounds** (`animals/`): tap 15 animals to hear their (made-up, synthesized) sounds, then
+- 🐮 **Animal Sounds** (`animals/`): tap 15 animals to hear their real sounds (free, openly licensed recordings), then
   play "Who says moo?".
 
 **Music & Making**
@@ -55,8 +55,8 @@ speech off everywhere.
 ## How it's built
 
 - No build step and no dependencies: plain HTML, CSS and ES modules. Every picture is drawn in SVG or
-  on a canvas, and every sound is made live with the Web Audio API, so there are no image or audio files
-  to download.
+  on a canvas, and almost every sound is made live with the Web Audio API. The only audio files are the
+  short animal recordings in `animals/sounds/` (credited in `animals/sounds/CREDITS.md`).
 - Spoken words use the browser's built-in speech. Everything spoken is also shown, so games still work
   on devices without a voice.
 - `shared/` holds what the games have in common: the look, sounds, speech, the background worlds, the
