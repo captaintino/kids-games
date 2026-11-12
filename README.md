@@ -62,7 +62,8 @@ sticker. The **My Stickers** button on the home screen shows the album.
 **🔒 Grown-up corner:** hold the Grown-ups button at the bottom of the home screen for 3 seconds to set
 the kid's name (used by Letter Tracing), the sound and voice volume, a daily play-time limit (a gentle
 "Time for a break!" screen; hold its lock to add time), which games show on the home screen, and
-whether stickers are earned.
+whether stickers are earned. Its **About this app** card shows the version that is running and which
+offline copy is stored, for debugging.
 
 **Worlds:** the 🌍 button on the home screen picks the background for every game: Party, Under the
 Sea, Wild West, Knights & Castles, Outer Space, Farm, City, Winter or Birthday Party. (Bubble Pop keeps
@@ -114,7 +115,7 @@ python3 tools/update-sw.py
 ```
 
 It refreshes the list of files in `sw.js` and bumps its `VERSION`, so installed copies download the
-new files.
+new files. It also writes `js/version.js`, the version shown in the grown-up corner.
 
 ### Adding a game
 

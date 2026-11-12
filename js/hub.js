@@ -9,6 +9,7 @@ import {
   grownups, saveGrownups, isHidden, playedToday, holdGate,
 } from '../shared/js/grownups.js';
 import { STICKERS, CATS, album, stickerHTML, resetAlbum } from '../shared/js/rewards.js';
+import { VERSION, BUILT } from './version.js';
 
 // To add a game: add it here, then run tools/update-sw.py.
 // id: used by the grown-up corner to hide a game. icon: an emoji, or an image path (img: true).
@@ -218,8 +219,28 @@ function buildGrownups() {
       <span class="gu-ico">${gm.img ? `<img src="${gm.icon}" alt="">` : gm.icon}</span> ${esc(gm.name)}</label>`).join('')).join('');
 }
 
+// Version info for debugging: the version of the page that's running, and which offline
+// copies are stored (an older one still listed means the update hasn't finished yet).
+function buildVersion() {
+  const dpr = window.devicePixelRatio || 1;
+  const lines = [
+    `Version ${VERSION} (${BUILT})`,
+    `Screen ${window.innerWidth}×${window.innerHeight} at ${Math.round(dpr * 100) / 100}x`,
+  ];
+  const show = (more) => { $('#gu-version').textContent = lines.concat(more).join('\n'); };
+  show(['Offline copy: checking…']);
+  const sw = navigator.serviceWorker;
+  if (!sw || !window.caches) { show(['Offline copy: not supported on this browser']); return; }
+  caches.keys().then((keys) => {
+    const mine = keys.filter((k) => k.indexOf('play-party-') === 0).map((k) => k.slice(11));
+    const state = sw.controller ? 'offline mode on' : 'offline mode not running yet';
+    show([`Offline copy: ${mine.length ? mine.join(', ') : 'none yet'} (${state})`]);
+  }, () => show(['Offline copy: unknown']));
+}
+
 function openGrownups() {
   buildGrownups();
+  buildVersion();
   showScreen('screen-grownups');
 }
 
