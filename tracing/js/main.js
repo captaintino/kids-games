@@ -684,6 +684,7 @@ function sayIntro() {
 }
 
 function openChar(i, intro = true) {
+  T.token++;
   T.i = (i + T.set.chars.length) % T.set.chars.length;
   T.ch = T.set.chars[T.i];
   T.on = true;
