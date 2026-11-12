@@ -85,8 +85,16 @@ function keyIndex(key) {
 // ---------------------------------------------------------------------------
 // Canvases: animated background behind, effects (confetti, splashes) in front
 // ---------------------------------------------------------------------------
+// The world is three layers: #bg (the still picture, painted once), #bg-fade (the old
+// picture fading out after a change) and #bg-anim (only the small moving bits, redrawn
+// at 30 frames a second). Repainting the whole picture every frame was the biggest cost
+// on older tablets.
 const bg = $('#bg');
-const bgx = bg.getContext('2d');
+const bgx = bg.getContext('2d', { alpha: false });
+const fadeCv = $('#bg-fade');
+const fadeX = fadeCv.getContext('2d');
+const an = $('#bg-anim');
+const anx = an.getContext('2d');
 const fx = $('#fx');
 const fxx = fx.getContext('2d');
 let W = 0, H = 0, unit = 1, DPR = 1;
@@ -103,7 +111,8 @@ function resize() {
   H = window.innerHeight;
   // pixel budget so big retina tablets stay smooth
   DPR = Math.max(1, Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(2400000 / (W * H))));
-  sizeCanvas(bg, bgx, DPR);
+  sizeCanvas(bg, bgx, Math.min(DPR, 1.5));
+  sizeCanvas(an, anx, 1);
   sizeCanvas(fx, fxx, DPR);
   fxDirty = true;
   unit = clamp(Math.min(W, H) / 400, 0.8, 1.8);
@@ -118,26 +127,35 @@ function resize() {
 // ---------------------------------------------------------------------------
 if (!SCENES.some((sc) => sc.id === save.scene)) save.scene = 'party';
 const MODE_PALETTE = { title: 0, fill: 1, paint: 2, number: 3, magic: 4, draw: ['#ffb347', '#ff7ac6', '#a98bff'] };
-let bgCur = document.createElement('canvas');
-let bgPrev = document.createElement('canvas');
-let bgFade = 1;
+let fadeTimer = 0;
+let animAcc = 0;
 let palette = 0;
 let animator = createAnimator(save.scene);
 
 function rebuildBackground(fade) {
-  if (fade && bgCur.width === bg.width && bgCur.height === bg.height) {
-    const t = bgPrev;
-    bgPrev = bgCur;
-    bgCur = t;
-    bgFade = 0;
-  } else {
-    bgFade = 1;
+  if (fade && bg.width) {
+    // keep a copy of the old picture on top and fade it out over the new one
+    fadeCv.width = bg.width;
+    fadeCv.height = bg.height;
+    fadeX.drawImage(bg, 0, 0);
+    fadeCv.style.transition = 'none';
+    fadeCv.style.opacity = '1';
+    fadeCv.style.visibility = 'visible';
+    void fadeCv.offsetWidth;
+    fadeCv.style.transition = 'opacity .6s ease';
+    fadeCv.style.opacity = '0';
+    clearTimeout(fadeTimer);
+    fadeTimer = setTimeout(() => {
+      fadeCv.style.visibility = 'hidden';
+      fadeCv.width = 0;
+      fadeCv.height = 0;
+    }, 700);
   }
-  bgCur.width = bg.width;
-  bgCur.height = bg.height;
-  const c = bgCur.getContext('2d');
-  c.setTransform(DPR, 0, 0, DPR, 0, 0);
-  paintScene(c, W, H, save.scene, palette);
+  const k = bg.width / W;
+  bgx.setTransform(1, 0, 0, 1, 0, 0);
+  bgx.clearRect(0, 0, bg.width, bg.height);
+  bgx.setTransform(k, 0, 0, k, 0, 0);
+  paintScene(bgx, W, H, save.scene, palette);
 }
 
 // Each screen has its own colors in the Paint Party world.
@@ -157,17 +175,15 @@ function setScene(id) {
 }
 
 function drawBackground(t, dt) {
-  bgx.setTransform(1, 0, 0, 1, 0, 0);
-  if (bgFade < 1) {
-    bgFade = Math.min(1, bgFade + dt * 1.6);
-    bgx.drawImage(bgPrev, 0, 0);
-    bgx.globalAlpha = bgFade;
-  }
-  bgx.drawImage(bgCur, 0, 0);
-  bgx.globalAlpha = 1;
-  bgx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  animator.draw(bgx, W, H, t, dt);
-  bgx.globalAlpha = 1;
+  // the moving bits are slow drifting things: 30 frames a second is plenty
+  animAcc += dt;
+  if (animAcc < 1 / 31) return;
+  const step = Math.min(animAcc, 0.1);
+  animAcc = 0;
+  anx.setTransform(1, 0, 0, 1, 0, 0);
+  anx.clearRect(0, 0, an.width, an.height);
+  animator.draw(anx, W, H, t, step);
+  anx.globalAlpha = 1;
 }
 
 const sparkleImg = (() => {
@@ -256,9 +272,14 @@ function updateParticles(dt) {
   particles = particles.filter((p) => p.life > 0);
 }
 
+let fxShown = true;
 function drawParticles() {
-  // nothing to draw: leave the cleared layer alone instead of clearing it every frame
-  if (!particles.length && !fxDirty) return;
+  // nothing to draw: leave the cleared layer alone (and hidden) instead of clearing it every frame
+  if (!particles.length && !fxDirty) {
+    if (fxShown) { fx.style.visibility = 'hidden'; fxShown = false; }
+    return;
+  }
+  if (!fxShown) { fx.style.visibility = ''; fxShown = true; }
   fxDirty = particles.length > 0;
   fxx.clearRect(0, 0, W, H);
   for (const p of particles) {

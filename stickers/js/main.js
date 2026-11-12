@@ -24,6 +24,25 @@ if (!BY_ID.kitty || !CATS.some((c) => c.key === store.data.tab)) store.data.tab 
 // ---------------------------------------------------------------------------
 const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","Android Emoji",sans-serif';
 const art = {}; // id -> { src, img (drawable for canvas) }
+function lazyEmoji(emoji) {
+  let cv = null;
+  let src = null;
+  const draw = () => {
+    if (cv) return cv;
+    cv = document.createElement('canvas');
+    cv.width = cv.height = 256;
+    const c = cv.getContext('2d');
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.font = `200px ${EMOJI_FONT}`;
+    c.fillText(emoji, 128, 140);
+    return cv;
+  };
+  return {
+    get img() { return draw(); },
+    get src() { if (!src) src = draw().toDataURL('image/png'); return src; },
+  };
+}
 function makeArt() {
   const loads = [];
   for (const s of STICKERS) {
@@ -34,14 +53,9 @@ function makeArt() {
       img.src = src;
       art[s.id] = { src, img };
     } else {
-      const cv = document.createElement('canvas');
-      cv.width = cv.height = 256;
-      const c = cv.getContext('2d');
-      c.textAlign = 'center';
-      c.textBaseline = 'middle';
-      c.font = `200px ${EMOJI_FONT}`;
-      c.fillText(s.emoji, 128, 140);
-      art[s.id] = { src: cv.toDataURL('image/png'), img: cv };
+      // Emoji are drawn to a canvas (and turned into a PNG for the tray) only the first
+      // time they're needed: doing all of them at startup took half a second on old tablets.
+      art[s.id] = lazyEmoji(s.emoji);
     }
   }
   return Promise.all(loads);

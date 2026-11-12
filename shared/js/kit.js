@@ -81,16 +81,21 @@ export function coloringSave() {
 // Canvases: background world behind, effects in front
 // ---------------------------------------------------------------------------
 let opts = {};
-let bg, bgx, fxc, fxx;
+let bg, bgx, fadeCv, fadeX, an, anx, fxc, fxx;
 export let W = 0;
 export let H = 0;
 /** 1 on a ~400px phone, bigger on tablets. Multiply sizes by it. */
 export let unit = 1;
 export let DPR = 1;
 
-let bgCur = document.createElement('canvas');
-let bgPrev = document.createElement('canvas');
-let bgFade = 1;
+// The world is three layers: #bg (the still picture, painted once), #bg-fade (a copy of
+// the old picture while a new world fades in) and #bg-anim (only the small moving bits,
+// redrawn at 30 frames a second and a lower resolution). Repainting the whole picture
+// every frame was the biggest cost on older tablets.
+let animDpr = 1;
+let animAcc = 0;
+let animCleared = false;
+let fadeTimer = 0;
 let party = 0;
 let animator = null;
 let fxDirty = true;
@@ -108,6 +113,8 @@ function resize() {
   // pixel budget so big retina tablets stay smooth
   DPR = Math.max(1, Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(2400000 / (W * H))));
   sizeCanvas(bg, bgx, Math.min(DPR, 1.5));
+  animDpr = 1;
+  sizeCanvas(an, anx, animDpr);
   sizeCanvas(fxc, fxx, DPR);
   fxDirty = true;
   unit = clamp(Math.min(W, H) / 400, 0.8, 1.8);
@@ -118,20 +125,29 @@ function resize() {
 export function currentScene() { return sceneOverride || settings.data.scene; }
 
 function rebuildBackground(fade) {
-  if (fade && bgCur.width === bg.width && bgCur.height === bg.height) {
-    const t = bgPrev;
-    bgPrev = bgCur;
-    bgCur = t;
-    bgFade = 0;
-  } else {
-    bgFade = 1;
+  if (fade && bg.width) {
+    // keep a copy of the old picture on top and fade it out over the new one
+    fadeCv.width = bg.width;
+    fadeCv.height = bg.height;
+    fadeX.drawImage(bg, 0, 0);
+    fadeCv.style.transition = 'none';
+    fadeCv.style.opacity = '1';
+    fadeCv.style.visibility = 'visible';
+    void fadeCv.offsetWidth;
+    fadeCv.style.transition = 'opacity .6s ease';
+    fadeCv.style.opacity = '0';
+    clearTimeout(fadeTimer);
+    fadeTimer = setTimeout(() => {
+      fadeCv.style.visibility = 'hidden';
+      fadeCv.width = 0;
+      fadeCv.height = 0;
+    }, 700);
   }
-  bgCur.width = bg.width;
-  bgCur.height = bg.height;
-  const c = bgCur.getContext('2d');
   const s = bg.width / W;
-  c.setTransform(s, 0, 0, s, 0, 0);
-  paintScene(c, W, H, currentScene(), party);
+  bgx.setTransform(1, 0, 0, 1, 0, 0);
+  bgx.clearRect(0, 0, bg.width, bg.height);
+  bgx.setTransform(s, 0, 0, s, 0, 0);
+  paintScene(bgx, W, H, currentScene(), party);
 }
 
 /** Change the Paint Party colors (an index into PARTY_THEMES or [top, middle, bottom]). */
@@ -163,28 +179,38 @@ function applyScene() {
 
 /** Hide the moving background details (e.g. to keep a busy game screen calm). */
 let bgAnimate = true;
-export function animateBackground(on) { bgAnimate = on; }
+export function animateBackground(on) { bgAnimate = on; animCleared = false; }
 
 /** Turn the whole background world off (for a game that paints its own), saving work every frame. */
 let bgOn = true;
 export function showBackground(on) {
   bgOn = on;
-  if (bg) bg.style.visibility = on ? '' : 'hidden';
+  if (bg) {
+    bg.style.visibility = on ? '' : 'hidden';
+    an.style.visibility = on ? '' : 'hidden';
+  }
 }
 
 function drawBackground(t, dt) {
-  bgx.setTransform(1, 0, 0, 1, 0, 0);
-  if (bgFade < 1) {
-    bgFade = Math.min(1, bgFade + dt * 1.6);
-    bgx.drawImage(bgPrev, 0, 0);
-    bgx.globalAlpha = bgFade;
+  if (!bgAnimate) {
+    if (!animCleared) {
+      anx.setTransform(1, 0, 0, 1, 0, 0);
+      anx.clearRect(0, 0, an.width, an.height);
+      animCleared = true;
+    }
+    return;
   }
-  bgx.drawImage(bgCur, 0, 0);
-  bgx.globalAlpha = 1;
-  const s = bg.width / W;
-  bgx.setTransform(s, 0, 0, s, 0, 0);
-  if (bgAnimate) animator.draw(bgx, W, H, t, dt);
-  bgx.globalAlpha = 1;
+  // the moving bits are slow drifting things: 30 frames a second is plenty
+  animAcc += dt;
+  if (animAcc < 1 / 31) return;
+  const step = Math.min(animAcc, 0.1);
+  animAcc = 0;
+  anx.setTransform(1, 0, 0, 1, 0, 0);
+  anx.clearRect(0, 0, an.width, an.height);
+  anx.setTransform(animDpr, 0, 0, animDpr, 0, 0);
+  animator.draw(anx, W, H, t, step);
+  anx.globalAlpha = 1;
+  animCleared = false;
 }
 
 // ---------------------------------------------------------------------------
@@ -293,9 +319,14 @@ function updateParticles(dt) {
   particles = particles.filter((p) => p.life > 0);
 }
 
+let fxShown = true;
 function drawParticles() {
-  // nothing to draw: leave the cleared layer alone instead of clearing it every frame
-  if (!particles.length && !fxDirty) return;
+  // nothing to draw: leave the cleared layer alone (and hidden) instead of clearing it every frame
+  if (!particles.length && !fxDirty) {
+    if (fxShown) { fxc.style.visibility = 'hidden'; fxShown = false; }
+    return;
+  }
+  if (!fxShown) { fxc.style.visibility = ''; fxShown = true; }
   fxDirty = particles.length > 0;
   fxx.clearRect(0, 0, W, H);
   for (const p of particles) {
@@ -578,6 +609,8 @@ export async function saveImage(cv, name = 'picture', title = 'My picture') {
 // ---------------------------------------------------------------------------
 const CHROME = `
 <canvas id="bg" aria-hidden="true"></canvas>
+<canvas id="bg-fade" aria-hidden="true"></canvas>
+<canvas id="bg-anim" aria-hidden="true"></canvas>
 <canvas id="fx" aria-hidden="true"></canvas>
 <div id="banner" class="banner" aria-live="polite">
   <div class="banner-title" id="banner-title"></div>
@@ -612,7 +645,11 @@ export function boot(options = {}) {
   party = options.party != null ? options.party : 0;
   document.body.insertAdjacentHTML('afterbegin', CHROME);
   bg = $('#bg');
-  bgx = bg.getContext('2d');
+  bgx = bg.getContext('2d', { alpha: false });
+  fadeCv = $('#bg-fade');
+  fadeX = fadeCv.getContext('2d');
+  an = $('#bg-anim');
+  anx = an.getContext('2d');
   fxc = $('#fx');
   fxx = fxc.getContext('2d');
   animator = createAnimator(currentScene());
