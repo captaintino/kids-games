@@ -8,7 +8,7 @@ import {
   rand, vibrate, unit,
 } from '../../shared/js/kit.js';
 import { FRIENDS, FRIEND, friendSvg, mountFriend } from './characters.js';
-import { FOODS, foodSvg } from './food.js';
+import { FOODS, foodSvg } from '../../shared/js/food.js';
 
 const store = createStore('feed', { fed: {}, total: 0 });
 if (!store.data.fed || typeof store.data.fed !== 'object') store.data.fed = {};

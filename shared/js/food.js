@@ -1,9 +1,9 @@
 // Drawn fruit, veg and snacks, each on a 100 x 100 sheet with thick ink outlines.
-// The same file lives in sorter/js/ and feed/js/ (keep the two copies in step).
+// Used by Shapes & Colors (sorter/) and Feed the Animal (feed/).
 //
 //   FOODS.apple  -> { name: 'apple', color: '#ff4d5e', art: '<path ...>' }
 //   foodSvg('apple', 'cls')  -> a complete <svg> string
-import { circle, ellipse, rect, star, cloud, INK } from '../../shared/js/pictures.js';
+import { circle, ellipse, rect, star, cloud, INK } from './pictures.js';
 
 const P = (d, f, w) => `<path d="${d}" fill="${f}" stroke="${INK}" stroke-width="${w == null ? 4 : w}" stroke-linejoin="round" stroke-linecap="round"/>`;
 const F = (d, f, o) => `<path d="${d}" fill="${f}"${o ? ` opacity="${o}"` : ''}/>`;
@@ -73,7 +73,7 @@ export const FOODS = {
       P('M58 25Q66 10 83 12Q77 27 60 26Z', LEAF, 3) + HL(34, 44, 5, 10, 50),
   },
   corn: {
-    name: 'corn', color: '#ffd93b',
+    name: 'corn', color: '#ffd93b', plural: true,
     art: P(ellipse(50, 44, 20, 36), '#ffd93b') +
       L('M50 12V76', '#e6b422', 2.5) + L('M37 22H63', '#e6b422', 2.5) + L('M35 34H65', '#e6b422', 2.5) +
       L('M34 46H66', '#e6b422', 2.5) + L('M36 58H64', '#e6b422', 2.5) +

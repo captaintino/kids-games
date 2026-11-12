@@ -9,7 +9,7 @@ import {
 import {
   SHAPES, SHAPE, BLOCK_COLORS, COLORS, blockSvg, holeSvg, miniShapeSvg, basketBackSvg, basketFrontSvg, blobSvg,
 } from './art.js';
-import { FOODS, foodSvg } from './food.js';
+import { FOODS, foodSvg } from '../../shared/js/food.js';
 
 const store = createStore('sorter', { round: { shapes: 0, colors: 0 }, sorted: 0 });
 if (!store.data.round || typeof store.data.round !== 'object') store.data.round = { shapes: 0, colors: 0 };
@@ -175,7 +175,7 @@ function layout() {
   const m = pieces.length;
   const tin = { x: R.tray.x + 8, y: R.tray.y + 8, w: R.tray.w - 16, h: R.tray.h - 16 };
   const g = fitGrid(m, tin.w, tin.h, 1);
-  const trayScale = Math.min(mode === 'colors' ? 1.35 : 1, (g.s * 0.84) / D);
+  const trayScale = Math.min(mode === 'colors' ? 1.7 : 1, (g.s * 0.84) / D);
   gridCenters(m, tin, g).forEach((c, i) => {
     const pc = pieces[i];
     pc.homeX = c.x + rand(-0.04, 0.04) * g.cw;
@@ -398,7 +398,7 @@ function startDrag(pc, p) {
   pc.el.classList.add('lifted');
   pc.el.classList.remove('enter');
   pc.el.style.zIndex = String(++zTop);
-  moveTo(pc, cx, cy - lift, 1.08, 0, 120, 'ease-out');
+  moveTo(pc, cx, cy - lift, Math.max(1.08, geo.trayScale * 1.05), 0, 120, 'ease-out');
   sfx.pick(pieces.indexOf(pc) + 2);
   vibrate(8);
   say(`${pieceName(pc)}!`);
