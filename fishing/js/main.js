@@ -1125,8 +1125,8 @@ function render(t) {
   drawWeeds(t);
   for (const f of fish) if (f.sp.kind !== 'crab') drawFish(f, t);
   for (const f of fish) if (f.sp.kind === 'crab') drawFish(f, t);
-  drawBoat(t);
   drawDuck(t);
+  drawBoat(t);
   if (line.st !== 'idle' && line.st !== 'card' && line.st !== 'cast' && line.st !== 'jump') {
     const by = line.bobY || P.surfaceY;
     drawBobber(line.bx, by, 0);
@@ -1227,9 +1227,15 @@ function startPlay() {
   talk(state.session ? 'Let\'s fish!' : 'Tap the water to go fishing!', true);
 }
 
+// On a short landscape screen the title would cover the boat: park it by the dock.
+function titleBoatX() {
+  return eng.H < 520 && eng.W > eng.H ? boatMinX() + 10 * eng.unit : eng.W * 0.55;
+}
+
 function goTitle() {
   if (caught) finishCard('release');
   state.mode = 'menu';
+  boat.tx = clamp(titleBoatX(), boatMinX(), boatMaxX());
   if (line.st !== 'jump' && line.st !== 'card') {
     if (line.biter) letGo(line.biter);
     line.biter = null;
@@ -1256,6 +1262,7 @@ boot({
       line.st = 'idle';
     }
     for (const f of fish) if (f.st === 'peek' || f.st === 'curious') letGo(f);
+    if (state.mode === 'menu') boat.tx = clamp(titleBoatX(), boatMinX(), boatMaxX());
   },
   onAction(action) {
     switch (action) {
@@ -1283,8 +1290,8 @@ boot({
 });
 animateBackground(false);
 fillPond();
-boat.x = boat.tx = eng.W * 0.55;
 layout();
+boat.x = boat.tx = clamp(titleBoatX(), boatMinX(), boatMaxX());
 updateTitle();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { eng.resize(); paintPondCache(); });
 

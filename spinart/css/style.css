@@ -259,7 +259,7 @@
   .seg-btn { width: 46px; height: 44px; font-size: 22px; }
   .palette { grid-template-columns: repeat(4, 50px); }
   .tools-made { flex-direction: column; }
-  .tools-made .btn { width: 100%; }
+  .tools-made .btn { width: 100%; flex: none; }
 }
 @media (min-aspect-ratio: 5/4) and (min-height: 700px) {
   .dock { width: 300px; }
@@ -292,4 +292,9 @@
   .title-panel .btn-col > * + * { margin-top: 0; margin-left: 12px; }
   .title-panel .btn-col .btn { flex: 1 1 0; min-width: 0; padding: 18px 10px 20px; font-size: 24px; }
   .title-swirl { display: block; width: 86px; height: 86px; }
+}
+.tools-made .btn { white-space: nowrap; font-size: 22px; }
+@media (max-width: 460px) and (max-aspect-ratio: 5/4) {
+  .seg-btn { width: 47px; height: 46px; font-size: 23px; }
+  .tools > * + * { margin-left: 8px; }
 }

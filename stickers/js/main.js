@@ -384,10 +384,8 @@ let pinch = null;
 const fingers = {};
 const trash = $('#trash');
 
-function stagePoint(p) {
-  const r = layer.getBoundingClientRect();
-  return { x: p.x - r.left, y: p.y - r.top };
-}
+// the layer sits at the top-left corner of the screen, so screen = stage coordinates
+function stagePoint(p) { return { x: p.x, y: p.y }; }
 function hitTest(x, y) {
   const list = ordered();
   for (let i = list.length - 1; i >= 0; i--) {
@@ -936,7 +934,8 @@ function buildTitleFriend() {
   BASE = size;
   box.innerHTML = [fr].concat(kids).map((st) => {
     const w = world(st);
-    return `<img src="${art[st.t].src}" alt="" draggable="false" style="width:${w.size}px;height:${w.size}px;left:${w.x - w.size / 2}px;top:${w.y - w.size / 2}px">`;
+    const pc = (v) => `${((v / size) * 100).toFixed(2)}%`;
+    return `<img src="${art[st.t].src}" alt="" draggable="false" style="width:${pc(w.size)};height:${pc(w.size)};left:${pc(w.x - w.size / 2)};top:${pc(w.y - w.size / 2)}">`;
   }).join('');
   [byUid, stage, BASE] = prev;
 }

@@ -368,6 +368,13 @@ boot({
     soundClock += dt;
     if (!M) return;
     M.update(dt);
+    // a soft painty sound while a finger drips onto the spinning paper
+    if (modeId === 'spin' && soundClock - lastSound > 0.16) {
+      for (const id in M.fingers) {
+        const f = M.fingers[id];
+        if (M.onDisc(f.sx, f.sy)) { lastSound = soundClock; sfx.scribble(); break; }
+      }
+    }
     let need = redraw;
     if (modeId === 'spin') need = need || M.busy();
     else if (modeId === 'fly') need = need || M.busy();

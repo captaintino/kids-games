@@ -143,6 +143,7 @@ canvas#game {
 }
 .new-badge.show { animation: badge-in .6s cubic-bezier(.2, 1.8, .4, 1) .25s both; }
 @keyframes badge-in { from { transform: rotate(35deg) scale(0); } to { transform: rotate(35deg) scale(1); } }
+@keyframes badge-in-left { from { transform: rotate(-35deg) scale(0); } to { transform: rotate(-35deg) scale(1); } }
 
 /* the card flies into the fish book button when kept */
 .catch-card.to-book { animation: to-book .5s ease-in both; }
@@ -249,7 +250,10 @@ canvas#game {
   .book-panel > * + * { margin-top: 6px; }
 }
 @media (max-height: 560px) and (min-aspect-ratio: 5/4) {
-  .catch-card { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto auto; align-items: center; justify-items: center; }
+  .catch-card { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto auto; align-items: center; justify-items: center; width: min(600px, 94vw); max-width: none; }
+  .catch-card > .new-badge { right: auto; left: -40px; transform: rotate(-35deg); }
+  .new-badge.show { animation-name: badge-in-left; }
+  .catch-btns .btn { white-space: nowrap; font-size: 20px; }
   .catch-card > .catch-pic { grid-row: 1 / span 3; grid-column: 1; margin-right: 10px; }
   .catch-card { grid-template-rows: auto auto auto auto; }
   .catch-card > .catch-pic { grid-row: 1 / span 4; }
@@ -257,7 +261,6 @@ canvas#game {
   .catch-card > .catch-name { grid-column: 2; grid-row: 2; margin-top: 0; }
   .catch-card > .catch-count { grid-column: 2; grid-row: 3; }
   .catch-card > .catch-btns { grid-column: 2; grid-row: 4; margin-top: 8px; }
-  .catch-card > .new-badge { right: -40px; }
 }
 @media (min-height: 900px) and (min-width: 700px) {
   .catch-card { width: 440px; }

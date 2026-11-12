@@ -103,6 +103,8 @@ export function createBubbles(hooks) {
       color, glitter: colorKey === 'glitter',
       phase: Math.random() * TAU,
       life: 3.5 + Math.random() * 3.5,
+      // each bubble pops somewhere different, so the prints spread over the paper
+      popAt: Math.min(y - r * 2, U.y + U.s * (0.06 + Math.random() * 0.7)),
       grow: 0,
     });
   }
@@ -197,7 +199,7 @@ export function createBubbles(hooks) {
       if (b.x - b.r < left) { b.x = left + b.r; b.vx = Math.abs(b.vx); }
       if (b.x + b.r > right) { b.x = right - b.r; b.vx = -Math.abs(b.vx); }
       if (b.y + b.r > bottom) { b.y = bottom - b.r; b.vy = -Math.abs(b.vy); }
-      if (b.life <= 0 || b.y - b.r * 0.6 < top) gone.push(b);
+      if (b.life <= 0 || b.y < b.popAt || b.y - b.r * 0.6 < top) gone.push(b);
     }
     gone.forEach((b) => popBubble(b, false));
   };
@@ -232,7 +234,7 @@ export function createBubbles(hooks) {
   U.restore = function (url) {
     if (!url) return;
     const img = new Image();
-    img.onload = () => { pc.drawImage(img, 0, 0, BP, BP); };
+    img.onload = () => { pc.drawImage(img, 0, 0, BP, BP); U.changed = true; };
     img.src = url;
   };
   return U;

@@ -69,7 +69,7 @@ export function createSpin(P) {
   S.layout = function (w, h, dpr) {
     S.cx = w / 2;
     S.cy = h / 2;
-    S.r = Math.max(60, Math.min(w, h) / 2 - 18);
+    S.r = Math.max(60, Math.min(w, h) / 2 / 1.1 - 6);
     const pr = S.r * 1.09;
     const size = Math.ceil(pr * 2 + 8);
     // the turntable: a candy-colored ring with dots, so you can see it turn

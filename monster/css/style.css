@@ -14,6 +14,9 @@
   filter: drop-shadow(0 8px 10px rgba(30, 60, 90, .3));
 }
 .title-mon svg { width: 100%; height: 100%; display: block; }
+.title-panel .btn-col { width: 340px; max-width: 86vw; }
+.title-panel .btn { white-space: nowrap; }
+@media (min-width: 700px) and (min-height: 900px) { .title-mon { width: 280px; height: 336px; } }
 @media (max-height: 700px) { .title-mon { width: 150px; height: 180px; } }
 @media (max-height: 560px) { .title-mon { width: 110px; height: 132px; } }
 @media (max-height: 560px) and (min-aspect-ratio: 5/4) {
@@ -348,13 +351,15 @@
 /* ---------- Landscape: parts beside the monster ---------- */
 @media (min-aspect-ratio: 5/4) {
   .play {
-    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-columns: minmax(0, 1fr) 400px;
     grid-template-rows: auto minmax(0, 1fr) auto;
     grid-template-areas: "top top" "stage dock" "stage done";
     grid-column-gap: 12px;
     column-gap: 12px;
   }
-  .play.dancing { grid-template-columns: minmax(0, 1fr); grid-template-areas: "top" "stage" "done"; }
+  .play.dancing { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "top top" "stage done"; }
+  .dance-row { flex-direction: column; justify-content: center; padding: 0 4px; }
+  .big-round + .big-round { margin-left: 0; margin-top: 16px; }
   .topbar { max-width: none; }
   .dock {
     display: flex;
@@ -363,9 +368,8 @@
     align-self: stretch;
     margin-top: 8px;
   }
-  .tabs { flex-wrap: wrap; flex: none; margin-bottom: 4px; }
-  .tab { flex: 0 0 23%; max-width: none; height: 44px; font-size: 24px; margin: 0 1% 4px; }
-  .tab + .tab { margin-left: 1%; }
+  .tabs { flex: none; margin-bottom: 4px; }
+  .tab { max-width: none; height: 48px; font-size: 24px; }
   .opts, .paint { flex: 1 1 auto; min-height: 0; }
   .opts {
     display: block;
@@ -386,7 +390,7 @@
   .arrow { width: 56px; height: 60px; margin-top: -30px; }
 }
 @media (min-aspect-ratio: 5/4) and (min-height: 700px) {
-  .play { grid-template-columns: minmax(0, 1fr) 440px; }
+  .play { grid-template-columns: minmax(0, 1fr) 460px; }
   .tab { height: 60px; font-size: 30px; }
   .opt, .opt + .opt { width: 96px; height: 104px; margin: 4px; }
   .swatch, .swatch + .swatch { width: 52px; height: 52px; }
