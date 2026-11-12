@@ -1,6 +1,9 @@
 /* Catch the Falling Stars: this game's own styles (kit.css has the shared look) */
 html, body { background: #211d63; }
 
+/* a screen that is fading out must not catch taps meant for the game */
+.screen:not(.active) button { pointer-events: none; }
+
 canvas#game {
   position: fixed;
   top: 0;

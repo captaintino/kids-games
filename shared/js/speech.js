@@ -95,5 +95,12 @@ export function say(text, opts = {}) {
 
 const ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
   'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'];
+const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
 /** Number words for counting out loud (speech engines read "1" fine, but words are surer). */
-export function numberWord(n) { return ONES[n] || String(n); }
+export function numberWord(n) {
+  if (n < 0 || n !== Math.floor(n) || n >= 1000) return String(n);
+  if (n <= 20) return ONES[n];
+  if (n < 100) return TENS[Math.floor(n / 10)] + (n % 10 ? `-${ONES[n % 10]}` : '');
+  const rest = n % 100;
+  return `${ONES[Math.floor(n / 100)]} hundred${rest ? ` and ${numberWord(rest)}` : ''}`;
+}

@@ -4,7 +4,7 @@ import * as sfx from '../../shared/js/audio.js';
 import { say } from '../../shared/js/speech.js';
 import {
   boot, $, fx, showScreen, currentScreen, celebrate, onPointer, createStore, rand, randInt, pickOne, clamp, lerp,
-  vibrate, animateBackground, centerOf, replayClass,
+  vibrate, animateBackground, showBackground, centerOf, replayClass,
 } from '../../shared/js/kit.js';
 import { createEngine, goFullscreen, glowImg, makeSprite } from './engine.js';
 import { SPECIES, BY_ID, buildArt, drawCreature, portrait, boundsOf } from './fish.js';
@@ -1288,6 +1288,8 @@ boot({
     return false;
   },
 });
+// the pond paints its own world, so skip drawing the shared one every frame
+showBackground(false);
 animateBackground(false);
 fillPond();
 layout();

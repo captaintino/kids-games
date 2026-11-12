@@ -187,6 +187,13 @@ function applyScene() {
 let bgAnimate = true;
 export function animateBackground(on) { bgAnimate = on; }
 
+/** Turn the whole background world off (for a game that paints its own), saving work every frame. */
+let bgOn = true;
+export function showBackground(on) {
+  bgOn = on;
+  if (bg) bg.style.visibility = on ? '' : 'hidden';
+}
+
 function drawBackground(t, dt) {
   bgx.setTransform(1, 0, 0, 1, 0, 0);
   if (bgFade < 1) {
@@ -615,7 +622,7 @@ function frame(now) {
   const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
   last = now;
   clock += dt;
-  drawBackground(clock, dt);
+  if (bgOn) drawBackground(clock, dt);
   if (opts.onFrame) opts.onFrame(dt, clock);
   updateParticles(dt);
   drawParticles();

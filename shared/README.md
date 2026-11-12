@@ -13,12 +13,13 @@ still carry most of their own code; every newer game is built on this kit.
 | `js/scenes.js` | The five background worlds (Paint Party, Under the Sea, Wild West, Knights & Castles, Outer Space): `SCENES`, `paintScene(ctx, w, h, id, palette)`, `createAnimator(id)`. |
 | `js/pictures.js` | The 36 coloring pictures (`PICTURES`), the `PALETTE`, and the path helpers (`circle`, `ellipse`, `rect`, `poly`, `star`, `cloud`, `S`, `I`, `D`, `BG`, `eye`). |
 | `js/art.js` | Turns a picture into SVG (`pictureMarkup`, `svgOpen`) and into a canvas (`svgToCanvas`). |
+| `js/food.js` | 32 drawn fruit, veg and snacks (`FOODS`, `foodSvg`), used by Shapes & Colors and Feed the Animal. |
 | `fonts/` | Fredoka (SIL Open Font License). |
 
 ## Making a new game
 
 1. Copy `_template/` to a new folder, for example `puzzles/`.
-2. Add a tile for it to the `GAMES` list in `js/hub.js` at the root.
+2. Add a tile for it to the `SECTIONS` list in `js/hub.js` at the root.
 3. Add its files to `sw.js` by running `python3 tools/update-sw.py` (this also bumps the version).
 
 A game page is a normal HTML page that links `../shared/css/kit.css`, its own `css/style.css`, and a
@@ -48,6 +49,9 @@ boot({
   Add `data-quiet` to skip the click sound.
 - `boot()` adds `#bg` (the world), `#fx` (effects, drawn above everything), the banner, and the
   "save on older iPads" card, so the page does not need them.
+- A game that paints its own backdrop can call `showBackground(false)` (no world is drawn at all) or
+  `animateBackground(false)` (the world stays, its moving details stop). `overrideScene(id)` shows one
+  particular world for now, without changing the kid's choice.
 
 ### Input
 

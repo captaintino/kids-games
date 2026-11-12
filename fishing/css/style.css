@@ -4,6 +4,9 @@ html, body { background: #34b6e4; }
 /* the pond is drawn on the game canvas, so the shared world behind it stays hidden */
 canvas#bg { visibility: hidden; }
 
+/* a screen that is fading out must not catch taps meant for the game */
+.screen:not(.active) button { pointer-events: none; }
+
 canvas#game {
   position: fixed;
   top: 0;
