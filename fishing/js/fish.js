@@ -675,7 +675,33 @@ function paintPuffer(c, sp, puffed, happy) {
 // ---------------------------------------------------------------------------
 // Live-drawn creatures (local units, facing right, centered on 0,0)
 // ---------------------------------------------------------------------------
-export function drawEel(c, sp, t, happy) {
+// The parts of the live-drawn creatures that never change shape (the eel's face, the
+// jellyfish's bell, the octopus's head) are pre-rendered once per species, so each
+// frame draws one picture instead of a dozen little shapes. `a` = the creature's art
+// (from buildArt); without it (the big pictures for the card and the book) they are
+// drawn from shapes as before.
+function partSprite(a, name, box, draw) {
+  if (!a.parts) a.parts = {};
+  let cv = a.parts[name];
+  if (!cv) {
+    cv = boxSprite(box, a.res || 2, draw);
+    a.parts[name] = cv;
+  }
+  return cv;
+}
+function drawPart(c, cv, x, y) {
+  c.drawImage(cv, x - cv.cx, y - cv.cy, cv.w, cv.h);
+}
+
+function eelFace(c, h2, happy) {
+  c.fillStyle = 'rgba(255,255,255,0.5)';
+  c.beginPath(); c.ellipse(-4, -h2 * 0.55, h2 * 0.6, h2 * 0.25, 0, 0, TAU); c.fill();
+  eye(c, 1, -4, 6.5, happy);
+  grin(c, 8, 6, 4.5, 2.2);
+  blush(c, -3, 6, 4);
+}
+
+export function drawEel(c, sp, t, happy, a) {
   const n = 15;
   const len = sp.len;
   const pts = [];
@@ -695,12 +721,15 @@ export function drawEel(c, sp, t, happy) {
   }
   c.strokeStyle = INK; c.lineWidth = 10; c.stroke();
   c.strokeStyle = sp.fin; c.lineWidth = 6; c.stroke();
-  for (const p of pts) { c.fillStyle = INK; c.beginPath(); c.arc(p[0], p[1], p[2] + 2, 0, TAU); c.fill(); }
-  for (let i = 0; i < pts.length; i++) {
-    const p = pts[i];
-    c.fillStyle = sp.color;
-    c.beginPath(); c.arc(p[0], p[1], p[2], 0, TAU); c.fill();
-  }
+  // the outline circles, then the body circles (each set filled as one shape: same look, fewer draws)
+  c.fillStyle = INK;
+  c.beginPath();
+  for (const p of pts) { c.moveTo(p[0] + p[2] + 2, p[1]); c.arc(p[0], p[1], p[2] + 2, 0, TAU); }
+  c.fill();
+  c.fillStyle = sp.color;
+  c.beginPath();
+  for (const p of pts) { c.moveTo(p[0] + p[2], p[1]); c.arc(p[0], p[1], p[2], 0, TAU); }
+  c.fill();
   // a pale belly and yellow spots
   for (let i = 1; i < pts.length; i++) {
     const p = pts[i];
@@ -713,11 +742,16 @@ export function drawEel(c, sp, t, happy) {
     c.beginPath(); c.arc(p[0] - 1, p[1] - p[2] * 0.3, p[2] * 0.3, 0, TAU); c.fill();
   }
   const h = pts[n];
-  c.fillStyle = 'rgba(255,255,255,0.5)';
-  c.beginPath(); c.ellipse(h[0] - 4, h[1] - h[2] * 0.55, h[2] * 0.6, h[2] * 0.25, 0, 0, TAU); c.fill();
-  eye(c, h[0] + 1, h[1] - 4, 6.5, happy);
-  grin(c, h[0] + 8, h[1] + 6, 4.5, 2.2);
-  blush(c, h[0] - 3, h[1] + 6, 4);
+  if (a) {
+    const h2 = h[2];
+    const face = partSprite(a, happy ? 'faceHappy' : 'face', { left: 18, right: 18, top: 18, bottom: 14 }, (g) => eelFace(g, h2, happy));
+    drawPart(c, face, h[0], h[1]);
+  } else {
+    c.save();
+    c.translate(h[0], h[1]);
+    eelFace(c, h[2], happy);
+    c.restore();
+  }
 }
 
 function bellPath(c, r) {
@@ -733,25 +767,7 @@ function bellPath(c, r) {
   c.closePath();
 }
 
-export function drawJelly(c, sp, t, happy, squash = 1) {
-  const r = sp.r;
-  c.lineCap = 'round';
-  c.lineJoin = 'round';
-  // tentacles
-  for (let i = 0; i < 5; i++) {
-    const x0 = -r * 0.7 + i * r * 0.35;
-    c.beginPath();
-    c.moveTo(x0, r * 0.3);
-    for (let s = 1; s <= 4; s++) {
-      const y = r * 0.3 + s * r * 0.42;
-      const x = x0 + Math.sin(t * 3 + i + s * 1.2) * 5 * (s / 4);
-      c.lineTo(x, y);
-    }
-    c.strokeStyle = INK; c.lineWidth = 5; c.stroke();
-    c.strokeStyle = i % 2 ? sp.color : sp.light; c.lineWidth = 2.6; c.stroke();
-  }
-  c.save();
-  c.scale(1 / squash, squash);
+function jellyBell(c, sp, r, happy) {
   bellPath(c, r);
   const g = c.createLinearGradient(0, -r, 0, r * 0.5);
   g.addColorStop(0, sp.light);
@@ -772,10 +788,58 @@ export function drawJelly(c, sp, t, happy, squash = 1) {
   blush(c, -r * 0.55, r * 0.12, r * 0.13);
   blush(c, r * 0.55, r * 0.12, r * 0.13);
   grin(c, 0, r * 0.14, r * 0.16, 2);
+}
+
+export function drawJelly(c, sp, t, happy, squash = 1, a) {
+  const r = sp.r;
+  c.lineCap = 'round';
+  c.lineJoin = 'round';
+  // tentacles
+  for (let i = 0; i < 5; i++) {
+    const x0 = -r * 0.7 + i * r * 0.35;
+    c.beginPath();
+    c.moveTo(x0, r * 0.3);
+    for (let s = 1; s <= 4; s++) {
+      const y = r * 0.3 + s * r * 0.42;
+      const x = x0 + Math.sin(t * 3 + i + s * 1.2) * 5 * (s / 4);
+      c.lineTo(x, y);
+    }
+    c.strokeStyle = INK; c.lineWidth = 5; c.stroke();
+    c.strokeStyle = i % 2 ? sp.color : sp.light; c.lineWidth = 2.6; c.stroke();
+  }
+  c.save();
+  c.scale(1 / squash, squash);
+  if (a) {
+    const box = { left: r * 1.15 + 4, right: r * 1.15 + 4, top: r * 1.1 + 4, bottom: r * 0.7 + 4 };
+    drawPart(c, partSprite(a, happy ? 'bellHappy' : 'bell', box, (g) => jellyBell(g, sp, r, happy)), 0, 0);
+  } else jellyBell(c, sp, r, happy);
   c.restore();
 }
 
-export function drawOctopus(c, sp, t, happy, squash = 1) {
+function octopusHead(c, sp, r, happy) {
+  c.beginPath();
+  c.ellipse(0, -r * 0.1, r, r * 1.02, 0, 0, TAU);
+  const g = c.createLinearGradient(0, -r, 0, r);
+  g.addColorStop(0, sp.light);
+  g.addColorStop(0.5, sp.color);
+  g.addColorStop(1, sp.dark);
+  c.fillStyle = g;
+  c.fill();
+  inkStroke(c, 3.4);
+  c.fillStyle = 'rgba(255,255,255,0.35)';
+  for (const [x, y, s] of [[r * 0.45, -r * 0.6, 0.12], [-r * 0.5, -r * 0.45, 0.1], [r * 0.6, -r * 0.15, 0.08]]) {
+    c.beginPath(); c.arc(x, y, r * s, 0, TAU); c.fill();
+  }
+  c.fillStyle = 'rgba(255,255,255,0.7)';
+  c.beginPath(); c.ellipse(-r * 0.3, -r * 0.75, r * 0.3, r * 0.13, -0.4, 0, TAU); c.fill();
+  eye(c, -r * 0.32, r * 0.05, r * 0.22, happy);
+  eye(c, r * 0.32, r * 0.05, r * 0.22, happy);
+  blush(c, -r * 0.6, r * 0.38, r * 0.14);
+  blush(c, r * 0.6, r * 0.38, r * 0.14);
+  grin(c, 0, r * 0.45, r * 0.18, 2.2);
+}
+
+export function drawOctopus(c, sp, t, happy, squash = 1, a) {
   const r = sp.r;
   c.lineCap = 'round';
   c.lineJoin = 'round';
@@ -797,26 +861,10 @@ export function drawOctopus(c, sp, t, happy, squash = 1) {
   }
   c.save();
   c.scale(1 / squash, squash);
-  c.beginPath();
-  c.ellipse(0, -r * 0.1, r, r * 1.02, 0, 0, TAU);
-  const g = c.createLinearGradient(0, -r, 0, r);
-  g.addColorStop(0, sp.light);
-  g.addColorStop(0.5, sp.color);
-  g.addColorStop(1, sp.dark);
-  c.fillStyle = g;
-  c.fill();
-  inkStroke(c, 3.4);
-  c.fillStyle = 'rgba(255,255,255,0.35)';
-  for (const [x, y, s] of [[r * 0.45, -r * 0.6, 0.12], [-r * 0.5, -r * 0.45, 0.1], [r * 0.6, -r * 0.15, 0.08]]) {
-    c.beginPath(); c.arc(x, y, r * s, 0, TAU); c.fill();
-  }
-  c.fillStyle = 'rgba(255,255,255,0.7)';
-  c.beginPath(); c.ellipse(-r * 0.3, -r * 0.75, r * 0.3, r * 0.13, -0.4, 0, TAU); c.fill();
-  eye(c, -r * 0.32, r * 0.05, r * 0.22, happy);
-  eye(c, r * 0.32, r * 0.05, r * 0.22, happy);
-  blush(c, -r * 0.6, r * 0.38, r * 0.14);
-  blush(c, r * 0.6, r * 0.38, r * 0.14);
-  grin(c, 0, r * 0.45, r * 0.18, 2.2);
+  if (a) {
+    const box = { left: r + 4, right: r + 4, top: r * 1.12 + 4, bottom: r * 0.92 + 4 };
+    drawPart(c, partSprite(a, happy ? 'headHappy' : 'head', box, (g) => octopusHead(g, sp, r, happy)), 0, 0);
+  } else octopusHead(c, sp, r, happy);
   c.restore();
 }
 
@@ -1161,12 +1209,56 @@ function boxSprite(b, res, draw) {
   const cv = makeSprite(w, h, (c) => { c.translate(b.left + 4, b.top + 4); draw(c); }, res);
   cv.cx = b.left + 4;
   cv.cy = b.top + 4;
-  return cv;
+  return trimSprite(cv);
+}
+
+// The boxes are roomy; a tail fills only about a quarter of its box. Trimming the empty
+// border (keeping the same pixels per unit, and a clear 2-pixel edge) makes every
+// drawing of it, turned or copied, touch far fewer pixels. Looks exactly the same.
+function trimSprite(cv) {
+  let d;
+  try { d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; } catch (err) { return cv; }
+  const W = cv.width;
+  const H = cv.height;
+  let x0 = W;
+  let y0 = H;
+  let x1 = -1;
+  let y1 = -1;
+  for (let y = 0; y < H; y++) {
+    const row = y * W * 4;
+    for (let x = 0; x < W; x++) {
+      if (d[row + x * 4 + 3]) {
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        y1 = y;
+      }
+    }
+  }
+  if (x1 < 0) return cv;
+  x0 = Math.max(0, x0 - 2);
+  y0 = Math.max(0, y0 - 2);
+  x1 = Math.min(W - 1, x1 + 2);
+  y1 = Math.min(H - 1, y1 + 2);
+  const nw = x1 - x0 + 1;
+  const nh = y1 - y0 + 1;
+  if (nw * nh > W * H * 0.85) return cv;
+  const kx = W / cv.w;
+  const ky = H / cv.h;
+  const out = document.createElement('canvas');
+  out.width = nw;
+  out.height = nh;
+  out.getContext('2d').drawImage(cv, x0, y0, nw, nh, 0, 0, nw, nh);
+  out.w = nw / kx;
+  out.h = nh / ky;
+  out.cx = cv.cx - x0 / kx;
+  out.cy = cv.cy - y0 / ky;
+  return out;
 }
 
 /** Pre-renders everything a species needs. res = sprite pixels per unit. */
 export function buildArt(sp, res) {
-  const a = { sp };
+  const a = { sp, res };
   if (sp.kind === 'fish') {
     const bb = boundsOf(sp);
     const b = { left: sp.rx * 1.25, right: bb.right + 2, top: Math.max(sp.ry * (sp.shape === 'tall' ? 2.05 : 1.6) + (sp.crown ? 14 : 0), bb.top + 6), bottom: Math.max(sp.ry * (sp.shape === 'tall' ? 2.05 : 1.5), bb.bottom + 4) };
@@ -1232,9 +1324,9 @@ export function drawCreature(c, a, t, pose) {
       c.drawImage(body, -body.cx, -body.cy, body.w, body.h);
       break;
     }
-    case 'eel': drawEel(c, sp, t, pose.happy); break;
-    case 'jelly': drawJelly(c, sp, t, pose.happy, pose.squash || 1); break;
-    case 'octopus': drawOctopus(c, sp, t, pose.happy, pose.squash || 1); break;
+    case 'eel': drawEel(c, sp, t, pose.happy, pose.big ? null : a); break;
+    case 'jelly': drawJelly(c, sp, t, pose.happy, pose.squash || 1, pose.big ? null : a); break;
+    case 'octopus': drawOctopus(c, sp, t, pose.happy, pose.squash || 1, pose.big ? null : a); break;
     case 'crab':
     case 'lobster': {
       const f = pose.wave ? a.frames.wave : (Math.floor(pose.step || 0) % 2 ? a.frames.b : a.frames.a);
@@ -1266,6 +1358,103 @@ export function drawCreature(c, a, t, pose) {
   }
 }
 
+// ---- the same drawings, copied 1:1 ----
+// A sprite drawn scaled (and mirrored) on the canvas costs several times more than a
+// plain pixel copy. A creature that swims straight (no tilt, not turning, not
+// squashed) has its sprite drawn once at its exact on-screen size into a small canvas,
+// and then copied each frame at whole device pixels. The wagging tail and the turtle's
+// flippers still turn, so they are drawn as before.
+const baked = new Map();
+let bakedD = 0;
+function bake(img, k, flip) {
+  const key = img.bakeId + '|' + k + '|' + flip;
+  let cv = baked.get(key);
+  if (cv) return cv;
+  if (baked.size > 160) baked.clear();
+  cv = document.createElement('canvas');
+  cv.width = Math.ceil(img.w * k) + 2;
+  cv.height = Math.ceil(img.h * k) + 2;
+  cv.ox = (flip > 0 ? img.cx : img.w - img.cx) * k + 1;
+  cv.oy = img.cy * k + 1;
+  const c = cv.getContext('2d');
+  c.setTransform(flip * k, 0, 0, k, cv.ox, cv.oy);
+  c.drawImage(img, -img.cx, -img.cy, img.w, img.h);
+  baked.set(key, cv);
+  return cv;
+}
+let bakeIds = 0;
+function blitBaked(c, img, x, y, k, flip) {
+  if (!img.bakeId) img.bakeId = ++bakeIds;
+  const cv = bake(img, k, flip);
+  c.drawImage(cv, Math.round(x - cv.ox), Math.round(y - cv.oy));
+}
+
+/**
+ * Draws a creature that swims straight, facing `flip` (1 or -1), at scale s, centered
+ * at (x, y) in canvas units; D = device pixels per unit. The canvas transform must be
+ * (D, 0, 0, D, 0, 0); it is left that way. Returns false for the ones drawn live
+ * (eel, jellyfish, octopus): use drawCreature for those.
+ */
+export function drawCreatureFlat(c, a, pose, x, y, s, flip, D) {
+  const sp = a.sp;
+  if (sp.kind === 'eel' || sp.kind === 'jelly' || sp.kind === 'octopus') return false;
+  if (D !== bakedD) { baked.clear(); bakedD = D; }
+  const k = s * D;
+  const X = x * D;
+  const Y = y * D;
+  const flat = () => c.setTransform(1, 0, 0, 1, 0, 0);
+  const local = () => { c.setTransform(D, 0, 0, D, 0, 0); c.translate(x, y); c.scale(flip * s, s); };
+  switch (sp.kind) {
+    case 'fish':
+    case 'puffer': {
+      const puffed = pose.puff && a.puffed;
+      const body = puffed ? a.puffed : pose.happy ? a.bodyHappy : a.body;
+      local();
+      c.translate(puffed ? a.joint * 1.3 : a.joint, 0);
+      c.rotate(pose.wag || 0);
+      c.drawImage(a.tail, -a.tail.cx, -a.tail.cy, a.tail.w, a.tail.h);
+      flat();
+      blitBaked(c, body, X, Y, k, flip);
+      break;
+    }
+    case 'crab':
+    case 'lobster': {
+      const f = pose.wave ? a.frames.wave : (Math.floor(pose.step || 0) % 2 ? a.frames.b : a.frames.a);
+      flat();
+      blitBaked(c, f, X, Y, k, flip);
+      break;
+    }
+    case 'ray': {
+      const w = pose.wag || 0;
+      const set = pose.happy ? a.happyFrames : a.frames;
+      flat();
+      blitBaked(c, set[w > 0.1 ? 0 : w < -0.1 ? 2 : 1], X, Y, k, flip);
+      break;
+    }
+    case 'turtle': {
+      const r = sp.r;
+      const w = pose.wag || 0;
+      local();
+      c.translate(-r * 0.55, r * 0.2); c.rotate(-w * 1.2); c.drawImage(a.back, -a.back.cx, -a.back.cy, a.back.w, a.back.h);
+      flat();
+      blitBaked(c, pose.happy ? a.bodyHappy : a.body, X, Y, k, flip);
+      local();
+      c.translate(r * 0.42, r * 0.22); c.rotate(w * 1.5); c.drawImage(a.front, -a.front.cx, -a.front.cy, a.front.w, a.front.h);
+      break;
+    }
+    case 'seahorse': {
+      const set = pose.happy ? a.happyFrames : a.frames;
+      flat();
+      blitBaked(c, set[(pose.wag || 0) > 0 ? 0 : 1], X, Y, k, flip);
+      break;
+    }
+    default:
+      return false;
+  }
+  c.setTransform(D, 0, 0, D, 0, 0);
+  return true;
+}
+
 /** A still picture of the creature for the catch card and the fish book. */
 export function portrait(a, size, silhouette, happy) {
   const sp = a.sp;
@@ -1281,7 +1470,7 @@ export function portrait(a, size, silhouette, happy) {
   const c = cv.getContext('2d');
   c.translate(W / 2 + ((b.left - b.right) / 2) * scale, H / 2 + ((b.top - b.bottom) / 2) * scale);
   c.scale(scale, scale);
-  drawCreature(c, a, 0.7, { wag: 0.12, happy: !!happy, step: 0, wave: (sp.kind === 'crab' || sp.kind === 'lobster') && happy });
+  drawCreature(c, a, 0.7, { wag: 0.12, happy: !!happy, step: 0, wave: (sp.kind === 'crab' || sp.kind === 'lobster') && happy, big: true });
   if (silhouette) {
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.globalCompositeOperation = 'source-in';

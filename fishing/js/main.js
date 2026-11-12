@@ -10,7 +10,7 @@ import {
   vibrate, animateBackground, showBackground, centerOf, replayClass,
 } from '../../shared/js/kit.js';
 import { createEngine, goFullscreen, glowImg, makeSprite, dotSprite } from './engine.js';
-import { SPECIES, BY_ID, buildArt, drawCreature, portrait, boundsOf, isWalker, isFlipless } from './fish.js';
+import { SPECIES, BY_ID, buildArt, drawCreature, drawCreatureFlat, portrait, boundsOf, isWalker, isFlipless } from './fish.js';
 import * as scene from './scene.js';
 import * as snd from './sounds.js';
 
@@ -105,7 +105,9 @@ let skyClouds = [];
 function paintPondCache() {
   const { W, H } = eng;
   if (!W || !H) return;
-  const s = Math.min(eng.DPR, 1.5);
+  // painted at the game canvas's own resolution, so the copy each frame is a plain
+  // 1:1 pixel copy (a scaled full-screen copy costs several times more)
+  const s = eng.DPR;
   pond.width = Math.round(W * s);
   pond.height = Math.round(H * s);
   const c = pond.getContext('2d');
@@ -117,6 +119,7 @@ function paintPondCache() {
   P.deckY = r.deckY;
   P.holes = r.holes || null;
   P.iceTop = r.iceTop || r.surfaceY;
+  resetScenery();
 }
 
 function layout() {
@@ -135,6 +138,7 @@ function layout() {
     });
   }
   rays = [0.12, 0.38, 0.64, 0.88].map((fx) => ({ x: fx * W, w: rand(60, 110) * unit, ph: rand(0, TAU) }));
+  resetScenery();
   if (!skyClouds.length) {
     skyClouds = [0.15, 0.55, 0.9].map((fx) => ({ x: fx * W, k: rand(0.2, 0.7), s: rand(0.6, 0.95), v: rand(5, 10) }));
   }
@@ -218,7 +222,8 @@ function pickSpecies() {
 
 function makeFish(sp, opts = {}) {
   const { W, unit } = eng;
-  const s = unit * rand(0.85, 1.05) * (sp.kind === 'eel' ? 0.9 : 1);
+  // (sizes in steps of 5%, so fish of one species can share their 1:1 copies)
+  const s = unit * (Math.round(rand(0.85, 1.05) * 20) / 20) * (sp.kind === 'eel' ? 0.9 : 1);
   const dir = opts.dir || (Math.random() < 0.5 ? 1 : -1);
   const b = boundsOf(sp);
   const margin = Math.max(b.left, b.right) * s + 20;
@@ -1093,19 +1098,25 @@ function drawFish(f, t) {
     ctx.drawImage(f.sp.rare === 'rainbow' ? glowImg : goldGlow, f.x - z / 2, f.y - z / 2, z, z);
     ctx.globalAlpha = 1;
   }
-  ctx.translate(f.x, f.y);
-  if (f.rot) ctx.rotate(f.rot);
   const squash = (f.sp.kind === 'jelly' || f.sp.kind === 'octopus') ? 1 + Math.sin(f.age * 3 + f.ph) * 0.07 : 1;
-  ctx.scale(isFlipless(f.sp) ? s : sx, s);
-  drawCreature(ctx, f.a, f.age + f.ph, {
+  const pose = {
     wag: f.wag,
     happy: f.happy > 0 || f.st === 'hooked',
     puff: f.sp.kind === 'puffer' && f.puff > 0.5,
     squash,
     step: f.step,
     wave: isWalker(f.sp) && (f.st === 'hooked' || f.st === 'nibble'),
-  });
-  ctx.setTransform(D, 0, 0, D, 0, 0);
+  };
+  // swimming straight (not tilted or turning): copied 1:1, which is much cheaper
+  const flip = isFlipless(f.sp) ? 1 : f.dir;
+  const straight = !f.rot && (isFlipless(f.sp) || Math.abs(f.faceK - f.dir) < 0.004);
+  if (!straight || !drawCreatureFlat(ctx, f.a, pose, f.x, f.y, s, flip, D)) {
+    ctx.translate(f.x, f.y);
+    if (f.rot) ctx.rotate(f.rot);
+    ctx.scale(isFlipless(f.sp) ? s : sx, s);
+    drawCreature(ctx, f.a, f.age + f.ph, pose);
+    ctx.setTransform(D, 0, 0, D, 0, 0);
+  }
   if (f.notice > 0) {
     const k = Math.min(1, (1.1 - f.notice) / 0.15);
     const img = eng.textSprite('!', '#ffe866', 34 * eng.unit);
@@ -1139,19 +1150,99 @@ function drawWeeds(t, list, floorY, dark) {
   }
 }
 
-function drawRays(t) {
+// A ray is the RAY sprite stretched and slanted; doing that every frame was the most
+// expensive thing in the scene. Each ray is now drawn that way once, at the canvas's
+// own resolution, into its own canvas, and each frame only copied 1:1 (in a few
+// horizontal bands, skipping the empty corners of the slanted box).
+const RAY_SKEW = 0.25;
+const RAY_BANDS = 6;
+function raySprite(r, h, D) {
+  const key = `${D}|${h}|${r.w}`;
+  if (r.img && r.img.key === key) return r.img;
+  const pad = Math.ceil((r.w / 60 + 2) * D); // the stretched sprite's soft edge
+  const left = -r.w / 2; // local x of the box's left edge (bottom-left corner)
+  const cw = Math.ceil((r.w + RAY_SKEW * h) * D) + pad * 2;
+  const ch = Math.ceil(h * D) + 2;
+  const cv = r.img && r.img.width ? r.img : document.createElement('canvas');
+  cv.width = cw;
+  cv.height = ch;
+  const c = cv.getContext('2d');
+  // the same drawing as before, with the slant, just without the moving offset
+  c.setTransform(D, 0, D * RAY_SKEW, D, pad - left * D, 0);
+  c.drawImage(RAY, -r.w / 2, 0, r.w, h);
+  cv.key = key;
+  cv.ox = pad - left * D; // where local x = 0 is, in sprite pixels
+  // the parts of each band that hold any light: the ray widens and slants as it goes down
+  cv.bands = [];
+  for (let i = 0; i < RAY_BANDS; i++) {
+    const y0 = Math.floor((i * ch) / RAY_BANDS);
+    const y1 = Math.floor(((i + 1) * ch) / RAY_BANDS);
+    const k0 = y0 / D / h;
+    const k1 = y1 / D / h;
+    const xl = Math.min(-0.2 - 0.3 * k0, -0.2 - 0.3 * k1) * r.w + RAY_SKEW * h * k0;
+    const xr = Math.max(0.2 + 0.3 * k0, 0.2 + 0.3 * k1) * r.w + RAY_SKEW * h * k1;
+    const sx = Math.max(0, Math.floor(cv.ox + xl * D) - pad);
+    const ex = Math.min(cw, Math.ceil(cv.ox + xr * D) + pad);
+    cv.bands.push([sx, y0, ex - sx, y1 - y0]);
+  }
+  r.img = cv;
+  return cv;
+}
+
+/** One ray onto canvas context c (its transform is left at 1:1). */
+function drawRay(c, r, t) {
   const D = eng.DPR;
+  const a = PLACE.rays + Math.sin(t * 0.6 + r.ph) * 0.1;
+  if (a <= 0) return;
   const h = (P.floorY - P.surfaceY) * 1.05;
   const top = PLACE.ice ? P.surfaceY + 18 * eng.unit : P.surfaceY;
-  for (const r of rays) {
-    const a = PLACE.rays + Math.sin(t * 0.6 + r.ph) * 0.1;
-    if (a <= 0) continue;
-    ctx.globalAlpha = a;
-    ctx.setTransform(D, 0, D * 0.25, D, D * (r.x + Math.sin(t * 0.3 + r.ph) * 10), D * top);
-    ctx.drawImage(RAY, -r.w / 2, 0, r.w, h);
+  const img = raySprite(r, h, D);
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.globalAlpha = a;
+  const dx = Math.round(D * (r.x + Math.sin(t * 0.3 + r.ph) * 10) - img.ox);
+  const dy = Math.round(D * top);
+  for (const b of img.bands) c.drawImage(img, b[0], b[1], b[2], b[3], dx + b[0], dy + b[1], b[2], b[3]);
+  c.globalAlpha = 1;
+}
+
+function drawRays(t) {
+  for (const r of rays) drawRay(ctx, r, t);
+  ctx.setTransform(eng.DPR, 0, 0, eng.DPR, 0, 0);
+}
+
+// The still pond with the light rays on it, made into one picture a step at a time (one
+// step per frame: the pond in two halves, then each ray), a fresh one about five times a
+// second. Most frames then copy that one picture instead of the pond plus four big
+// see-through rays. The rays drift and fade so slowly that the steps cannot be seen.
+// While the whale swims by (it is behind the rays) everything is drawn live as before.
+const scenery = { cur: document.createElement('canvas'), next: document.createElement('canvas'), ready: false, stage: 0, wait: 0 };
+const SCENERY_WAIT = 4; // frames to rest between pictures
+function resetScenery() {
+  scenery.ready = false;
+  scenery.stage = 0;
+  scenery.wait = 0;
+}
+function stepScenery(t) {
+  if (scenery.wait > 0) { scenery.wait--; return; }
+  const n = scenery.next;
+  const c = n.getContext('2d');
+  const st = scenery.stage++;
+  if (st < 2) {
+    if (n.width !== pond.width || n.height !== pond.height) { n.width = pond.width; n.height = pond.height; }
+    const y0 = st ? Math.floor(n.height / 2) : 0;
+    const y1 = st ? n.height : Math.floor(n.height / 2);
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.globalAlpha = 1;
+    c.drawImage(pond, 0, y0, n.width, y1 - y0, 0, y0, n.width, y1 - y0);
+  } else if (st - 2 < rays.length) {
+    drawRay(c, rays[st - 2], t);
+  } else {
+    scenery.next = scenery.cur;
+    scenery.cur = n;
+    scenery.ready = true;
+    scenery.stage = 0;
+    scenery.wait = SCENERY_WAIT;
   }
-  ctx.setTransform(D, 0, 0, D, 0, 0);
-  ctx.globalAlpha = 1;
 }
 
 function waveY(x, t) {
@@ -1392,13 +1483,22 @@ function drawFrog(t) {
 
 function drawSkyClouds() {
   const { unit } = eng;
+  const D = eng.DPR;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   for (const c of skyClouds) {
     const w = scene.CLOUD_W * c.s * unit;
     const h = scene.CLOUD_H * c.s * unit;
     const y = Math.max(10, P.surfaceY * c.k * 0.75);
+    // each cloud is drawn at its size once, then copied 1:1
+    const key = D + '|' + w;
+    if (!c.img || c.img.key !== key) {
+      c.img = makeSprite(w, h, (g) => g.drawImage(CLOUD, 0, 0, w, h), D);
+      c.img.key = key;
+    }
     ctx.globalAlpha = 0.95;
-    ctx.drawImage(CLOUD, c.x - w / 2, y, w, h);
+    ctx.drawImage(c.img, Math.round((c.x - w / 2) * D), Math.round(y * D));
   }
+  ctx.setTransform(D, 0, 0, D, 0, 0);
   ctx.globalAlpha = 1;
 }
 
@@ -1418,7 +1518,7 @@ function drawFlying(t) {
   ctx.translate(fl.x, fl.y);
   ctx.rotate(fl.rot || 0);
   ctx.scale(isFlipless(f.sp) ? s : f.faceK * s, s);
-  drawCreature(ctx, f.a, t, { wag: Math.sin(t * 20) * 0.5, happy: true, puff: f.sp.kind === 'puffer', wave: true, squash: 1 });
+  drawCreature(ctx, f.a, t, { wag: Math.sin(t * 20) * 0.5, happy: true, puff: f.sp.kind === 'puffer', wave: true, squash: 1, big: true });
   ctx.setTransform(D, 0, 0, D, 0, 0);
 }
 
@@ -1441,11 +1541,16 @@ function drawHint(t) {
 function render(t) {
   eng.begin(false);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.drawImage(pond, 0, 0, canvas.width, canvas.height);
+  const baked = scenery.ready && !friends.whale && scenery.cur.width === canvas.width && scenery.cur.height === canvas.height;
+  ctx.drawImage(baked ? scenery.cur : pond, 0, 0, canvas.width, canvas.height);
   ctx.setTransform(eng.DPR, 0, 0, eng.DPR, 0, 0);
   drawSkyClouds();
-  drawWhale(t);
-  drawRays(t);
+  if (!baked) {
+    drawWhale(t);
+    drawRays(t);
+  }
+  if (friends.whale) resetScenery();
+  else stepScenery(t);
   drawWeeds(t, weeds, P.floorY, PLACE.weedDark);
   for (const f of fish) if (!isWalker(f.sp)) drawFish(f, t);
   for (const f of fish) if (isWalker(f.sp)) drawFish(f, t);
@@ -1494,7 +1599,7 @@ function paintTankCache() {
   const { W, H } = eng;
   if (!W || !H) return;
   tankLayout();
-  const s = Math.min(eng.DPR, 1.5);
+  const s = eng.DPR; // the canvas's own resolution: a 1:1 copy each frame
   tankCv.width = Math.round(W * s);
   tankCv.height = Math.round(H * s);
   const c = tankCv.getContext('2d');
@@ -1523,7 +1628,7 @@ function tankBox(f) {
 }
 
 function makeTankFish(sp, i) {
-  const s = T.s * rand(0.85, 1);
+  const s = T.s * (Math.round(rand(0.85, 1) * 20) / 20); // steps of 5%: fish of a kind share their 1:1 copies
   const f = {
     sp, a: artOf(sp), s, dir: Math.random() < 0.5 ? 1 : -1, faceK: 1, x: 0, y: 0, tx: 0, ty: 0,
     speed: rand(sp.speed[0], sp.speed[1]) * eng.unit * 0.6, age: rand(0, 10), ph: rand(0, TAU), wag: 0,
@@ -1664,6 +1769,14 @@ function drawTankFish(f, t) {
     ctx.drawImage(f.sp.rare === 'rainbow' ? glowImg : goldGlow, f.x - z / 2, f.y - z / 2, z, z);
     ctx.globalAlpha = 1;
   }
+  const squash = (f.sp.kind === 'jelly' || f.sp.kind === 'octopus') ? 1 + Math.sin(f.age * 3 + f.ph) * 0.07 : 1;
+  const pose = {
+    wag: f.wag, happy: f.happy > 0 || f.flip > 0, puff: f.sp.kind === 'puffer' && f.puff > 0.5, squash, step: f.step,
+    wave: isWalker(f.sp) && f.flip > 0,
+  };
+  // swimming straight: copied 1:1 (see drawFish)
+  const straight = !(f.flip > 0) && (isFlipless(f.sp) || Math.abs(f.faceK - f.dir) < 0.004);
+  if (straight && drawCreatureFlat(ctx, f.a, pose, f.x, f.y, s, isFlipless(f.sp) ? 1 : f.dir, D)) return;
   ctx.translate(f.x, f.y);
   if (f.flip > 0) {
     // a happy flip (a little hop for the ones on the sand)
@@ -1671,12 +1784,8 @@ function drawTankFish(f, t) {
     if (isWalker(f.sp)) ctx.translate(0, -Math.sin(k * Math.PI) * 30 * s);
     else ctx.rotate(-f.dir * k * TAU);
   }
-  const squash = (f.sp.kind === 'jelly' || f.sp.kind === 'octopus') ? 1 + Math.sin(f.age * 3 + f.ph) * 0.07 : 1;
   ctx.scale(isFlipless(f.sp) ? s : f.faceK * s, s);
-  drawCreature(ctx, f.a, f.age + f.ph, {
-    wag: f.wag, happy: f.happy > 0 || f.flip > 0, puff: f.sp.kind === 'puffer' && f.puff > 0.5, squash, step: f.step,
-    wave: isWalker(f.sp) && f.flip > 0,
-  });
+  drawCreature(ctx, f.a, f.age + f.ph, pose);
   ctx.setTransform(D, 0, 0, D, 0, 0);
 }
 

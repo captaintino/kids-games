@@ -7,7 +7,7 @@ import { say } from '../../shared/js/speech.js';
 import { earnSticker } from '../../shared/js/rewards.js';
 import {
   boot, $, fx, showScreen, currentScreen, celebrate, onPointer, createStore, rand, randInt, pickOne, clamp, lerp,
-  vibrate, currentScene, setScene, setPartyColors, animateBackground, centerOf, replayClass,
+  vibrate, currentScene, setScene, setPartyColors, animateBackground, showBackground, centerOf, replayClass,
 } from '../../shared/js/kit.js';
 import { SCENES, paintScene, createAnimator } from '../../shared/js/scenes.js';
 import { createEngine, goFullscreen, sparkleImg, glowImg, dotSprite, makeSprite } from './engine.js';
@@ -69,7 +69,9 @@ function paintSky() {
   const W = eng.W;
   const H = eng.H;
   if (!W || !H) return;
-  const s = Math.min(eng.DPR, 1.5);
+  // painted at the game canvas's own resolution, so drawing it each frame is a plain
+  // 1:1 pixel copy (a scaled full-screen copy costs several times more)
+  const s = eng.DPR;
   sky.width = Math.round(W * s);
   sky.height = Math.round(H * s);
   const c = sky.getContext('2d');
@@ -939,15 +941,38 @@ function update(dt) {
 // ---------------------------------------------------------------------------
 // Render
 // ---------------------------------------------------------------------------
-function drawSky(t, dt) {
+// While our own sky covers the whole screen, the kit's world behind the canvas cannot be
+// seen: it is hidden then (one less full-screen layer to put together every frame).
+let kitBg = true;
+function setKitBg(on) {
+  if (on === kitBg) return;
+  kitBg = on;
+  showBackground(on);
+}
+
+/** Fades our own sky in or out; true when it covers the whole canvas. */
+function skyCovers(dt) {
   const target = ownSky() ? 1 : 0;
   skyAlpha = lerp(skyAlpha, target, Math.min(1, dt * 2.5));
   if (Math.abs(skyAlpha - target) < 0.01) skyAlpha = target;
+  const cover = skyAlpha === 1 && sky.width === canvas.width && sky.height === canvas.height;
+  setKitBg(!cover);
+  return cover;
+}
+
+function drawSky(t, cover) {
   if (skyAlpha <= 0) return;
   const { DPR, unit } = eng;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.globalAlpha = skyAlpha;
-  ctx.drawImage(sky, 0, 0, canvas.width, canvas.height);
+  if (cover) {
+    // replaces every pixel: the same as clearing the canvas and drawing it, in one go
+    ctx.globalCompositeOperation = 'copy';
+    ctx.drawImage(sky, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+  } else {
+    ctx.globalAlpha = skyAlpha;
+    ctx.drawImage(sky, 0, 0, canvas.width, canvas.height);
+  }
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   for (const s of twinkles) {
     const a = 0.5 + 0.5 * Math.sin(t * s.sp + s.ph);
@@ -1142,8 +1167,9 @@ function drawHint(t) {
 }
 
 function render(t, dt) {
-  eng.begin();
-  drawSky(t, dt);
+  const cover = skyCovers(dt);
+  eng.begin(!cover);
+  drawSky(t, cover);
   drawClouds(t);
   for (const it of items) if (it.kind === 'rain') drawItem(it, t);
   for (const it of items) if (it.kind !== 'rain') drawItem(it, t);
