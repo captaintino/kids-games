@@ -1,7 +1,7 @@
 // Service worker: caches every game so the whole collection works offline.
 // Run `python3 tools/update-sw.py` after changing files: it refreshes ASSETS and
 // bumps VERSION, so installed copies download the new files.
-const VERSION = 'v5';
+const VERSION = 'v6';
 const CACHE = `play-party-${VERSION}`;
 
 const ASSETS = [
@@ -92,6 +92,7 @@ const ASSETS = [
   './music/js/main.js',
   './music/js/songs.js',
   './music/js/voices.js',
+  './quiz.png',
   './shared/css/kit.css',
   './shared/fonts/fredoka-latin.woff2',
   './shared/js/art.js',
