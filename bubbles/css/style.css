@@ -691,3 +691,43 @@ canvas#game {
   .heart { width: 18px; height: 18px; }
   .heart + .heart { margin-left: 1px; }
 }
+
+/* ---------- Count & Pop ---------- */
+.hub-btn {
+  position: absolute;
+  left: calc(16px + var(--safe-left));
+  top: calc(16px + var(--safe-top));
+}
+.count-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 94vw;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(90, 40, 190, .5);
+  border: 2px solid rgba(255,255,255,.75);
+}
+.count-dot {
+  width: 30px;
+  height: 30px;
+  margin: 2px 3px;
+  border-radius: 50%;
+  border: 3px dashed rgba(255,255,255,.75);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 17px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(60, 10, 120, .8);
+}
+.count-dot.on {
+  border: 3px solid #fff;
+  background: radial-gradient(circle at 35% 30%, #fff 0 16%, #7fe3ff 46%, #2f8cff);
+  box-shadow: 0 3px 6px rgba(40, 10, 90, .3);
+}
+.count-dot.pop { animation: count-pop .4s cubic-bezier(.2, 1.8, .4, 1); }
+@keyframes count-pop { from { transform: scale(.2); } 60% { transform: scale(1.35); } }
+@media (min-width: 600px) {
+  .count-dot { width: 40px; height: 40px; font-size: 22px; }
+}

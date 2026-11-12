@@ -947,3 +947,10 @@ canvas#fx { z-index: 30; }
   .photo-img { width: 150px; height: 150px; }
   #screen-photo .btn-col, #screen-done .btn-col { width: min(260px, 44vw); }
 }
+
+/* ---------- Back to the game list ---------- */
+.hub-btn {
+  position: absolute;
+  left: calc(16px + var(--safe-left));
+  top: calc(16px + var(--safe-top));
+}

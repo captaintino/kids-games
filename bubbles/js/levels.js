@@ -66,3 +66,23 @@ export function immortalParams(t) {
     theme: Math.floor(t / 40) % THEMES.length,
   };
 }
+
+// Count & Pop: big, slow bubbles, a few more on screen than the number asked for.
+export function countParams(goal) {
+  return {
+    rise: 9,
+    spawn: Math.max(0.55, 1.2 - goal * 0.05),
+    size: 1.3,
+    burst: 0.15,
+    specials: {},
+  };
+}
+
+// Round n (from 0): count up from 2 to 10, then mixed numbers. From round 5
+// every third round also asks for one color ("Pop 4 blue bubbles!").
+const COUNT_COLORS = [0, 2, 3, 5, 6, 7]; // red, yellow, green, blue, purple, pink
+export function countRound(n) {
+  const goal = n < 9 ? n + 2 : 3 + Math.floor(Math.random() * 8);
+  const color = n >= 4 && n % 3 === 1 ? COUNT_COLORS[Math.floor(Math.random() * COUNT_COLORS.length)] : null;
+  return { goal: color != null ? Math.min(goal, 6) : goal, color, theme: n % THEMES.length };
+}

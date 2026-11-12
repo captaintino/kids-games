@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8a4dff"/>
+      <stop offset=".55" stop-color="#ff6fb5"/>
+      <stop offset="1" stop-color="#ffb86b"/>
+    </linearGradient>
+    <radialGradient id="ball" cx=".38" cy=".32" r=".75">
+      <stop offset="0" stop-color="#fff6a8"/>
+      <stop offset=".45" stop-color="#ffd23b"/>
+      <stop offset=".85" stop-color="#ff9a1f"/>
+      <stop offset="1" stop-color="#e06d00"/>
+    </radialGradient>
+    <radialGradient id="blue" cx=".42" cy=".38" r=".62">
+      <stop offset="0" stop-color="#effcff" stop-opacity=".8"/>
+      <stop offset=".45" stop-color="#6fd6ff" stop-opacity=".8"/>
+      <stop offset=".85" stop-color="#2f8cff"/>
+      <stop offset="1" stop-color="#1550c0"/>
+    </radialGradient>
+    <radialGradient id="green" cx=".42" cy=".38" r=".62">
+      <stop offset="0" stop-color="#f2fff0" stop-opacity=".8"/>
+      <stop offset=".45" stop-color="#8dff7a" stop-opacity=".8"/>
+      <stop offset=".85" stop-color="#23c95a"/>
+      <stop offset="1" stop-color="#138a3b"/>
+    </radialGradient>
+    <linearGradient id="play" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff6fb5"/>
+      <stop offset="1" stop-color="#d81b7a"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- sparkles -->
+  <g fill="#fff" opacity=".85">
+    <path d="M92 118Q92 136 110 136Q92 136 92 154Q92 136 74 136Q92 136 92 118Z"/>
+    <path d="M414 380Q414 394 428 394Q414 394 414 408Q414 394 400 394Q414 394 414 380Z"/>
+    <circle cx="430" cy="140" r="6"/>
+    <circle cx="80" cy="410" r="5"/>
+  </g>
+  <!-- bubbles -->
+  <circle cx="392" cy="112" r="50" fill="url(#blue)" stroke="#fff" stroke-width="6"/>
+  <ellipse cx="376" cy="94" rx="16" ry="10" fill="#fff" opacity=".85" transform="rotate(-30 376 94)"/>
+  <circle cx="118" cy="388" r="40" fill="url(#green)" stroke="#fff" stroke-width="6"/>
+  <ellipse cx="105" cy="374" rx="12" ry="8" fill="#fff" opacity=".85" transform="rotate(-30 105 374)"/>
+  <!-- big play ball -->
+  <circle cx="256" cy="268" r="150" fill="url(#ball)" stroke="#fff" stroke-width="12"/>
+  <ellipse cx="200" cy="190" rx="54" ry="30" fill="#fff" opacity=".75" transform="rotate(-30 200 190)"/>
+  <path d="M220 200Q220 186 233 193L340 255Q352 262 340 270L233 334Q220 341 220 327Z" fill="url(#play)" stroke="#fff" stroke-width="10" stroke-linejoin="round"/>
+  <!-- star -->
+  <path d="M128 70l17 35 38 5-28 26 7 38-34-18-34 18 7-38-28-26 38-5z" fill="#ffe34d" stroke="#fff" stroke-width="7" stroke-linejoin="round" transform="rotate(-12 128 120)"/>
+</svg>

@@ -1,5 +1,6 @@
 import * as sfx from '../../shared/js/audio.js';
-import { COLORS, THEMES, LEVELS, endlessParams, immortalParams } from './levels.js';
+import { say, numberWord, setSpeechMuted, unlockSpeech } from '../../shared/js/speech.js';
+import { COLORS, THEMES, LEVELS, endlessParams, immortalParams, countParams, countRound } from './levels.js';
 import { buildSprites, buildSparkle, SPRITE_SIZE, SPRITE_R } from './sprites.js';
 import { SCENES, paintScene, createAnimator } from './scenes.js';
 
@@ -202,7 +203,7 @@ let bubbles = [];
 let particles = [];
 
 const state = {
-  mode: 'menu', // 'menu' | 'level' | 'endless' | 'immortal'
+  mode: 'menu', // 'menu' | 'level' | 'endless' | 'immortal' | 'count'
   levelIndex: 0,
   paused: false,
   over: false,
@@ -220,16 +221,24 @@ const state = {
   timeScale: 1,
   target: null,
   params: null,
+  // Count & Pop
+  countRound: 0,
+  countGoal: 0,
+  countDone: false,
+  countStars: 0,
+  countNext: 0,
+  countColors: [],
 };
 
 function isPlaying() {
-  return (state.mode === 'level' || state.mode === 'endless' || state.mode === 'immortal') && !state.over;
+  return (state.mode === 'level' || state.mode === 'endless' || state.mode === 'immortal' || state.mode === 'count') && !state.over;
 }
 
 function currentParams() {
   if (state.mode === 'endless') return endlessParams(state.time);
   if (state.mode === 'immortal') return immortalParams(state.time);
   if (state.mode === 'level') return state.params;
+  if (state.mode === 'count') return countParams(state.countGoal);
   return { rise: 9, spawn: 1.1, size: 1.15, burst: 0, specials: { star: 0.05 } };
 }
 
@@ -425,6 +434,11 @@ function popBubble(b, { chain = false } = {}) {
     return;
   }
 
+  if (state.mode === 'count') {
+    countPop(b, chain);
+    return;
+  }
+
   const mult = 1 + Math.min(Math.floor(state.combo / 5), 4);
   let pts = 10;
   if (b.kind === 'big') pts = 20;
@@ -513,7 +527,7 @@ function addScore(n) {
 function flushHud() {
   if (!hudDirty) return;
   hudDirty = false;
-  scoreEl.textContent = state.score;
+  scoreEl.textContent = state.mode === 'count' ? `⭐ ${state.countStars}` : state.score;
   if (state.mode === 'immortal') $('#hud-best-val').textContent = save.bestImmortal;
   if (state.mode === 'level') {
     const n = Math.min(state.popped, state.goal);
@@ -528,7 +542,7 @@ function flushHud() {
 }
 
 function bubbleEscaped(b) {
-  if (!isPlaying() || state.intro > 0 || state.mode === 'immortal') return;
+  if (!isPlaying() || state.intro > 0 || state.mode === 'immortal' || state.mode === 'count') return;
   if (!counts(b) || b.kind === 'star') return;
   state.hearts--;
   state.heartsLost++;
@@ -555,6 +569,7 @@ const swipes = new Map();
 // id: which finger (pointerId or touch identifier); clientX/Y: page position
 function fingerDown(id, clientX, clientY) {
   sfx.unlock();
+  unlockSpeech();
   if (state.paused) return;
   const { x, y } = canvasPoint(clientX, clientY);
 
@@ -692,6 +707,14 @@ let swipeBurst = 0; // pops so far this frame: extra ones get lighter effects
 function update(dt) {
   clock += dt;
   if (state.paused) return;
+
+  if (state.mode === 'count' && state.countNext > 0) {
+    state.countNext -= dt;
+    if (state.countNext <= 0) {
+      state.countRound++;
+      startCountRound();
+    }
+  }
 
   if (isPlaying()) {
     if (state.intro > 0) {
@@ -956,9 +979,15 @@ function setupHud() {
   renderHearts();
   const level = state.mode === 'level';
   const immortal = state.mode === 'immortal';
-  $('#hud-hearts').classList.toggle('invisible', immortal);
+  const count = state.mode === 'count';
+  $('#hud-hearts').classList.toggle('invisible', immortal || count);
   $('#hud-goal').classList.toggle('hidden', !level);
-  $('#hud-best').classList.toggle('hidden', level);
+  $('#hud-best').classList.toggle('hidden', level || count);
+  $('#hud-count').classList.toggle('hidden', !count);
+  if (count) {
+    $('#hud-score').textContent = `⭐ ${state.countStars}`;
+    renderCountRow();
+  }
   $('#hud-best-val').textContent = immortal ? save.bestImmortal : save.best;
   const tgt = $('#hud-target');
   if (state.target != null) {
@@ -1075,6 +1104,86 @@ function startImmortal() {
   showScreen(null);
   showBanner('Endless Immortal!', 'Swipe your finger to pop! 💫');
   sfx.chime([0, 4, 7, 12], 660, 0.08);
+}
+
+// ---------------------------------------------------------------------------
+// Count & Pop: "Pop 5 bubbles!" Each pop is counted out loud. Gentle: no
+// hearts, slow bubbles, and the next round starts by itself.
+// ---------------------------------------------------------------------------
+function startCount() {
+  sfx.unlock();
+  unlockSpeech();
+  goFullscreen();
+  state.mode = 'count';
+  state.countRound = 0;
+  state.countStars = 0;
+  startCountRound();
+}
+
+function startCountRound() {
+  const round = countRound(state.countRound);
+  state.countGoal = round.goal;
+  state.target = round.color;
+  state.countDone = false;
+  state.countNext = 0;
+  state.countColors = [];
+  resetRun();
+  state.intro = 1.8;
+  setTheme(round.theme);
+  setupHud();
+  showScreen(null);
+  const what = round.color != null ? `${COLORS[round.color].name.toLowerCase()} bubbles` : (round.goal === 1 ? 'bubble' : 'bubbles');
+  showBanner(`Pop ${round.goal}!`, round.color != null ? `Only ${COLORS[round.color].name} ones!` : 'Count out loud!');
+  sfx.chime([0, 4, 7], 660, 0.1);
+  say(`Pop ${numberWord(round.goal)} ${what}!`);
+}
+
+function renderCountRow() {
+  const row = $('#hud-count');
+  let html = '';
+  for (let i = 0; i < state.countGoal; i++) {
+    const on = i < state.popped;
+    const dot = state.countColors[i];
+    const style = on && dot ? ` style="background:radial-gradient(circle at 35% 30%, #fff 0 16%, ${dot} 46%)"` : '';
+    html += `<span class="count-dot${on ? ' on' : ''}"${style}>${on ? i + 1 : ''}</span>`;
+  }
+  row.innerHTML = html;
+}
+
+function countPop(b, chain) {
+  // celebration pops and the rest of a finished round don't count
+  if (chain || state.countDone || !counts(b)) return;
+  state.popped++;
+  const n = state.popped;
+  state.countColors[n - 1] = COLORS[b.color].css;
+  renderCountRow();
+  const dotEl = $('#hud-count').children[n - 1];
+  if (dotEl) { dotEl.classList.remove('pop'); void dotEl.offsetWidth; dotEl.classList.add('pop'); }
+  floatText(b.x, b.y - b.r * 0.1, String(n), '#ffffff', 64, 1.1);
+  // each count climbs one step up the scale
+  sfx.chime([[0, 2, 4, 5, 7, 9, 11, 12, 14, 16][Math.min(n - 1, 9)]], 523, 0);
+  say(numberWord(n), { rate: 1 });
+  if (n >= state.countGoal) finishCountRound();
+}
+
+const COUNT_CHEERS = ['Great counting!', 'You did it!', 'Super counting!', 'Hooray!', 'Wow!', 'Amazing!'];
+function finishCountRound() {
+  state.countDone = true;
+  state.countStars++;
+  hudDirty = true;
+  const goal = state.countGoal;
+  const color = state.target;
+  later(() => {
+    for (const o of bubbles) if (o.popT < 0) o.chainDelay = rand(0.05, 0.5);
+    confetti(80);
+    sfx.win();
+    const cheer = pick(COUNT_CHEERS);
+    floatText(W / 2, H * 0.36, `${goal}!`, '#ffe86b', 96, 1.6);
+    floatText(W / 2, H * 0.36 + 80 * unit, cheer, '#ffffff', 40, 1.6);
+    const what = color != null ? `${COLORS[color].name.toLowerCase()} ${goal === 1 ? 'bubble' : 'bubbles'}` : (goal === 1 ? 'bubble' : 'bubbles');
+    say(`${numberWord(goal)} ${what}! ${cheer}`, { queue: true });
+  }, 450);
+  state.countNext = 3.6; // counted down in update(), so it waits while paused
 }
 
 function goHome() {
@@ -1307,6 +1416,7 @@ document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-action]');
   if (!el) return;
   sfx.unlock();
+  unlockSpeech();
   const action = el.dataset.action;
   if (action !== 'sound') sfx.click();
   switch (action) {
@@ -1314,12 +1424,15 @@ document.addEventListener('click', (e) => {
     case 'endless': startEndless(); break;
     case 'themes': buildThemeGrid(); showScreen('screen-themes'); break;
     case 'immortal': startImmortal(); break;
+    case 'count': startCount(); break;
+    case 'hub': persist(); window.location.href = '../'; break;
     case 'home': goHome(); break;
     case 'pause': pause(); break;
     case 'resume': resumeGame(); break;
     case 'restart':
       if (state.mode === 'endless') startEndless();
       else if (state.mode === 'immortal') startImmortal();
+      else if (state.mode === 'count') startCount();
       else startLevel(state.levelIndex);
       break;
     case 'next':
@@ -1328,6 +1441,7 @@ document.addEventListener('click', (e) => {
     case 'sound':
       save.muted = !save.muted;
       sfx.setMuted(save.muted);
+      setSpeechMuted(save.muted);
       persist();
       updateSoundButtons();
       sfx.click();
@@ -1374,6 +1488,7 @@ resize();
 // the Wild West sign uses the game font: repaint once it has loaded
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => rebuildBackground(false));
 sfx.setMuted(save.muted);
+setSpeechMuted(save.muted);
 updateSoundButtons();
 updateTitle();
 updateInstallButton();
@@ -1386,5 +1501,11 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   });
 }
 
+// Opened from the game list's "Count & Pop" tile: go straight into that mode.
+if (location.hash === '#count') {
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (err) { /* ignore */ }
+  startCount();
+}
+
 // expose a tiny hook for automated testing
-window.__bubbles = { get quality() { return quality; }, state, get bubbles() { return bubbles; }, startLevel, startEndless, startImmortal };
+window.__bubbles = { get quality() { return quality; }, state, get bubbles() { return bubbles; }, startLevel, startEndless, startImmortal, startCount };

@@ -9,7 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Bubbles">
+  <meta name="apple-mobile-web-app-title" content="Play Party">
   <link rel="manifest" href="../manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
@@ -32,6 +32,9 @@
         <button class="btn btn-blue" data-action="endless">
           <span class="btn-icon">♾️</span> Endless
         </button>
+        <button class="btn btn-green btn-small" data-action="count">
+          <span class="btn-icon">🔢</span> Count &amp; Pop
+        </button>
         <button class="btn btn-orange btn-small" data-action="immortal">
           <span class="btn-icon">💫</span> Endless Immortal
         </button>
@@ -44,6 +47,7 @@
       </div>
       <div class="best-line" id="title-best"></div>
     </div>
+    <button class="round-btn hub-btn" data-action="hub" aria-label="All games">🏠</button>
     <button class="round-btn sound-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
   </section>
 
@@ -99,6 +103,7 @@
         <div class="goal-text" id="hud-goal-text">0 / 10</div>
       </div>
       <div class="target-chip hidden" id="hud-target">Pop only <span class="chip-bubble" id="hud-target-dot"></span> <b id="hud-target-name">Red</b></div>
+      <div class="count-row hidden" id="hud-count" aria-live="polite"></div>
       <div class="best-chip hidden" id="hud-best">Best: <b id="hud-best-val">0</b></div>
     </div>
   </section>

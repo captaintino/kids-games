@@ -1262,6 +1262,7 @@ document.addEventListener('click', (e) => {
     case 'mode': openGallery(el.dataset.mode); break;
     case 'themes': buildThemeGrid(); showScreen('screen-themes'); break;
     case 'home': goHome(); break;
+    case 'hub': persistNow(); window.location.href = '../'; break;
     case 'gallery': finishAllAnims(); persistNow(); openGallery(); break;
     case 'undo': undo(); break;
     case 'clear':

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Play Party</title>
+  <meta name="description" content="A box of happy games for little kids: pop bubbles, color, puzzles, music, counting, letters and more. Works offline.">
+  <meta name="theme-color" content="#8a4dff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Play Party">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preload" href="shared/fonts/fredoka-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="shared/css/kit.css">
+  <link rel="stylesheet" href="css/hub.css">
+</head>
+<body>
+  <!-- Game list -->
+  <section id="screen-home" class="screen active" data-start>
+    <div class="hub scroll-y" id="hub-scroll">
+      <header class="hub-head">
+        <h1 class="logo"><span>Play</span><span>Party!</span></h1>
+        <p class="tagline">What do you want to play?</p>
+      </header>
+      <div id="sections"></div>
+      <div class="hub-foot">
+        <button class="btn btn-purple btn-small" data-action="worlds"><span class="btn-icon">🌍</span> Worlds</button>
+        <button class="btn btn-green btn-small hidden" id="install-btn" data-action="install"><span class="btn-icon">📲</span> Install</button>
+      </div>
+    </div>
+    <button class="round-btn corner-left" data-action="worlds" aria-label="Pick a world">🌍</button>
+    <button class="round-btn corner-right" data-action="sound" aria-label="Toggle sound">🔊</button>
+  </section>
+
+  <!-- World picker -->
+  <section id="screen-worlds" class="screen">
+    <div class="panel themes-panel">
+      <h2 class="heading">Pick a World</h2>
+      <div class="theme-grid" id="theme-grid"></div>
+      <button class="btn btn-purple btn-small" data-action="home"><span class="btn-icon">🏠</span> Back</button>
+    </div>
+  </section>
+
+  <!-- How to install on iPhone / iPad (Safari has no install prompt) -->
+  <section id="screen-install" class="screen dim">
+    <div class="panel card install-card">
+      <h2 class="heading">Add to Home Screen</h2>
+      <ol class="steps">
+        <li><span class="step-n">1</span><span>Tap the <b>Share</b> button <svg class="share-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 9H6.5A1.5 1.5 0 0 0 5 10.5v9A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 17.5 9H16" fill="none" stroke="#2f8cff" stroke-width="2" stroke-linecap="round"/><path d="M12 14V3M8.5 6.5 12 3l3.5 3.5" fill="none" stroke="#2f8cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></li>
+        <li><span class="step-n">2</span><span>Tap <b>Add to Home Screen</b> <span class="plus-ico">+</span></span></li>
+        <li><span class="step-n">3</span><span>Tap <b>Add</b>. Then play from your home screen!</span></li>
+      </ol>
+      <p class="card-text install-where" id="install-where">The Share button is at the bottom of the screen.</p>
+      <div class="btn-col">
+        <button class="btn btn-green btn-small" data-action="home"><span class="btn-icon">👍</span> Got it</button>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="js/hub.js"></script>
+  <script nomodule>
+    document.body.insertAdjacentHTML('beforeend',
+      '<p style="position:fixed;left:0;right:0;top:40%;padding:20px;text-align:center;font:600 22px sans-serif;color:#fff">' +
+      'Sorry! This browser is too old for these games. Please update it to play.</p>');
+  </script>
+</body>
+</html>
