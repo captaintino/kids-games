@@ -323,7 +323,6 @@ const MELODY = [
   [[0, 2], [2, 7], [4, 11], [6, 14], [8, 12], [11, 7], [12, 12]],
 ];
 let danceStart = null; // clock time of beat 0 (audio clock when sound is on)
-let perfStart = 0;
 let sched = 0;
 let nextStep = 0;
 let stepIdx = 0;
@@ -391,7 +390,6 @@ function startMusic() {
   } else {
     danceStart = performance.now() / 1000;
   }
-  perfStart = performance.now();
   const ms = LOOPS * 16 * 4 * STEP * 1000 + 150;
   danceEndTimer = setTimeout(endDance, ms);
 }
