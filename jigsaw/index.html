@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Jigsaw Puzzles</title>
+  <meta name="description" content="Big, friendly jigsaw puzzles for little hands: 4, 6 or 9 pieces that snap into place. Make puzzles from your own colored pictures too. Works offline.">
+  <meta name="theme-color" content="#ff8a3d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Play Party">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+  <link rel="preload" href="../shared/fonts/fredoka-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../shared/css/kit.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Title screen -->
+  <section id="screen-title" class="screen active" data-start>
+    <button class="round-btn corner-left" data-action="hub" aria-label="All games">🏠</button>
+    <button class="round-btn corner-right" data-action="sound" aria-label="Toggle sound">🔊</button>
+    <div class="panel title-panel">
+      <div class="hero" id="hero" aria-hidden="true"></div>
+      <h1 class="logo"><span>Jigsaw</span><span>Puzzles</span></h1>
+      <div class="btn-col">
+        <button class="btn btn-pink" data-action="gallery" data-tab="all"><span class="btn-icon">🧩</span> Puzzles</button>
+        <button class="btn btn-blue" data-action="gallery" data-tab="mine"><span class="btn-icon">🎨</span> My Pictures</button>
+        <button class="btn btn-orange btn-small" data-action="surprise"><span class="btn-icon">🎲</span> Surprise!</button>
+      </div>
+      <div class="best-line" id="title-best"></div>
+    </div>
+  </section>
+
+  <!-- Picture picker -->
+  <section id="screen-gallery" class="screen">
+    <div class="panel gallery-panel">
+      <div class="gallery-head">
+        <button class="round-btn" data-action="home" aria-label="Back">⬅️</button>
+        <h2 class="heading">Pick a Picture</h2>
+        <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
+      </div>
+      <div class="tabs" id="tabs"></div>
+      <div class="gallery-scroll" id="gallery-scroll">
+        <div class="pic-grid" id="pic-grid"></div>
+        <div class="mine-empty hidden" id="mine-empty">
+          <div class="mine-art" id="mine-art" aria-hidden="true"></div>
+          <p class="card-text">Color a picture in<br><b>Color Splash Party</b><br>and make it a puzzle here!</p>
+          <a class="btn btn-pink" href="../coloring/" data-quiet id="go-color"><span class="btn-icon">🖍️</span> Go Color!</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How many pieces? -->
+  <section id="screen-size" class="screen dim">
+    <div class="panel card size-card">
+      <button class="round-btn size-close" data-action="size-close" aria-label="Close">✖️</button>
+      <h2 class="heading">How many pieces?</h2>
+      <div class="size-tiles" id="size-tiles"></div>
+    </div>
+  </section>
+
+  <!-- Play area (not a .screen: shown while no screen is active) -->
+  <div id="play" class="play hidden">
+    <div id="area" class="area" aria-hidden="true"></div>
+    <div id="layer" class="layer">
+      <div id="board" class="board">
+        <canvas id="ghost" class="ghost"></canvas>
+        <canvas id="slots" class="slots"></canvas>
+        <div id="slot-glow" class="slot-glow hidden"></div>
+        <canvas id="full" class="full"></canvas>
+      </div>
+    </div>
+    <div class="hud">
+      <button class="round-btn" data-action="back" aria-label="Back to pictures">⬅️</button>
+      <div class="pill" id="pic-name">Kitty</div>
+      <button class="round-btn" data-action="hint" aria-label="Help me">💡</button>
+      <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
+    </div>
+  </div>
+
+  <!-- Finished! -->
+  <section id="screen-done" class="screen dim">
+    <div class="panel card done-card">
+      <h2 class="heading" id="done-title">You did it!</h2>
+      <div class="done-thumb" id="done-thumb"></div>
+      <div class="done-name" id="done-name"></div>
+      <div class="btn-col">
+        <button class="btn btn-green" data-action="next"><span class="btn-icon">➡️</span> Next</button>
+        <button class="btn btn-purple btn-small" data-action="pictures"><span class="btn-icon">🖼️</span> Pictures</button>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="js/main.js"></script>
+  <script nomodule>
+    document.body.insertAdjacentHTML('beforeend',
+      '<p style="position:fixed;left:0;right:0;top:40%;padding:20px;text-align:center;font:600 22px sans-serif;color:#fff">' +
+      'Sorry! This browser is too old for this game. Please update it to play.</p>');
+  </script>
+</body>
+</html>
