@@ -430,7 +430,7 @@
   .tray-row + .tray-row { margin-top: 4px; }
 }
 @media (max-height: 560px) and (min-aspect-ratio: 5/4) {
-  .mascot { display: none; }
+  .mascot { width: 156px; height: 104px; margin-bottom: -16px; }
   .done-card { max-width: 680px; padding: 14px 22px 18px; }
   .done-body { flex-direction: row; }
   .done-body > .btn-col { margin: 0 0 0 26px; width: 300px; }

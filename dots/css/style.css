@@ -189,7 +189,7 @@
 .rubber { stroke-width: 6; stroke-linecap: round; stroke-dasharray: 2 12; opacity: .7; }
 
 .pulse { fill: rgba(255, 210, 63, .35); stroke: #ffb300; stroke-width: 3.5; }
-.glow { fill: rgba(255, 240, 120, .45); stroke: #ffd23f; stroke-width: 5; display: none; }
+.glow { fill: rgba(255, 240, 120, .45); stroke: #ffd23f; stroke-width: 5; }
 
 .dot .dc { fill: #3b1f72; stroke: #fff; stroke-width: 3.5; transition: fill .15s; }
 .dot.on .dc { fill: #ffd23f; stroke: #ff9a1f; }
@@ -273,7 +273,7 @@
   .mode-grid { grid-template-columns: 1fr 1fr; width: min(520px, 70vw); }
 }
 @media (max-height: 560px) {
-  .mascot { display: none; }
+  .mascot { width: 130px; height: 88px; margin-bottom: -16px; }
   .mode-grid { grid-gap: 10px; gap: 10px; }
   .done-thumb { width: 120px; height: 120px; }
 }
