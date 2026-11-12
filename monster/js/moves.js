@@ -23,6 +23,7 @@ export function restPose() {
 
 /** Apply a pose. Only parts that exist are touched. */
 export function setPose(R, p) {
+  if (R.pose) { R.pose(p); return; } // a monster cut into layers (rig.js)
   setT(R.all, `translate(0 ${f2(p.y)}) rotate(${f2(p.r)}) scale(${f2(p.sx)} ${f2(p.sy)})`);
   setT(R.torso, `rotate(${f2(p.torso)})`);
   setT(R.head, `rotate(${f2(p.head)})`);

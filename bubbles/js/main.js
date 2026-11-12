@@ -81,21 +81,52 @@ function resize() {
 }
 
 // ---------------------------------------------------------------------------
-// Background: the scene picture is painted once into a cached canvas and
-// copied to the screen each frame; only small moving bits are drawn live.
+// Background: the scene picture is painted once into its own canvas; only small
+// moving bits are drawn live.
 // ---------------------------------------------------------------------------
-let bgCur = document.createElement('canvas');
-let bgPrev = document.createElement('canvas');
+// The picture lives in its own canvas behind the game canvas, so each frame the game
+// canvas is only cleared and gets the moving bits, instead of a full-screen copy of the
+// picture. A new world or level color cross-fades: the old picture sits on top of the new
+// one and fades out with CSS opacity. Soft moving bits that the compositor can move by
+// itself (the party bokeh) sit in .bg-bits, between the picture and the game canvas.
+function bgCanvas() {
+  const c = document.createElement('canvas');
+  c.className = 'bg-pic';
+  c.setAttribute('aria-hidden', 'true');
+  c.getContext('2d', { alpha: false }); // the picture is opaque: cheaper to composite
+  canvas.parentNode.insertBefore(c, canvas);
+  return c;
+}
+let bgCur = bgCanvas();
+let bgPrev = bgCanvas();
+// the old picture is only kept while it fades out
+function hidePrev() {
+  bgPrev.style.visibility = 'hidden';
+  bgPrev.width = 0;
+  bgPrev.height = 0;
+}
+hidePrev();
+const bgBits = document.createElement('div');
+bgBits.className = 'bg-bits';
+bgBits.setAttribute('aria-hidden', 'true');
+canvas.parentNode.insertBefore(bgBits, canvas);
 let bgFade = 1;
 let palette = 0;
-let animator = createAnimator(save.scene);
+let animator = createAnimator(save.scene, bgBits);
 
 function rebuildBackground(fade) {
   if (fade && bgCur.width === canvas.width && bgCur.height === canvas.height) {
     [bgPrev, bgCur] = [bgCur, bgPrev];
     bgFade = 0;
+    // the old picture goes on top (still under the moving bits), then fades out
+    canvas.parentNode.insertBefore(bgPrev, bgBits);
+    bgPrev.style.opacity = '1';
+    bgPrev.style.visibility = '';
+    bgCur.style.opacity = '';
+    bgCur.style.visibility = '';
   } else {
     bgFade = 1;
+    hidePrev();
   }
   bgCur.width = canvas.width;
   bgCur.height = canvas.height;
@@ -115,19 +146,19 @@ function setScene(id) {
   if (save.scene === id) return;
   save.scene = id;
   persist();
-  animator = createAnimator(id);
+  if (animator.destroy) animator.destroy();
+  animator = createAnimator(id, bgBits);
   rebuildBackground(true);
 }
 
 function drawBackground(t, dt) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (bgFade < 1) {
     bgFade = Math.min(1, bgFade + dt * 1.6);
-    ctx.drawImage(bgPrev, 0, 0);
-    ctx.globalAlpha = bgFade;
+    bgPrev.style.opacity = (1 - bgFade).toFixed(3);
+    if (bgFade >= 1) hidePrev();
   }
-  ctx.drawImage(bgCur, 0, 0);
-  ctx.globalAlpha = 1;
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   animator.draw(ctx, W, H, t, dt);
   ctx.globalAlpha = 1;

@@ -155,6 +155,11 @@
   touch-action: none;
 }
 .mon svg { display: block; width: 100%; height: 100%; overflow: visible; }
+/* a monster cut into layers (js/rig.js): 1em = 100 sheet units, parts moved with transforms */
+.rig { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; }
+.rig-part { position: absolute; left: 0; top: 0; width: 0; height: 0; -webkit-transform-origin: 0 0; transform-origin: 0 0; will-change: transform; }
+.rig svg { position: absolute; display: block; overflow: visible; pointer-events: none; }
+.rig svg > * { pointer-events: visiblePainted; }
 
 .arrow {
   position: absolute;
@@ -654,7 +659,7 @@
   cursor: pointer;
   will-change: transform;
 }
-.p-svg { width: 100%; height: calc(100% - 40px); }
+.p-svg { position: relative; width: 100%; height: calc(100% - 40px); }
 .p-svg svg { width: 100%; height: 100%; display: block; overflow: visible; }
 .p-name {
   display: table;

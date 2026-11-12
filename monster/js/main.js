@@ -14,6 +14,8 @@ import {
 import { createBeat } from './beat.js';
 import { createFeed } from './feed.js';
 import { createParade } from './parade.js';
+import { rigMonster } from './rig.js';
+import { setPose } from './moves.js';
 import { addArt, removeArt } from '../../shared/js/gallery.js';
 import { earnSticker } from '../../shared/js/rewards.js';
 
@@ -59,23 +61,17 @@ const A = {
 };
 
 function render() {
-  monEl.innerHTML = monsterSVG(m, { id: 'live', parts: true });
-  const g = (n) => document.getElementById('live-' + n);
-  refs = {
-    all: g('all'), torso: g('torso'), head: g('head'), eyes: g('eyes'), pupils: g('pupils'),
-    armL: g('armL'), armR: g('armR'), shadow: g('shadow'), legs: [],
-  };
-  for (let i = 0; i < 6; i++) { const l = g('leg' + i); if (l) refs.legs.push(l); }
+  // the monster as small layers moved with CSS transforms (rig.js), so posing it
+  // (blinks, reactions, the dance) does not repaint the drawing
+  refs = rigMonster(monEl, monsterSVG(m, { id: 'live', parts: true }), 'live');
   A.idleDirty = true;
   updateName();
 }
 
-function setT(el, v) { if (el) el.setAttribute('transform', v); }
-const f2 = (v) => v.toFixed(2);
-
 function animate(t) {
   if (!refs || !playing) return;
   A.t = t;
+  refs.fit(); // follows the stage size (cheap when it has not changed)
   let allY = 0;
   let allR = 0;
   let sx = 1;
@@ -156,16 +152,9 @@ function animate(t) {
   // skip the DOM work entirely when nothing is moving
   if (!active && !A.idleDirty) return;
   A.idleDirty = active;
-  setT(refs.all, `translate(0 ${f2(allY)}) rotate(${f2(allR)}) scale(${f2(sx)} ${f2(sy)})`);
-  setT(refs.torso, `rotate(${f2(torsoR)})`);
-  setT(refs.head, `rotate(${f2(headR)})`);
-  setT(refs.eyes, `scale(1 ${f2(eyeS)})`);
-  setT(refs.pupils, `translate(${f2(px)} ${f2(py)})`);
-  setT(refs.armR, `rotate(${f2(armR)})`);
-  setT(refs.armL, `rotate(${f2(armL)})`);
-  refs.legs.forEach((l, i) => setT(l, `rotate(${f2(legR[i] || 0)})`));
-  const sh = 1 + allY / 120;
-  setT(refs.shadow, `translate(200 452) scale(${f2(sh)} ${f2(sh)}) translate(-200 -452)`);
+  setPose(refs, {
+    y: allY, r: allR, sx, sy, torso: torsoR, head: headR, eye: eyeS, px, py, armR, armL, legs: legR,
+  });
 }
 
 function giggle() {

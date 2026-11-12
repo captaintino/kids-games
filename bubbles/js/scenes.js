@@ -156,25 +156,55 @@ function paintParty(c, w, h, palette) {
   c.fillRect(0, 0, w, h);
 }
 
-function partyAnimator() {
+function partyAnimator(host) {
   const S = sharedSprites();
   const bokeh = Array.from({ length: 12 }, () => ({
     fx: Math.random(), fy: Math.random(), r: rand(30, 110), v: rand(0.008, 0.025), a: rand(0.08, 0.2), drift: rand(0, TAU),
   }));
   const tw = makeTwinkles(26);
+  // The big soft blobs cover a lot of the screen. Given a host element (behind the game
+  // canvas), each blob is its own little image moved with a CSS transform, so the
+  // compositor moves them instead of the game redrawing big scaled images every frame.
+  let els = null;
+  if (host) {
+    if (!S.softUrl) S.softUrl = S.soft.img.toDataURL();
+    els = bokeh.map((b) => {
+      const el = document.createElement('img');
+      el.src = S.softUrl;
+      el.alt = '';
+      el.className = 'bokeh';
+      el.style.opacity = String(b.a);
+      host.appendChild(el);
+      return el;
+    });
+  }
   return {
     draw(ctx, w, h, t, dt) {
       const u = Math.min(w, h) / 400;
-      for (const b of bokeh) {
+      for (let i = 0; i < bokeh.length; i++) {
+        const b = bokeh[i];
         b.fy -= b.v * dt;
         if (b.fy < -0.2) { b.fy = 1.2; b.fx = Math.random(); }
         const r = b.r * u;
-        ctx.globalAlpha = b.a;
-        ctx.drawImage(S.soft.img, b.fx * w + Math.sin(t * 0.3 + b.drift) * 20 - r, b.fy * h - r, r * 2, r * 2);
+        const x = b.fx * w + Math.sin(t * 0.3 + b.drift) * 20 - r;
+        const y = b.fy * h - r;
+        if (els) {
+          const el = els[i];
+          if (b.size !== r) {
+            b.size = r;
+            el.style.width = `${(r * 2).toFixed(2)}px`;
+            el.style.height = `${(r * 2).toFixed(2)}px`;
+          }
+          el.style.transform = `translate3d(${x.toFixed(2)}px,${y.toFixed(2)}px,0)`;
+        } else {
+          ctx.globalAlpha = b.a;
+          ctx.drawImage(S.soft.img, x, y, r * 2, r * 2);
+        }
       }
       ctx.globalAlpha = 1;
       tw.draw(ctx, w, h, t, dt);
     },
+    destroy() { if (els) els.forEach((el) => { if (el.parentNode) el.parentNode.removeChild(el); }); },
   };
 }
 
@@ -969,6 +999,7 @@ export function paintScene(ctx, w, h, id, palette = 0) {
   (PAINT[id] || paintParty)(ctx, w, h, palette);
 }
 
-export function createAnimator(id) {
-  return (ANIM[id] || partyAnimator)();
+/** host: optional element behind the game canvas for bits moved with CSS (see partyAnimator). */
+export function createAnimator(id, host) {
+  return (ANIM[id] || partyAnimator)(host);
 }

@@ -60,9 +60,10 @@ sound setting are saved on the device.
 - All sounds are made live with the Web Audio API, so there are no audio files.
 - The [Fredoka](https://github.com/hafontia/Fredoka-One) font is included in `fonts/` (SIL Open Font License), so it works offline.
 - `sw.js` caches every file the first time the game loads.
-- Built to run fast on older tablets. Each world is painted once and then copied to the screen every
-  frame, and particles and text are pre-drawn images. If frames still come in slowly, the game lowers
-  its resolution and effects by itself.
+- Built to run fast on older tablets. Each world is painted once into its own canvas behind the game
+  canvas, so every frame only the moving bits are drawn (the big soft party blobs are small images moved by
+  CSS transforms), and particles and text are pre-drawn images. If frames still come in slowly, the game
+  lowers its resolution and effects by itself.
 - Works back to iOS 12 / Safari 12 (e.g. the original iPad Air): touch-event fallback when Pointer Events
   are missing, and no newer JS/CSS syntax (`??`, `?.`, `clamp()`, flex `gap`, `inset`, `aspect-ratio`).
 

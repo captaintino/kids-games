@@ -64,3 +64,7 @@ With no saved monsters, the one being built marches alone.
   sticker book gives at most one per game every 45 seconds).
 - The monster only redraws while something is moving (a reaction, a blink, the dance), to stay light on
   older tablets.
+- The live monster (builder, Feed me!, parade) is cut into small layers by `js/rig.js`: every still run of
+  shapes becomes its own little `<svg>`, and every moving part (body, torso, head, eyes, pupils, arms, legs,
+  shadow) becomes a `<div>` moved with a CSS transform, so dancing and marching never repaint the drawing.
+  `setPose()` in `js/moves.js` poses a rigged monster the same way.

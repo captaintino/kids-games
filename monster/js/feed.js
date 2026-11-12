@@ -8,7 +8,8 @@ import { $, fx, onPointer, replayClass, pickOne, rand, shuffle, unit, celebrate 
 import { earnSticker } from '../../shared/js/rewards.js';
 import { FOODS, foodSvg } from '../../shared/js/food.js';
 import { BODIES, monsterSVG, mouthSpot, eyeSpot } from './parts.js';
-import { partsOf, setPose, restPose, dancePose } from './moves.js';
+import { setPose, restPose, dancePose } from './moves.js';
+import { rigMonster } from './rig.js';
 
 const GOAL = 5;          // foods until the monster is full
 const SLOTS = 6;
@@ -38,6 +39,13 @@ export function createFeed(env) {
   let eaten = [];
   let lastBar = -1;
   const T = { now: 0, chomp: -9, happy: -9, yuck: -9, burp: -9, blink: -9, nextBlink: 2, tickle: -9, cheer: -9 };
+
+  function setDisplay(el, on) {
+    if (!el) return;
+    const v = on ? '' : 'none';
+    if (el.style.display !== v) el.style.display = v;
+  }
+  function setAttr(el, k, v) { if (el.getAttribute(k) !== v) el.setAttribute(k, v); }
 
   function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
   function clearTimers() { timers.forEach(clearTimeout); timers = []; }
@@ -351,6 +359,7 @@ export function createFeed(env) {
   function frame(dt, t) {
     if (!open || !R) return;
     T.now = t;
+    R.fit(); // follows the stage size (cheap when it has not changed)
     let p;
     const dancing = env.beat.on && state === 'full';
     if (dancing) {
@@ -460,21 +469,22 @@ export function createFeed(env) {
     // the mouth: the drawn one when closed, the big open one when eating
     mouth += (target - mouth) * Math.min(1, dt * 18);
     const showOpen = mouth > 0.08;
-    if (R.mshut) R.mshut.style.display = showOpen ? 'none' : '';
+    // (only touch the drawing when something changed: each change repaints that layer)
+    setDisplay(R.mshut, !showOpen);
     if (R.mopen) {
-      R.mopen.style.display = showOpen ? '' : 'none';
-      if (showOpen) R.mopen.setAttribute('transform', `translate(0 -6) scale(${(0.7 + 0.45 * mouth).toFixed(2)} ${(mouth * 1.12).toFixed(2)}) translate(0 6)`);
+      setDisplay(R.mopen, showOpen);
+      if (showOpen) setAttr(R.mopen, 'transform', `translate(0 -6) scale(${(0.7 + 0.45 * mouth).toFixed(2)} ${(mouth * 1.12).toFixed(2)}) translate(0 6)`);
     }
-    if (R.bleh) R.bleh.style.display = yuckFace ? '' : 'none';
+    setDisplay(R.bleh, yuckFace);
 
     // the tummy grows with every bite
     tummyK += (tummy / GOAL - tummyK) * Math.min(1, dt * 5);
     const wob = Math.max(0, 0.9 - kh) * Math.sin(kh * 18) * 0.05;
     const k = tummyK + wob;
-    if (R.body) R.body.setAttribute('transform', `scale(${(1 + 0.16 * k).toFixed(3)} ${(1 + 0.06 * k).toFixed(3)})`);
+    if (R.body) setAttr(R.body, 'transform', `scale(${(1 + 0.16 * k).toFixed(3)} ${(1 + 0.06 * k).toFixed(3)})`);
     if (R.belly) {
       const bl = BODIES[m.body].belly;
-      R.belly.setAttribute('transform', `translate(${bl[0]} ${bl[1]}) scale(${(1 + 0.4 * k).toFixed(3)}) translate(${-bl[0]} ${-bl[1]})`);
+      setAttr(R.belly, 'transform', `translate(${bl[0]} ${bl[1]}) scale(${(1 + 0.4 * k).toFixed(3)}) translate(${-bl[0]} ${-bl[1]})`);
     }
   }
 
@@ -493,9 +503,9 @@ export function createFeed(env) {
     root.classList.remove('hidden', 'fed');
     $('#feed-tray').classList.remove('dim');
     $('#feed-name').textContent = `👾 ${m.name || 'Hungry monster'}`;
-    monBox.innerHTML = monsterSVG(m, { id: 'fd', feed: true });
-    svg = monBox.firstChild;
-    R = partsOf(monBox, 'fd');
+    // cut into layers moved with CSS transforms (rig.js); svg stays as the empty sheet
+    R = rigMonster(monBox, monsterSVG(m, { id: 'fd', feed: true }), 'fd');
+    svg = R.svg;
     buildMeter();
     layout();
     fillTray();

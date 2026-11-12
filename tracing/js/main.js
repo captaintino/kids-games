@@ -67,6 +67,18 @@ const cv = $('#paint');
 const cx = cv.getContext('2d');
 const under = $('#under');
 const over = $('#over');
+// The start dot (with its pulsing ring) and the guide ball are small HTML layers above
+// the dots: the ring pulses and the ball glides with CSS transforms only, so the big
+// dots SVG is not repainted every frame.
+const startEl = $('#start');
+const startNum = $('#start-num');
+const ballEl = $('#ball');
+// position a guide layer centered on sheet point (x, y); `half` is half its size in sheet units
+const placeAt = (e, x, y, half) => {
+  const k = 50 / half;
+  e.style.transform = `translate(${(x * k - 50).toFixed(2)}%, ${(y * k - 50).toFixed(2)}%)`;
+};
+function hideBall() { ballEl.style.visibility = 'hidden'; }
 
 const keyOf = (set, ch) => `${set.id}:${ch}`;
 const starsOf = (set, ch) => store.data.stars[keyOf(set, ch)] || 0;
@@ -256,14 +268,7 @@ function renderOver() {
     }, ag));
   });
   T.goal = el('path', { d: starPath(0, 0, 15, 7), class: 'goal' }, over);
-  const st = el('g', { class: 'start' }, over);
-  const ring = el('circle', { r: 21, class: 'start-ring' }, st);
-  el('animate', { attributeName: 'r', values: '19;27;19', dur: '1.4s', repeatCount: 'indefinite' }, ring);
-  el('animate', { attributeName: 'opacity', values: '.8;0;.8', dur: '1.4s', repeatCount: 'indefinite' }, ring);
-  el('circle', { r: 18, class: 'start-dot' }, st);
-  T.startNum = el('text', { class: 'start-num', y: 1 }, st);
-  T.start = st;
-  T.ball = el('circle', { r: 13, class: 'ball', cx: -50, cy: -50 }, over);
+  hideBall();
   updateGuides();
 }
 
@@ -286,14 +291,14 @@ function updateGuides() {
   });
   const s = T.strokes[T.cur];
   if (!s || T.done) {
-    T.start.style.display = 'none';
+    startEl.style.display = 'none';
     T.goal.style.display = 'none';
     return;
   }
   const p = s.pts[0];
-  T.start.style.display = '';
-  T.start.setAttribute('transform', `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})`);
-  T.startNum.textContent = String(T.cur + 1);
+  startEl.style.display = '';
+  placeAt(startEl, p.x, p.y, 30);
+  startNum.textContent = String(T.cur + 1);
   const e = s.pts[s.pts.length - 1];
   const far = Math.hypot(e.x - p.x, e.y - p.y) > 50;
   T.goal.style.display = far ? '' : 'none';
@@ -442,7 +447,7 @@ function strokeDone() {
   sfx.chime([0, 4, 7, 12], 523 * Math.pow(2, (T.cur * 3) / 12));
   T.cur++;
   T.demo = null;
-  T.ball.setAttribute('cx', -50);
+  hideBall();
   if (T.cur >= T.strokes.length) {
     finish();
     return;
@@ -492,7 +497,7 @@ function frame(dt) {
   const f = d.from + d.t;
   if (f >= n + 3) {
     T.demo = null;
-    T.ball.setAttribute('cx', -50);
+    hideBall();
     return;
   }
   const i = Math.min(n, Math.floor(f));
@@ -500,8 +505,8 @@ function frame(dt) {
   const k = Math.min(1, f - i);
   const x = pts[i].x + (pts[j].x - pts[i].x) * k;
   const y = pts[i].y + (pts[j].y - pts[i].y) * k;
-  T.ball.setAttribute('cx', x.toFixed(1));
-  T.ball.setAttribute('cy', y.toFixed(1));
+  placeAt(ballEl, x, y, 20);
+  ballEl.style.visibility = 'visible';
   d.spark += dt;
   if (d.spark > 0.08) {
     d.spark = 0;
@@ -526,7 +531,7 @@ onPointer(paper, {
     T.ptr = { id: p.id, x: q.x, y: q.y, travel: 0, gain: 0, st: startPaint(q) };
     T.idle = 0;
     T.demo = null;
-    T.ball.setAttribute('cx', -50);
+    hideBall();
     sfx.scribble();
     fx.trail(p.x, p.y, trailColor());
     progress(q);
@@ -608,7 +613,7 @@ function phrase() {
 function finish() {
   T.done = true;
   T.demo = null;
-  T.ball.setAttribute('cx', -50);
+  hideBall();
   updateGuides();
   const stars = scoreStars();
   const key = keyOf(T.set, T.ch);

@@ -6,7 +6,8 @@ import { say } from '../../shared/js/speech.js';
 import { $, fx, onPointer, pickOne } from '../../shared/js/kit.js';
 import { monsterSVG } from './parts.js';
 import { createBeat } from './beat.js';
-import { partsOf, setPose, marchPose } from './moves.js';
+import { setPose, marchPose } from './moves.js';
+import { rigMonster } from './rig.js';
 
 // ---------------------------------------------------------------------------
 // The parade song: oom-pah tuba, a marching drum, a bright brass tune and bells
@@ -83,6 +84,7 @@ export function createParade(env) {
     mons.forEach((pm) => {
       pm.el.style.width = `${mw.toFixed(0)}px`;
       pm.el.style.height = `${(mh + 40).toFixed(0)}px`;
+      pm.R.fit(+mw.toFixed(0), +mh.toFixed(0));
     });
   }
 
@@ -94,9 +96,11 @@ export function createParade(env) {
       const el = document.createElement('div');
       el.className = 'p-mon';
       el.setAttribute('data-i', String(i));
-      el.innerHTML = `<div class="p-svg">${monsterSVG(m, { id: `pm${i}` })}</div><div class="p-name">${m.name || 'Monster'}</div>`;
+      el.innerHTML = `<div class="p-svg"></div><div class="p-name">${m.name || 'Monster'}</div>`;
       lane.appendChild(el);
-      return { m, el, name: el.lastChild, R: partsOf(el, `pm${i}`), style: i % 3, jumpT: -9, x: -9999, shown: true, spoke: false };
+      // cut into layers that march with CSS transforms (rig.js): nothing is repainted per frame
+      const R = rigMonster(el.firstChild, monsterSVG(m, { id: `pm${i}` }), `pm${i}`);
+      return { m, el, name: el.lastChild, R, style: i % 3, jumpT: -9, x: -9999, shown: true, spoke: false };
     });
     layout();
     // the first monster starts just off the left edge

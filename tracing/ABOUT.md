@@ -72,12 +72,13 @@ Stars are saved per character (the best one counts).
   400 × 400 sheet, plus the spoken name, the word and its emoji (or a small drawing for X and Y).
   To change a letter, edit its paths; the game measures them with `getTotalLength()`/`getPointAtLength()`.
 - Layers on the paper: an SVG with the writing lines and the band's soft edge, a `<canvas>` with the band
-  and the paint, and an SVG on top with the dots, arrows, start dot and guide ball.
+  and the paint, an SVG with the dots and arrows, and on top the start dot and the guide ball as small layers
+  that pulse and glide with CSS transforms only (so the dots SVG is not repainted every frame).
 - The "stay inside the lines" brush: the canvas first paints the band, then every brush stroke is drawn
   with `globalCompositeOperation = 'source-atop'`, so paint only sticks where the band already is.
   Strokes are kept as point lists and replayed after a rotation or resize.
 - Saved with `createStore('tracing')`: stars per character and the last brush.
-- Works on iOS 12 (touch-event fallback via the kit's `onPointer`, SMIL for the pulsing start dot, no newer
+- Works on iOS 12 (touch-event fallback via the kit's `onPointer`, a CSS animation for the pulsing start dot, no newer
   JS/CSS). Layout: palette under the paper in portrait, beside it in landscape.
 - Words live in `js/words.js` (`WORD_LIST`: the word plus a picture id from `shared/js/pictures.js` or an emoji).
 - `window.__tracing` exposes the state for automated tests (`open`, `openWord`, `openName`, `traceable`).
