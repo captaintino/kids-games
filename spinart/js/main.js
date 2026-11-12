@@ -386,7 +386,10 @@ function openGallery() {
   showScreen('screen-gallery');
   $('#gal-scroll').scrollTop = 0;
   const n = renderWall();
-  setTimeout(() => showBackground(false), 320);
+  setTimeout(() => {
+    const cur = currentScreen();
+    if (cur === 'screen-gallery' || cur === 'screen-view') showBackground(false);
+  }, 320);
   say(n ? pickOne(['My gallery!', 'Look at all my pictures!', 'Welcome to the gallery!']) : "No pictures yet. Let's paint one!");
 }
 function closeGallery() {

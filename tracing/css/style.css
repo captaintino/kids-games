@@ -387,3 +387,151 @@
   .done-body > .btn-col { margin: 0 0 0 26px; width: 300px; }
   .done-left .result-stars { font-size: 40px; margin-top: 10px; }
 }
+
+/* ---------- Title: My Name and Words ---------- */
+.more-row .btn { font-size: max(19px, min(5.4vw, 24px)); white-space: nowrap; }
+.btn-row.more-row > .btn { padding-left: 6px; padding-right: 6px; }
+.more-row .btn-icon { margin-right: 6px; }
+@media (max-height: 560px) and (min-aspect-ratio: 5/4) {
+  .title-panel > * + * { margin-top: 6px; }
+  .title-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-gap: 10px 12px;
+    gap: 10px 12px;
+    width: min(620px, 86vw);
+  }
+  .title-btns > * + * { margin-top: 0; }
+  .title-btns > .btn { font-size: 26px; padding: 8px 10px 10px; }
+  .title-btns .more-row { grid-column: 1 / 4; width: 74%; justify-self: center; }
+}
+
+/* ---------- Word picker ---------- */
+.words-heading { font-size: max(32px, min(10vw, 50px)) !important; }
+.word-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  grid-gap: 14px;
+  gap: 14px;
+  width: 100%;
+  pointer-events: auto;
+}
+.wtile { padding: 8px 4px 8px; border-radius: 24px; justify-content: center; min-height: 140px; }
+.wt-pic {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, .15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.wt-pic .emoji { font-size: 44px; line-height: 1; }
+.wt-svg { width: 62px; height: 62px; display: block; }
+.wt-word { margin-top: 4px; font-size: 30px; font-weight: 700; line-height: 1.05; text-shadow: 0 2px 0 rgba(0,0,0,.18); }
+@media (min-width: 700px) and (min-height: 700px) {
+  .word-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .wtile { min-height: 176px; }
+  .wt-pic { width: 88px; height: 88px; }
+  .wt-svg { width: 84px; height: 84px; }
+  .wt-pic .emoji { font-size: 58px; }
+  .wt-word { font-size: 38px; }
+}
+
+/* ---------- My Name card ---------- */
+.name-card { max-width: 400px; text-align: center; }
+.name-card > * + * { margin-top: 12px; }
+.name-back { position: absolute; top: 12px; left: 12px; }
+.name-star-big {
+  width: 92px;
+  height: 92px;
+  background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 3l5.3 10.8 11.9 1.7-8.6 8.4 2 11.8L20 30.1 9.4 35.7l2-11.8L2.8 15.5l11.9-1.7z' fill='%23ffd93b' stroke='%232d2442' stroke-width='2.4' stroke-linejoin='round'/%3E%3Ccircle cx='16.5' cy='19.5' r='1.8' fill='%232d2442'/%3E%3Ccircle cx='23.5' cy='19.5' r='1.8' fill='%232d2442'/%3E%3Cpath d='M17 23.5Q20 26.5 23 23.5' fill='none' stroke='%232d2442' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  animation: bob 2.4s ease-in-out infinite;
+  filter: drop-shadow(0 6px 8px rgba(60, 10, 120, .3));
+}
+.name-ask { margin: 0; font-size: 22px; font-weight: 600; text-shadow: 0 2px 0 rgba(80, 30, 150, .5); }
+.name-gate { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.name-form { display: none; flex-direction: column; align-items: stretch; width: 100%; }
+.name-form > * + * { margin-top: 12px; }
+.name-card.typing .name-form { display: flex; }
+.name-card.typing .name-gate, .name-card.typing .name-ask { display: none; }
+.name-input {
+  pointer-events: auto;
+  font-family: inherit;
+  font-size: 34px;
+  font-weight: 700;
+  text-align: center;
+  color: #5420c4;
+  padding: 8px 14px;
+  border-radius: 22px;
+  border: 4px solid #fff;
+  background: rgba(255,255,255,.92);
+  box-shadow: inset 0 3px 6px rgba(80, 30, 150, .2);
+  outline: none;
+  width: 100%;
+  -webkit-appearance: none;
+}
+.name-input:focus { border-color: #ffe34d; }
+@media (max-height: 560px) {
+  .name-star-big { width: 56px; height: 56px; }
+  .name-card > * + * { margin-top: 6px; }
+  .name-input { font-size: 28px; padding: 4px 12px; }
+}
+
+/* ---------- Tracing a name or a word ---------- */
+.trace.seq-name .topbar [data-action="next"] { display: none; }
+.seq-strip { padding-right: 14px; }
+.w-letters { display: flex; align-items: center; flex-wrap: wrap; justify-content: center; }
+.sl {
+  min-width: 40px;
+  height: 50px;
+  margin: 2px 3px;
+  padding: 0 4px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255,255,255,.85);
+  background: rgba(255,255,255,.18);
+  border: 3px dashed rgba(255,255,255,.75);
+  transition: background .25s, color .25s, transform .25s;
+}
+.sl.set-lower { padding-bottom: 6px; }
+.sl.cur { color: #8048ff; background: #fff; border: 3px solid #fff; transform: scale(1.12); box-shadow: 0 0 0 4px rgba(255, 227, 77, .8); animation: sl-pulse 1.4s ease-in-out infinite; }
+.sl.done { color: #fff; border: 3px solid #fff; background: linear-gradient(180deg, #ffd36b, #ff8a1f); text-shadow: 0 2px 0 rgba(150, 70, 0, .45); }
+.sl.pop-l { animation: pop-l .5s cubic-bezier(.2, 1.8, .4, 1); }
+@keyframes pop-l { 0% { transform: scale(.5) rotate(-12deg); } 60% { transform: scale(1.3) rotate(6deg); } }
+@keyframes sl-pulse { 50% { box-shadow: 0 0 0 8px rgba(255, 227, 77, .35); } }
+.w-letters.many .sl { min-width: 30px; height: 40px; font-size: 28px; margin: 2px; border-radius: 11px; }
+.name-star { width: 44px; height: 44px; }
+.word-svg.drawn { width: 50px; height: 50px; }
+@media (min-width: 700px) and (min-height: 700px) {
+  .sl { min-width: 52px; height: 62px; font-size: 46px; }
+  .w-letters.many .sl { min-width: 40px; height: 52px; font-size: 36px; }
+  .name-star { width: 54px; height: 54px; }
+  .word-svg.drawn { width: 62px; height: 62px; }
+}
+@media (min-aspect-ratio: 5/4) and (max-height: 500px) {
+  .sl { min-width: 32px; height: 40px; font-size: 28px; border-radius: 11px; margin: 2px; }
+  .w-letters.many .sl { min-width: 24px; height: 34px; font-size: 22px; }
+  .name-star { width: 36px; height: 36px; }
+  .word-svg.drawn { width: 42px; height: 42px; }
+}
+
+/* done card for a word or a name: the whole painted word */
+.done-card.seq-word .done-thumb, .done-card.seq-name .done-thumb { width: auto; height: auto; max-width: 100%; border-radius: 20px; }
+.done-card.seq-word .done-thumb img, .done-card.seq-name .done-thumb img { width: auto; height: auto; max-width: min(250px, 58vw); max-height: 120px; }
+.done-card.seq-name [data-action="next"] { display: none; }
+.done-card.seq-word .done-row, .done-card.seq-name .done-row { flex-wrap: wrap; }
+@media (max-height: 560px) and (min-aspect-ratio: 5/4) {
+  .done-card.seq-word .done-thumb img, .done-card.seq-name .done-thumb img { max-width: 230px; max-height: 96px; }
+}
+.done-pic .word-svg.drawn, .done-pic .name-star { width: 76px; height: 76px; }
+@media (max-height: 560px) and (min-aspect-ratio: 5/4) {
+  .done-pic .word-svg.drawn, .done-pic .name-star { width: 60px; height: 60px; }
+}

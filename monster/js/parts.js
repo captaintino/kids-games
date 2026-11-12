@@ -455,13 +455,15 @@ export function monsterSVG(m, o = {}) {
     `<g transform="translate(0 ${Hd.mouthY})"${tag('mouth')}><g${id('mouth')}>${mouth}</g></g>` +
     `</g></g>`;
   const extra = Ex.draw(c) ? `<g${tag('extra')}>${Ex.draw(c)}</g>` : '';
+  // a bow tie would cover the wide-open mouth while eating, so it goes behind the head then
+  const front = Ex.front && !o.feed;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}"${o.cls ? ` class="${o.cls}"` : ''}>${defs}` +
     `<ellipse cx="200" cy="${GROUND + 2}" rx="${Math.max(90, B.hipW * 2 + 40)}" ry="14" fill="rgba(45,36,66,.18)"${id('shadow')}/>` +
     `<g transform="translate(200 ${GROUND})"><g${id('all')}><g transform="translate(-200 ${-GROUND})">` +
     `<g transform="translate(200 ${lay.hipY})"${tag('legs')}>${legs}</g>` +
     `<g transform="translate(200 ${lay.bodyCY})"><g${id('torso')}>` +
-    `${Ex.front ? '' : extra}${arms}${body}${head}${Ex.front ? extra : ''}` +
+    `${front ? '' : extra}${arms}${body}${head}${front ? extra : ''}` +
     `</g></g></g></g></g></svg>`;
 }
 

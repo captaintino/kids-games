@@ -409,6 +409,10 @@ export function createWash(out) {
       og.fillRect(x, y, w, h);
     }
     og.save();
+    // (destination-in would also wipe everything outside the image, so clip to the rect first)
+    og.beginPath();
+    og.rect(x, y, w, h);
+    og.clip();
     og.globalCompositeOperation = 'destination-in';
     og.drawImage(W.SIL, x, y, w, h, x, y, w, h);
     og.restore();

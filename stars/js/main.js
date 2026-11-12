@@ -1186,7 +1186,11 @@ function onFrame(dt, t) {
   eng.watch(raw, state.paused);
   update(dt);
   render(t, dt);
+  frameCost += performance.now() - now;
+  frameCount++;
 }
+let frameCost = 0;
+let frameCount = 0;
 
 // ---------------------------------------------------------------------------
 // Input
@@ -1520,7 +1524,7 @@ function openSky() {
       const y = (r.height - size) / 2;
       const n = store.data.sky[con.id] || 0;
       if (n) drawConstellation(c, con, x, y, size, { creature: 1, dotSize: 0.12, lineW: 0.014 });
-      else drawConstellation(c, con, x, y, size, { lit: con.id === store.data.con ? store.data.lit : 0, faint: 0.5, dotSize: 0.13 });
+      else drawConstellation(c, con, x, y, size, { lit: con.id === store.data.con ? store.data.lit : 0, faint: 0.6, faintR: 0.02, dotSize: 0.14 });
     });
   });
   talk(found ? `Your sky! You found ${found} pictures!` : 'Your sky! Catch stars to find the pictures!', true);
@@ -1653,4 +1657,5 @@ window.__stars = {
   cloud() { spawnCloud(); },
   gust() { state.gustTimer = 0; state.time = Math.max(state.time, 11); },
   light(n) { landFlier({ n }); },
+  cost() { const r = frameCost / Math.max(1, frameCount); frameCost = 0; frameCount = 0; return r; },
 };

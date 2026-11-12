@@ -74,7 +74,7 @@ export function createParade(env) {
     W = window.innerWidth;
     const r = lane.getBoundingClientRect();
     const NAME = 40;   // room for the name tag under the feet
-    mh = Math.max(100, Math.min(r.height - NAME, 360, W * 0.55));
+    mh = Math.max(100, Math.min(r.height - NAME, Math.max(360, window.innerHeight * 0.4), W * 0.62));
     mw = mh * 400 / 480;
     gap = mw * 1.12;
     loop = Math.max(W + gap, mons.length * gap);

@@ -1,13 +1,18 @@
 // Letter Tracing: paint big letters and numbers along dotted paths. The brush
 // only paints inside the letter band, and the dots along the current stroke
-// light up as the brush reaches them in order.
+// light up as the brush reaches them in order. "My Name" and "Words" trace a
+// whole name or word, one letter after the other.
 import * as sfx from '../../shared/js/audio.js';
 import { say, numberWord } from '../../shared/js/speech.js';
 import {
   boot, $, $$, fx, showScreen, celebrate, onPointer, createStore, replayClass, pickOne, wait, clamp,
 } from '../../shared/js/kit.js';
-import { star as starPath, INK } from '../../shared/js/pictures.js';
+import { star as starPath, INK, PICTURES } from '../../shared/js/pictures.js';
+import { pictureMarkup } from '../../shared/js/art.js';
+import { earnSticker } from '../../shared/js/rewards.js';
+import { grownups, kidName, saveGrownups, holdGate } from '../../shared/js/grownups.js';
 import { SETS, GLYPHS, SPOKEN, WORDS } from './letters.js';
+import { WORD_LIST } from './words.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const DOT_GAP = 16; // sheet units between scoring dots
@@ -25,6 +30,11 @@ const BRUSHES = [
 ];
 const TILE_COLORS = ['pink', 'blue', 'green', 'orange', 'purple', 'teal', 'red', 'yellow'];
 const CHEERS = ['Wow!', 'Amazing!', 'Super!', 'Awesome!', 'Great job!', 'Fantastic!', 'Hooray!', 'Beautiful!'];
+const LETTER_CHEERS = ['Yes!', 'Good!', 'Nice!', 'Great!', 'Super!', 'Yay!'];
+const SET_BY_ID = {};
+SETS.forEach((st) => { SET_BY_ID[st.id] = st; });
+const PIC_BY_ID = {};
+PICTURES.forEach((pc) => { PIC_BY_ID[pc.id] = pc; });
 
 // ---------------------------------------------------------------------------
 // State
@@ -48,6 +58,8 @@ const T = {
   lastScribble: 0,
   token: 0,
   rect: null,
+  // tracing a name or a word: { kind: 'name' | 'word', text, items: [{ ch, set }], k, stars, thumbs, wi, w }
+  seq: null,
 };
 
 const paper = $('#paper');
@@ -96,6 +108,19 @@ function wordPic(w) {
   if (w.pic) return PICS[w.pic];
   return `<span class="emoji">${w.emoji}</span>`;
 }
+
+// A word's picture: one of the drawn coloring pictures (in color, without its
+// sky) or an emoji.
+const picCache = {};
+function wordListPic(w, cls = 'word-svg') {
+  if (!w.pic || !PIC_BY_ID[w.pic]) return `<span class="emoji">${w.emoji || '⭐'}</span>`;
+  if (!picCache[w.pic]) {
+    const shapes = PIC_BY_ID[w.pic].shapes.filter((sh) => !sh.bg);
+    picCache[w.pic] = pictureMarkup({ shapes }, { prefix: `wp-${w.pic}-`, fill: (i) => shapes[i].c });
+  }
+  return `<svg class="${cls} drawn" viewBox="28 28 344 344" xmlns="${SVGNS}" aria-hidden="true">${picCache[w.pic]}</svg>`;
+}
+const NAME_PIC = `<svg viewBox="0 0 40 40" class="word-svg name-star" aria-hidden="true"><path d="${starPath(20, 21, 18, 8)}" fill="#ffd93b" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/><circle cx="16.5" cy="20" r="1.8" fill="${INK}"/><circle cx="23.5" cy="20" r="1.8" fill="${INK}"/><path d="M17 24Q20 27 23 24" fill="none" stroke="${INK}" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 
 // A happy pencil for the title screen
 $('#mascot').innerHTML = `<svg viewBox="0 0 260 140" aria-hidden="true">
@@ -589,7 +614,9 @@ function finish() {
   const key = keyOf(T.set, T.ch);
   store.data.stars[key] = Math.max(store.data.stars[key] || 0, stars);
   store.persist();
+  if (T.seq) { seqLetterDone(stars); return; }
   updatePill();
+  earnSticker('tracing', { delay: 2700 });
   const cheer = pickOne(CHEERS);
   T.cheer = cheer;
   T.stars = stars;
@@ -602,6 +629,8 @@ function finish() {
 }
 
 function showDone() {
+  if (T.seq) { showSeqDone(); return; }
+  doneCardMode(null);
   let url = '';
   try {
     const c = document.createElement('canvas');
@@ -618,6 +647,10 @@ function showDone() {
   $('#done-pic').innerHTML = isDigit(T.ch)
     ? `<span class="done-num">${T.ch}</span>`
     : wordPic(WORDS[T.ch]);
+  showDoneStars();
+}
+
+function showDoneStars() {
   const stars = $$('#done-stars .rstar');
   stars.forEach((s) => s.classList.remove('on'));
   showScreen('screen-done');
@@ -631,16 +664,27 @@ function showDone() {
   });
 }
 
+// The done card's buttons: letters (null), a word or a name.
+function doneCardMode(kind) {
+  const card = $('#screen-done .done-card');
+  card.classList.toggle('seq-word', kind === 'word');
+  card.classList.toggle('seq-name', kind === 'name');
+  const all = $('#done-all');
+  all.innerHTML = kind === 'name' ? '<span class="btn-icon">⬅️</span> Back' : kind === 'word' ? '<span class="btn-icon">📖</span> Words' : '<span class="btn-icon">🔤</span> All';
+  all.setAttribute('aria-label', kind === 'name' ? 'Back' : kind === 'word' ? 'All words' : 'All letters');
+}
+
 // ---------------------------------------------------------------------------
 // Opening a letter
 // ---------------------------------------------------------------------------
 function updatePill() {
-  const n = starsOf(T.set, T.ch);
+  const n = T.seq ? store.data.stars[seqKey(T.seq)] || 0 : starsOf(T.set, T.ch);
   $('#char-pill').innerHTML = `<span class="pill-ch">${T.ch}</span><span class="pill-stars">${starRow(n)}</span>`;
 }
 
 function renderWord() {
   const strip = $('#word-strip');
+  if (T.seq) { renderSeqStrip(); return; }
   if (isDigit(T.ch)) {
     const n = +T.ch;
     let stars = '';
@@ -676,6 +720,7 @@ async function countOut(fresh) {
 }
 
 function sayIntro() {
+  if (T.seq) { seqIntro(); return; }
   if (isDigit(T.ch)) countOut(true);
   else {
     T.token++;
@@ -684,13 +729,18 @@ function sayIntro() {
 }
 
 function openChar(i, intro = true) {
-  T.token++;
+  T.seq = null;
   T.i = (i + T.set.chars.length) % T.set.chars.length;
   T.ch = T.set.chars[T.i];
+  showLetter(intro);
+}
+
+// Show T.ch (of T.set) on the paper, ready to trace.
+function showLetter(intro) {
+  T.token++;
   T.on = true;
   showScreen(null);
-  $('#trace').classList.add('active');
-  $('#trace').className = `trace active set-${T.set.id}`;
+  $('#trace').className = `trace active set-${T.set.id}${T.seq ? ` seq seq-${T.seq.kind}` : ''}`;
   updatePill();
   renderWord();
   layout(true);
@@ -710,6 +760,7 @@ function leaveTrace() {
 }
 
 function toPicker() {
+  if (T.seq) { leaveSeq(); return; }
   leaveTrace();
   buildPicker();
   showScreen('screen-picker');
@@ -723,6 +774,222 @@ function toTitle() {
   leaveTrace();
   updateTitle();
   showScreen('screen-title');
+}
+
+// ---------------------------------------------------------------------------
+// Names and words: trace them one letter at a time
+// ---------------------------------------------------------------------------
+// The letters of a name or word that can be traced (accents dropped: Zoë -> Zoe).
+function traceable(text) {
+  let t = String(text || '');
+  try { t = t.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch (err) { /* old browser */ }
+  const items = [];
+  for (let i = 0; i < t.length; i++) {
+    const ch = t.charAt(i);
+    const set = /[A-Z]/.test(ch) ? SET_BY_ID.upper : /[a-z]/.test(ch) ? SET_BY_ID.lower : /[0-9]/.test(ch) ? SET_BY_ID.digits : null;
+    if (set && GLYPHS[ch]) items.push({ ch, set });
+  }
+  return items;
+}
+const seqKey = (q) => `${q.kind}:${q.kind === 'name' ? q.text.toLowerCase() : q.text}`;
+const spell = (q) => q.items.map((it) => spoken(it.ch)).join(', ');
+
+function startSeq(kind, text, extra = {}) {
+  const items = traceable(text);
+  if (!items.length) return false;
+  T.seq = Object.assign({ kind, text, items, k: 0, stars: [], thumbs: [] }, extra);
+  openSeqLetter(true);
+  return true;
+}
+
+function openSeqLetter(intro) {
+  const q = T.seq;
+  const it = q.items[q.k];
+  T.set = it.set;
+  T.ch = it.ch;
+  T.i = it.set.chars.indexOf(it.ch);
+  showLetter(intro);
+  if (!intro) say(`${spoken(T.ch)}!`);
+}
+
+function seqIntro() {
+  const q = T.seq;
+  const first = spoken(q.items[0].ch);
+  if (q.kind === 'name') say(`${q.text}! Let's write your name! ${first}!`);
+  else say(`${q.text}! Let's write ${q.text}! ${first}!`);
+}
+
+function renderSeqStrip() {
+  const q = T.seq;
+  const strip = $('#word-strip');
+  const pic = q.kind === 'name' ? NAME_PIC : wordListPic(q.w);
+  const letters = q.items.map((it, i) =>
+    `<span class="sl set-${it.set.id}${i < q.k ? ' done' : i === q.k ? ' cur' : ''}">${it.ch}</span>`).join('');
+  strip.innerHTML = `<span class="w-pic">${pic}</span><span class="w-letters${q.items.length > 7 ? ' many' : ''}">${letters}</span>`;
+  strip.className = `word-strip seq-strip set-${T.set.id}`;
+  strip.setAttribute('aria-label', q.text);
+}
+
+// A small copy of the painted letter, for the picture of the whole word at the end.
+function snapLetter() {
+  const c = document.createElement('canvas');
+  c.width = 130;
+  c.height = 180;
+  try { c.getContext('2d').drawImage(cv, cv.width * 0.175, cv.height * 0.05, cv.width * 0.65, cv.height * 0.9, 0, 0, 130, 180); } catch (err) { /* ignore */ }
+  return c;
+}
+
+function seqLetterDone(stars) {
+  const q = T.seq;
+  q.stars[q.k] = stars;
+  q.thumbs[q.k] = snapLetter();
+  const el = $$('#word-strip .sl')[q.k];
+  if (el) {
+    el.className = `sl set-${q.items[q.k].set.id} done`;
+    replayClass(el, 'pop-l');
+    const r = el.getBoundingClientRect();
+    fx.sparkles(r.left + r.width / 2, r.top + r.height / 2, 8, 26);
+  }
+  const pr = paper.getBoundingClientRect();
+  fx.sparkles(pr.left + pr.width / 2, pr.top + pr.height / 2, 12, pr.width * 0.3);
+  sfx.chime([0, 4, 7, 12], 660 * Math.pow(2, (q.k % 5) / 12), 0.07);
+  q.k++;
+  const token = ++T.token;
+  if (q.k >= q.items.length) {
+    setTimeout(() => { if (token === T.token && T.on) seqDone(); }, 600);
+    return;
+  }
+  say(pickOne(LETTER_CHEERS));
+  const next = $$('#word-strip .sl')[q.k];
+  if (next) next.className = `sl set-${q.items[q.k].set.id} cur`;
+  setTimeout(() => { if (token === T.token && T.on) openSeqLetter(false); }, 1300);
+}
+
+function seqDone() {
+  const q = T.seq;
+  let sum = 0;
+  q.stars.forEach((n) => { sum += n; });
+  const stars = Math.max(1, Math.min(3, Math.round(sum / q.items.length)));
+  const key = seqKey(q);
+  store.data.stars[key] = Math.max(store.data.stars[key] || 0, stars);
+  store.persist();
+  T.stars = stars;
+  T.cheer = pickOne(CHEERS);
+  updatePill();
+  replayClass($('#word-strip'), 'bounce');
+  if (q.kind === 'name') {
+    celebrate(`${q.text}!`, 'You wrote your name!');
+    setTimeout(() => fx.confetti(80), 700);
+    say(`${q.text}! You wrote your name!`);
+    earnSticker('tracing', { cooldown: 0, delay: 3400 });
+  } else {
+    celebrate(T.cheer, `${q.text}!`);
+    say(`${spell(q)}. ${q.text}! You wrote ${q.text}!`);
+    earnSticker('tracing', { delay: 3400 });
+  }
+  const token = ++T.token;
+  setTimeout(() => { if (token === T.token && T.on) showDone(); }, q.kind === 'name' ? 2800 : 3000);
+}
+
+// The whole word in one picture: every painted letter side by side.
+function wordImage(q) {
+  const n = q.thumbs.length;
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, n) * 104 + 16;
+  c.height = 160;
+  const x = c.getContext('2d');
+  x.fillStyle = '#fff';
+  x.fillRect(0, 0, c.width, c.height);
+  q.thumbs.forEach((t, i) => { if (t) x.drawImage(t, 8 + i * 104 - 6, 6, 116, 160); });
+  try { return c.toDataURL('image/png'); } catch (err) { return ''; }
+}
+
+function showSeqDone() {
+  const q = T.seq;
+  doneCardMode(q.kind);
+  $('#done-img').src = wordImage(q);
+  $('#done-title').textContent = q.kind === 'name' ? `${q.text}!` : `${q.text}!`;
+  $('#done-pic').innerHTML = q.kind === 'name' ? NAME_PIC : wordListPic(q.w);
+  showDoneStars();
+}
+
+function leaveSeq() {
+  const q = T.seq;
+  leaveTrace();
+  if (q && q.kind === 'word') toWords(q.wi);
+  else toTitle();
+}
+
+// ---------------------------------------------------------------------------
+// My Name
+// ---------------------------------------------------------------------------
+function openName() {
+  T.seq = null;
+  const name = kidName();
+  if (name && traceable(name).length) {
+    startSeq('name', name);
+    return;
+  }
+  showNameCard();
+}
+
+let gateOpenedAt = 0;
+function showNameCard() {
+  $('#name-card').classList.remove('typing');
+  $('#name-input').value = kidName();
+  showScreen('screen-name');
+  say('Ask a grown-up to type your name!');
+}
+
+function nameGateOpened() {
+  gateOpenedAt = Date.now();
+  $('#name-card').classList.add('typing');
+  const input = $('#name-input');
+  input.value = kidName();
+  setTimeout(() => { try { input.focus(); } catch (err) { /* ignore */ } }, 60);
+}
+
+function saveName() {
+  const input = $('#name-input');
+  const name = String(input.value || '').replace(/\s+/g, ' ').trim().slice(0, 16);
+  if (!traceable(name).length) {
+    sfx.boing();
+    replayClass(input, 'wiggle');
+    try { input.focus(); } catch (err) { /* ignore */ }
+    return;
+  }
+  try { input.blur(); } catch (err) { /* ignore */ }
+  grownups.data.name = name;
+  saveGrownups();
+  sfx.chime([0, 4, 7, 12], 660, 0.06);
+  startSeq('name', name);
+}
+
+// ---------------------------------------------------------------------------
+// Words
+// ---------------------------------------------------------------------------
+function buildWords() {
+  $('#word-grid').innerHTML = WORD_LIST.map((w, i) => {
+    const n = store.data.stars[`word:${w.word}`] || 0;
+    return `<button class="tile wtile ${TILE_COLORS[(i * 3) % TILE_COLORS.length]}${n ? ' done' : ''}" data-action="open-word" data-i="${i}" aria-label="${w.word}" style="animation-delay:${Math.min(i, 20) * 0.025}s">
+      <span class="wt-pic">${wordListPic(w, 'wt-svg')}</span><span class="wt-word">${w.word}</span><span class="cstars">${starRow(n)}</span></button>`;
+  }).join('');
+}
+
+function toWords(wi) {
+  T.seq = null;
+  buildWords();
+  showScreen('screen-words');
+  const tile = wi == null ? null : $(`#word-grid [data-i="${wi}"]`);
+  if (tile && tile.scrollIntoView) {
+    try { tile.scrollIntoView({ block: 'center' }); } catch (err) { tile.scrollIntoView(); }
+  } else $('#words-scroll').scrollTop = 0;
+}
+
+function openWord(i) {
+  const wi = (i + WORD_LIST.length) % WORD_LIST.length;
+  const w = WORD_LIST[wi];
+  startSeq('word', w.word, { wi, w });
 }
 
 // ---------------------------------------------------------------------------
@@ -764,23 +1031,47 @@ function markBrush() {
 // ---------------------------------------------------------------------------
 buildPalette();
 updateTitle();
+holdGate($('#name-gate'), nameGateOpened);
+// a quick tap on the grown-up button: tell the kid what it is for
+$('#name-gate').addEventListener('click', () => {
+  if (Date.now() - gateOpenedAt < 1500) return;
+  sfx.boing();
+  replayClass($('#name-gate'), 'wiggle');
+  say('Ask a grown-up to hold this button!');
+});
+$('#name-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.keyCode === 13) { e.preventDefault(); saveName(); }
+});
 
 boot({
   party: ['#ff8fcf', '#b58cff', '#7fd0ff'],
   onAction(action, elx) {
     switch (action) {
-      case 'set': openSet(elx.dataset.set); break;
+      case 'set': T.seq = null; openSet(elx.dataset.set); break;
       case 'title': toTitle(); break;
       case 'open': openChar(+elx.dataset.i); break;
       case 'picker': toPicker(); break;
+      case 'name': openName(); break;
+      case 'name-save': saveName(); break;
+      case 'words': toWords(null); say('Words!'); break;
+      case 'open-word': openWord(+elx.dataset.i); break;
       case 'again':
-        if (!T.on) { openChar(T.i, false); break; }
-        showScreen(null);
         sfx.whoosh();
+        if (T.seq) {
+          // on the done card: the whole word again; while tracing: this letter again
+          const q = T.seq;
+          if (!T.on || q.k >= q.items.length) startSeq(q.kind, q.text, { wi: q.wi, w: q.w });
+          else openSeqLetter(false);
+          break;
+        }
         openChar(T.i, false);
         break;
       case 'next':
         sfx.whoosh();
+        if (T.seq) {
+          if (T.seq.kind === 'word') openWord(T.seq.wi + 1);
+          break;
+        }
         openChar(T.i + 1);
         break;
       case 'brush':
@@ -793,14 +1084,15 @@ boot({
       case 'word':
         replayClass($('#word-strip'), 'bounce');
         sfx.pick(7);
-        if (isDigit(T.ch)) countOut(false);
+        if (T.seq) say(T.seq.kind === 'name' ? `${T.seq.text}!` : `${T.seq.text}! ${spell(T.seq)}. ${T.seq.text}!`);
+        else if (isDigit(T.ch)) countOut(false);
         else say(phrase());
         break;
     }
   },
   onBack(screen) {
     if (screen === 'screen-done' || (screen === null && T.on)) { toPicker(); return true; }
-    if (screen === 'screen-picker') { toTitle(); return true; }
+    if (screen === 'screen-picker' || screen === 'screen-words' || screen === 'screen-name') { toTitle(); return true; }
     return false;
   },
   onFrame(dt) { frame(dt); },
@@ -817,5 +1109,9 @@ window.__tracing = {
     T.set = SETS.filter((s) => s.id === setId)[0];
     openChar(T.set.chars.indexOf(ch));
   },
+  openWord,
+  openName,
+  traceable,
+  WORD_LIST,
   sheetToScreen,
 };

@@ -110,7 +110,8 @@ export function createSplatter(hooks) {
   function dribbleAt(f, dt) {
     const p = toPaper(f.x, f.y);
     f.held += dt;
-    const grow = Math.min(46, 12 + f.held * 22);
+    // the puddle only grows while the finger keeps still for a moment
+    const grow = f.held > 0.2 ? Math.min(46, 12 + (f.held - 0.2) * 22) : 0;
     if (!f.lastP) {
       f.lastP = p;
       blob(pc, p.x, p.y, 12, paintColor(f.colorKey, U.t), Math.random() * 10);
@@ -122,7 +123,7 @@ export function createSplatter(hooks) {
     if (d > 3) {
       // drizzle: a wobbly line of paint following the finger
       pc.strokeStyle = col;
-      pc.lineWidth = 9 + Math.random() * 5;
+      pc.lineWidth = 6 + Math.random() * 9;
       pc.beginPath();
       pc.moveTo(f.lastP.x, f.lastP.y);
       pc.lineTo(p.x, p.y);
@@ -138,7 +139,7 @@ export function createSplatter(hooks) {
       // a new little puddle starts wherever the finger stops next
       f.puddle = 10;
       f.held = 0;
-    } else if (grow > f.puddle + 1.5) {
+    } else if (grow && grow > f.puddle + 1.5) {
       f.puddle = grow;
       blob(pc, p.x, p.y, grow, col, f.seed);
       if (f.colorKey === 'glitter' && Math.random() < 0.4) specks(pc, p.x, p.y, grow, 2);

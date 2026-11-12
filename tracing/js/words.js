@@ -1,0 +1,33 @@
+// Simple words to trace in Letter Tracing (little letters, 3 and 4 letters long).
+// pic: one of the drawn coloring pictures in shared/js/pictures.js, shown in color;
+// emoji: used where there is no drawing (all of these exist on iOS 12).
+export const WORD_LIST = [
+  { word: 'cat', pic: 'kitty' },
+  { word: 'dog', pic: 'puppy' },
+  { word: 'pig', pic: 'piggy' },
+  { word: 'cow', emoji: '🐮' },
+  { word: 'hen', emoji: '🐔' },
+  { word: 'fox', emoji: '🦊' },
+  { word: 'owl', pic: 'owl' },
+  { word: 'bee', pic: 'bee' },
+  { word: 'ant', emoji: '🐜' },
+  { word: 'sun', pic: 'sunny' },
+  { word: 'bus', emoji: '🚌' },
+  { word: 'car', pic: 'car' },
+  { word: 'hat', emoji: '🎩' },
+  { word: 'cup', emoji: '🥤' },
+  { word: 'bed', emoji: '🛏️' },
+  { word: 'egg', emoji: '🥚' },
+  { word: 'fish', pic: 'fish' },
+  { word: 'frog', pic: 'froggy' },
+  { word: 'duck', emoji: '🦆' },
+  { word: 'bear', emoji: '🐻' },
+  { word: 'bird', emoji: '🐦' },
+  { word: 'ball', emoji: '⚽' },
+  { word: 'cake', emoji: '🎂' },
+  { word: 'star', pic: 'starry' },
+  { word: 'tree', pic: 'tree' },
+  { word: 'moon', emoji: '🌙' },
+  { word: 'boat', pic: 'boat' },
+  { word: 'milk', emoji: '🥛' },
+];

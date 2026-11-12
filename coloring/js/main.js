@@ -498,6 +498,8 @@ $('#tabs').addEventListener('click', (e) => {
 });
 
 $('#pic-grid').addEventListener('click', (e) => {
+  // the picker is still fading out after a quick double tap
+  if ($('#editor').classList.contains('active')) return;
   const page = e.target.closest('[data-page]');
   if (page) {
     sfx.unlock();
@@ -582,7 +584,10 @@ function layoutDock() {
   // Landscape: the palette sits beside the picture. Use the biggest swatches that fit
   // the height while keeping the dock narrow enough to leave room for the picture.
   const toolsOn = !tools.classList.contains('hidden');
-  const stampsW = $('#stamps').classList.contains('hidden') ? 0 : $('#stamps').scrollWidth;
+  // (the stamp row stretches to the dock's width, so add up its buttons instead)
+  const stamps = $('#stamps');
+  const stampsW = stamps.classList.contains('hidden') ? 0
+    : [].reduce.call(stamps.children, (w, el) => w + el.offsetWidth + 4, 8);
   const toolsW = toolsOn ? Math.max(tools.querySelector('.seg').offsetWidth + $('#sizes').offsetWidth + 10, stampsW) : 0;
   const toolsH = toolsOn ? tools.offsetHeight + 10 : 0;
   const hintH = $('#dock-hint').classList.contains('hidden') ? 0 : 80;
@@ -1226,6 +1231,7 @@ function newCanvas() {
 
 function openDrawing(id) {
   finishAllAnims();
+  closeDrawing();
   if (!id || !save.pages.some((p) => p.id === id)) {
     if (save.pages.length >= MAX_PAGES) { sfx.boing(); return; }
     id = Date.now().toString(36);

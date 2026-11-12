@@ -26,10 +26,14 @@
       <div class="mascot" id="mascot" aria-hidden="true"></div>
       <h1 class="logo"><span>Letter</span><span>Tracing</span></h1>
       <div class="tagline">Paint along the dots!</div>
-      <div class="btn-col">
+      <div class="btn-col title-btns">
         <button class="btn btn-pink" data-action="set" data-set="upper"><span class="btn-icon">🔠</span> ABC</button>
         <button class="btn btn-blue" data-action="set" data-set="lower"><span class="btn-icon">🔡</span> abc</button>
         <button class="btn btn-green" data-action="set" data-set="digits"><span class="btn-icon">🔢</span> 123</button>
+        <div class="btn-row more-row">
+          <button class="btn btn-orange btn-small" data-action="name" aria-label="My name"><span class="btn-icon">⭐</span> My Name</button>
+          <button class="btn btn-purple btn-small" data-action="words" aria-label="Words"><span class="btn-icon">📖</span> Words</button>
+        </div>
       </div>
       <div class="best-line" id="title-stars"></div>
     </div>
@@ -45,6 +49,35 @@
       </div>
       <div class="picker-scroll scroll-y" id="picker-scroll">
         <div class="char-grid" id="char-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pick a word -->
+  <section id="screen-words" class="screen">
+    <div class="panel picker-panel">
+      <div class="picker-head">
+        <button class="round-btn" data-action="title" aria-label="Back">⬅️</button>
+        <h2 class="heading words-heading">📖 Words</h2>
+        <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
+      </div>
+      <div class="picker-scroll scroll-y" id="words-scroll">
+        <div class="word-grid" id="word-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- My name: a grown-up types it (hold the button) -->
+  <section id="screen-name" class="screen dim">
+    <div class="panel card name-card" id="name-card">
+      <button class="round-btn name-back" data-action="title" aria-label="Back">⬅️</button>
+      <div class="name-star-big" aria-hidden="true"></div>
+      <h2 class="heading">My Name</h2>
+      <p class="name-ask">Ask a grown-up to type your name!</p>
+      <button class="btn btn-purple btn-small name-gate" id="name-gate" aria-label="Grown-ups: hold to type a name"><span class="btn-icon">✋</span> Grown-ups: hold</button>
+      <div class="name-form">
+        <input id="name-input" class="name-input" type="text" maxlength="16" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" placeholder="Name" aria-label="The child's name">
+        <button class="btn btn-green" data-action="name-save" aria-label="Save the name and start"><span class="btn-icon">✏️</span> Let's write it!</button>
       </div>
     </div>
   </section>
@@ -87,7 +120,7 @@
         <button class="btn btn-green" data-action="next"><span class="btn-icon">➡️</span> Next</button>
         <div class="btn-row">
           <button class="btn btn-orange btn-small" data-action="again" aria-label="Try again"><span class="btn-icon">↩️</span> Again</button>
-          <button class="btn btn-purple btn-small" data-action="picker" aria-label="All letters"><span class="btn-icon">🔤</span> All</button>
+          <button class="btn btn-purple btn-small" data-action="picker" id="done-all" aria-label="All letters"><span class="btn-icon">🔤</span> All</button>
         </div>
       </div>
       </div>

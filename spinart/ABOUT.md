@@ -1,7 +1,8 @@
 # Spin Art 🌀
 
-Messy art, without the mess! Three ways to paint: fling paint on a spinning disc, fold paper into
-butterfly paintings, and print with painty soap bubbles.
+Messy art, without the mess! Four ways to paint: fling paint on a spinning disc, fold paper into
+butterfly paintings, print with painty soap bubbles, and splat paint all over the paper. The best ones
+get hung up in the gallery.
 
 ## Modes
 
@@ -19,6 +20,12 @@ butterfly paintings, and print with painty soap bubbles.
   to pop them (or wait), and each one leaves a bubble print on the paper. Pick small, medium or big
   bubbles, or press 💨 Blow for a big puff.
 
+- 💥 **Splatter**: fling paint at the paper. A tap makes a round splat with little drops all around it;
+  a fast flick throws a long streak that stretches out in the direction you flicked, with droplets
+  flying on ahead (you see the paint fly before it lands); holding a finger still makes a dribble: a
+  puddle with drips running down the paper (move slowly to drizzle a line). The 💥 **Splat!** button
+  throws one for you. The little pictures in the dock (👆 tap, 👉 flick, ✋ hold) show the three moves.
+
 The **bubble brush** (the little bubble button) also works in Spin Paint and Butterfly Fold: it stamps
 clusters of bubble-print rings.
 
@@ -27,9 +34,23 @@ and pastels with sparkles).
 
 Other buttons:
 - 🆕 a fresh paper.
+- 📌 **Hang it!** frames the painting, flies it into the gallery with a sparkle trail and gives a
+  sticker. Pressing it again without painting more just says it is already on the wall (no
+  duplicates); an empty paper gets a gentle "Paint something first!". Titles: Spin painting, Butterfly
+  painting (or Butterfly once it is cut out), Bubble print, Splatter.
 - 📷 save the painting as a picture (on phones this opens the share sheet; on older iPads you press
   and hold the picture and tap *Save Image*). A finished butterfly is saved on a sky background.
 - Each mode keeps its painting on the device, so it's still there next time.
+
+## 🖼️ Gallery
+
+The Gallery button on the title opens a cozy wall: striped wallpaper, a wooden picture rail with
+cords and brass hooks, a wooden floor, and every hung painting in a frame (wood, candy stripes, round,
+gold, oval or mint; each picture always gets the same frame and a little tilt) with a brass name plate
+under it. The kid's coloring pictures (`listArt('coloring')`) hang there too, marked with a 🖍️. Tap a
+picture to see it big: 📷 saves it, 🗑️ asks "Take it down?" (✔️ / ✖️) before removing it. An empty
+wall shows an empty frame and a "Let's paint!" button. Pictures live in the shared gallery
+(`shared/js/gallery.js`, newest 24 across all games), so Jigsaw can make puzzles of them.
 
 ## Tech
 
@@ -39,8 +60,13 @@ Other buttons:
 - `js/butterfly.js`: the fold is a canvas squash animation of the right half; the blot mirrors the
   paint with a mottled, softened copy (several offset draws, since old Safari has no canvas blur).
 - `js/bubbles.js`: bubble sprites are drawn once per color.
-- `js/paint.js`: colors, blobs, bubble prints and the blot.
+- `js/paint.js`: colors, blobs, bubble prints, the blot, and the splatter shapes (`splat`, `streak`).
+- `js/splatter.js`: Splatter. A finger is a tap, a flick or a hold depending on how far and how fast
+  it moves; flicks launch flying globs that land as streaks; drips run down the paper.
+- `js/wall.js`: builds the gallery wall (rows of frames, sized for the screen).
 - Paint canvases are capped at 1024 px and only redraw while something changes.
 - Newer emoji (bubbles, mirror) don't exist on older iPads, so those icons are drawn with CSS.
 - Settings are saved with `createStore('spinart', ...)`; each mode's picture has its own small store
-  (`spinart-spin`, `spinart-butterfly`, `spinart-bubbles`).
+  (`spinart-spin`, `spinart-butterfly`, `spinart-bubbles`, `spinart-splatter`).
+- The gallery hides the kit's background world while it is open (the wall covers it anyway).
+- Stickers: `earnSticker('spinart')` when a painting is hung.

@@ -354,7 +354,7 @@ export function drawConstellation(c, con, x, y, size, opts = {}) {
     } else if (faint > 0) {
       c.globalAlpha = faint;
       c.fillStyle = '#ffffff';
-      c.beginPath(); c.arc(p[0], p[1], Math.max(1, size * 0.012), 0, TAU); c.fill();
+      c.beginPath(); c.arc(p[0], p[1], Math.max(1, size * (opts.faintR || 0.012)), 0, TAU); c.fill();
     }
   }
   c.restore();

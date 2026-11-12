@@ -78,6 +78,8 @@ canvas#bg, canvas#fx {
   pointer-events: auto;
 }
 .screen button { pointer-events: auto; }
+/* a screen that is fading out can't be tapped any more */
+.screen:not(.active), .screen:not(.active) * { pointer-events: none !important; }
 
 .panel {
   display: flex;

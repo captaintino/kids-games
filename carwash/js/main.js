@@ -16,28 +16,28 @@ const store = createStore('carwash', { washed: {}, total: 0 });
 
 const STEPS = [
   {
-    id: 'soap', icon: '🧽', name: 'Soap', R: 34,
+    id: 'soap', tap: 'Tap the sponge!', icon: '🧽', name: 'Soap', R: 34,
     start: 'Soap time! Rub rub rub!',
     rub: ['Scrub scrub!', 'Rub a dub dub!', 'Bubbles!', 'Squeaky clean!'],
     pet: ['Hee hee! That tickles!', 'Scrub scrub!', 'Bubbles!'],
     done: 'So bubbly!', next: 'Now rinse it off!',
   },
   {
-    id: 'rinse', icon: '🚿', name: 'Rinse', R: 34,
+    id: 'rinse', tap: 'Tap the shower!', icon: '🚿', name: 'Rinse', R: 34,
     start: 'Rinse time! Splash!',
     rub: ['Splish splash!', 'Bye bye mud!', 'Whoosh!'],
     pet: ['Splish splash!', 'Hee hee!', 'Bye bye mud!'],
     done: 'All clean!', next: 'Now dry it!',
   },
   {
-    id: 'dry', icon: '🌬️', name: 'Dry', R: 40,
+    id: 'dry', tap: 'Tap the blower!', icon: '🌬️', name: 'Dry', R: 40,
     start: 'Dry time! Whoosh!',
     rub: ['Whoosh!', 'Blow blow!', 'Brrr!'],
     pet: ['Whoosh!', 'So fluffy!', 'Brrr!'],
     done: 'All dry!', next: 'Now make it shine!',
   },
   {
-    id: 'shine', icon: '✨', name: 'Shine', R: 36,
+    id: 'shine', tap: 'Tap the sparkles!', icon: '✨', name: 'Shine', R: 36,
     start: 'Make it shine!',
     rub: ['Sparkle sparkle!', 'Shiny!', 'Ooh, sparkly!'],
     pet: ['Sparkle sparkle!', 'So pretty!'],
@@ -226,7 +226,7 @@ function selectTool(id) {
     replayClass($(`#dock [data-tool="${id}"]`), 'wiggle');
     const need = needed();
     nudge(need);
-    say(STEP_BY_ID[need] ? STEP_BY_ID[need].start : 'Make it pretty!');
+    say(STEP_BY_ID[need] ? STEP_BY_ID[need].tap : 'Make it pretty!');
     return;
   }
   C.tool = id;
@@ -483,7 +483,7 @@ function rubAt(p, first) {
       C.lastNudge = now;
       const need = needed();
       nudge(need === 'decor' ? 'go' : need);
-      if (need !== 'decor') say(STEP_BY_ID[need].start);
+      if (need !== 'decor') say(STEP_BY_ID[need].tap);
       else say('Tap the flag to go!');
     }
     if (step.id === 'shine' && Math.random() < 0.3) fx.sparkle(p.x, p.y);
@@ -613,7 +613,7 @@ async function finishWash() {
     replayClass($('#dock .go-btn'), 'wiggle');
     const need = needed();
     nudge(need);
-    say(STEP_BY_ID[need].start);
+    say(STEP_BY_ID[need].tap);
     return;
   }
   const tk = C.token;
@@ -777,6 +777,20 @@ function frame(dt) {
     C.pop.el.setAttribute('font-size', s.toFixed(1));
     if (k >= 1) C.pop = null;
   }
+  // a gentle reminder after a quiet while
+  if (C.phase === 'wash' && C.ptr === null && C.ready) {
+    C.idle = (C.idle || 0) + dt;
+    if (C.idle > 9) {
+      C.idle = 0;
+      const need = needed();
+      if (need !== 'decor') {
+        nudge(need);
+        say(C.tool === need ? STEP_BY_ID[need].start : STEP_BY_ID[need].tap);
+      } else if (C.tool !== 'decor') {
+        nudge('go');
+      }
+    }
+  } else C.idle = 0;
   // blink now and then
   if (!C.happy && C.eyes.length) {
     C.blink -= dt;
@@ -824,6 +838,9 @@ function toTitle() {
 
 function layout() {
   if (!C.on) return;
+  // the bay is never much taller than wide (no big empty wall on tall phones)
+  const st = $('#stage');
+  bay.style.height = `${Math.round(Math.min(st.clientHeight, Math.max(260, Math.min(st.clientWidth, 980) * 0.92)))}px`;
   const bw = bay.clientWidth;
   const bh = bay.clientHeight;
   const floor = bh * 0.2;
