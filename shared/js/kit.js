@@ -115,7 +115,8 @@ function resize() {
   sizeCanvas(bg, bgx, Math.min(DPR, 1.5));
   animDpr = 1;
   sizeCanvas(an, anx, animDpr);
-  sizeCanvas(fxc, fxx, DPR);
+  // sparkles are soft and short-lived: 1.5x resolution is plenty and saves a lot of pixels on 2x/3x screens
+  sizeCanvas(fxc, fxx, Math.min(DPR, 1.5));
   fxDirty = true;
   unit = clamp(Math.min(W, H) / 400, 0.8, 1.8);
   rebuildBackground(false);

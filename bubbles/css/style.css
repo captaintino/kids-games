@@ -99,6 +99,9 @@ canvas.bg-pic {
   pointer-events: auto;
 }
 .screen button, .hud button { pointer-events: auto; }
+/* hidden screens keep their looping animations (button shine, bobbing mascots) paused,
+   so the browser doesn't restyle invisible things every frame */
+.screen:not(.active) * { animation-play-state: paused; }
 
 .panel {
   display: flex;

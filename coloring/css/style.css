@@ -80,6 +80,9 @@ canvas#bg, canvas#bg-fade, canvas#bg-anim, canvas#fx {
 .screen button { pointer-events: auto; }
 /* a screen that is fading out can't be tapped any more */
 .screen:not(.active), .screen:not(.active) * { pointer-events: none !important; }
+/* hidden screens keep their looping animations (button shine, bobbing mascots) paused,
+   so the browser doesn't restyle invisible things every frame */
+.screen:not(.active) * { animation-play-state: paused; }
 
 .panel {
   display: flex;

@@ -113,7 +113,8 @@ function resize() {
   DPR = Math.max(1, Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(2400000 / (W * H))));
   sizeCanvas(bg, bgx, Math.min(DPR, 1.5));
   sizeCanvas(an, anx, 1);
-  sizeCanvas(fx, fxx, DPR);
+  // sparkles are soft and short-lived: 1.5x resolution is plenty and saves a lot of pixels on 2x/3x screens
+  sizeCanvas(fx, fxx, Math.min(DPR, 1.5));
   fxDirty = true;
   unit = clamp(Math.min(W, H) / 400, 0.8, 1.8);
   rebuildBackground(false);
