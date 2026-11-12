@@ -1096,7 +1096,8 @@ function numberTap(r, pt, e) {
     setTimeout(() => sfx.chime(), 200);
     floatText(e.clientX, e.clientY - 30, pickOne(['Great!', 'Super!', 'Yay!', 'Awesome!']), '#fff');
     const next = ed.groups.find((x) => !groupComplete(x));
-    setTimeout(() => setKey(next.key, true), 450);
+    // move on to the next number, unless the kid already picked another color
+    setTimeout(() => { if (ed.key === g.key) setKey(next.key, true); }, 450);
   }
 }
 

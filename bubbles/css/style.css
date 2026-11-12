@@ -771,6 +771,9 @@ canvas#game {
 .learn-icon canvas { display: block; filter: drop-shadow(0 3px 2px rgba(40, 10, 90, .35)); }
 .banner-icon { width: 110px; height: 110px; margin: 0 auto 6px; }
 @media (max-height: 560px) and (orientation: landscape) {
-  .banner-icon { width: 80px; height: 80px; }
+  .banner-icon { width: 70px; height: 70px; margin-bottom: 2px; }
+  /* below the HUD's two rows */
+  .banner.with-icon { top: 61%; }
+  .banner.with-icon .banner-title { font-size: 52px; }
   .learn-panel > * + * { margin-top: 12px; }
 }

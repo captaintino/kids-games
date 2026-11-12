@@ -6,11 +6,17 @@ There's no wrong answer: anything can go anywhere.
 
 ## How to play
 
-1. Tap ▶️ **Play** and pick a world: 🎨 Paint Party, 🐠 Under the Sea, 🤠 Wild West, 🏰 Knights & Castles
-   or 🚀 Outer Space (the same worlds as the other games, with their little moving fish, flags and rockets).
+1. Tap ▶️ **Play** and pick a world: 🎨 Paint Party, 🐠 Under the Sea, 🤠 Wild West, 🏰 Knights & Castles,
+   🚀 Outer Space, 🐮 Farm, 🚌 City, ⛄ Winter or 🎂 Birthday Party (the same worlds as the other games, with
+   their little moving fish, flags, rockets, tractors, cars, snow and balloons). The nine world cards fit on
+   one screen: three by three on a phone, five in a row when it is sideways.
 2. The sticker tray is at the bottom (on the right side when the screen is sideways). The tabs choose a
    kind of sticker: 🐱 friends, 🎩 hats, 🕶️ glasses and silly faces, 🌸 flowers and bugs, 🐠 sea things,
-   🚀 space things and 🌈 fun stuff (rainbows, balloons, sweets, a unicorn, a dragon...).
+   🚀 space things, 🐮 farm (cow, piggy and sheep to dress up, hen, tractor, hay bale, straw hat...),
+   🚗 town (car, bus, traffic light, hard hat, fire truck...), ⛄ winter (snowman and penguin to dress up,
+   snowflake, bobble hat, sled...) and 🌈 fun stuff (rainbows, balloons, cake, cupcakes, confetti, a unicorn,
+   a dragon...). On a phone the tab strip scrolls sideways. Opening the sea, space, farm, city, winter or
+   birthday world opens the tray on its matching stickers.
 3. **Pull a sticker up out of the tray** and drop it anywhere. Swipe the tray sideways to see more.
    Or just **tap** a sticker in the tray and it hops into the picture by itself.
 4. **Dress up:** drop a hat near a friend's head (or glasses near their eyes) and it snaps on, with a
@@ -22,9 +28,13 @@ There's no wrong answer: anything can go anywhere.
    and twist it.
 6. **Remove a sticker** by dragging it to the 🗑️ trash can (it appears while you drag) or back onto
    the tray. Whoosh!
-7. 📷 saves the picture (the world plus all your stickers). 🗑️ clears the whole scene (it asks first).
+7. 📷 saves the picture (the world plus all your stickers) and also keeps it in the shared art gallery (so
+   Jigsaw can make a puzzle of it). 🗑️ clears the whole scene (it asks first).
 
-Tap a friend to hear it say hello (meow, woof, beep...). Every world keeps its own scene, saved on the
+**Stickers for the sticker book:** saving a picture earns one, and so does filling a world with 8 or more
+stickers (once per world each visit). The shared `earnSticker('stickers')` keeps it to one every 45 seconds.
+
+Tap a friend to hear it say hello (meow, woof, moo, oink, baa, beep...). Every world keeps its own scene, saved on the
 device, and the world cards show your scene and a ⭐ count of stickers.
 
 ## Notes
@@ -37,3 +47,6 @@ device, and the world cards show your scene and a ⭐ count of stickers.
   picture matches what is on screen.
 - Sticker positions are stored relative to the play area, so scenes survive rotating the device.
 - Up to 80 stickers per world.
+- The worlds come from `shared/js/scenes.js`. World previews and the saved picture draw a few frames with big
+  time steps on one still picture; the newer worlds draw their big movers (tractor, cars, penguin, balloons)
+  only once in that case so they don't appear twice.

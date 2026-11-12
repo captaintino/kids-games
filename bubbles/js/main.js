@@ -1145,6 +1145,7 @@ function showBanner(title, sub, icon = false) {
   $('#banner-sub').textContent = sub;
   $('#banner-sub').classList.toggle('hidden', !sub);
   $('#banner-icon').classList.toggle('hidden', !icon);
+  el.classList.toggle('with-icon', icon);
   if (icon) setLearnIcon($('#banner-icon'), 110);
   el.classList.remove('show');
   void el.offsetWidth;
@@ -1467,18 +1468,20 @@ function finishLearnRound() {
     confetti(80);
     sfx.win();
     const cheer = pick(LEARN_CHEERS);
+    // below the HUD on short landscape screens
+    const y0 = Math.max(H * 0.3, 190);
     if (shapes) {
       const sh = SHAPES[sym];
       const big = `${goal} ${sh.plural}!`;
-      floatText(W / 2, H * 0.36, big, '#ffe86b', fitSize(big, 72), 1.8);
-      floatText(W / 2, H * 0.36 + 76 * unit, cheer, '#ffffff', 40, 1.8);
+      floatText(W / 2, y0 + 20 * unit, big, '#ffe86b', fitSize(big, 72), 1.8);
+      floatText(W / 2, y0 + 96 * unit, cheer, '#ffffff', 40, 1.8);
       say(`${numberWord(goal)} ${sh.plural}! ${cheer}`, { queue: true });
     } else {
       const w = LETTER_WORDS[sym];
       const line = `${sym} is for ${w[0]}!`;
-      if (w[1]) floatText(W / 2, H * 0.3, w[1], '#ffffff', 84, 2.2, true);
-      floatText(W / 2, H * 0.3 + 86 * unit, line, '#ffe86b', fitSize(line, 46), 2.2);
-      floatText(W / 2, H * 0.3 + 140 * unit, cheer, '#ffffff', 36, 2.2);
+      if (w[1]) floatText(W / 2, y0, w[1], '#ffffff', 84, 2.2, true);
+      floatText(W / 2, y0 + 86 * unit, line, '#ffe86b', fitSize(line, 46), 2.2);
+      floatText(W / 2, y0 + 140 * unit, cheer, '#ffffff', 36, 2.2);
       say(`${line} ${cheer}`, { queue: true });
     }
   }, 450);

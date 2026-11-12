@@ -496,9 +496,9 @@
   font-size: 36px;
   font-weight: 700;
   line-height: 1;
-  color: rgba(255,255,255,.85);
-  background: rgba(255,255,255,.18);
-  border: 3px dashed rgba(255,255,255,.75);
+  color: rgba(128, 72, 255, .5);
+  background: rgba(255,255,255,.4);
+  border: 3px dashed rgba(128, 72, 255, .45);
   transition: background .25s, color .25s, transform .25s;
 }
 .sl.set-lower { padding-bottom: 6px; }
@@ -535,3 +535,4 @@
 @media (max-height: 560px) and (min-aspect-ratio: 5/4) {
   .done-pic .word-svg.drawn, .done-pic .name-star { width: 60px; height: 60px; }
 }
+.done-card.seq-word .done-pic, .done-card.seq-name .done-pic { margin: 8px 8px 0; }

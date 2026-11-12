@@ -178,20 +178,18 @@ body:not([data-season="night"]) .big-emoji { display: inline-block; margin-right
 .calm-btn.on { --c1: #a6ff7a; --c2: #23c95a; --edge: #138a3b; opacity: 1; }
 .calm-check {
   display: none;
-  position: absolute;
-  top: -8px;
-  right: -6px;
-  width: 26px;
-  height: 26px;
+  margin-left: 6px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: linear-gradient(180deg, #fff27a, #ffb000);
   border: 2px solid #fff;
-  font-size: 15px;
-  line-height: 22px;
+  font-size: 14px;
+  line-height: 20px;
   color: #6b3200;
   text-shadow: none;
 }
-.calm-btn.on .calm-check { display: block; }
+.calm-btn.on .calm-check { display: inline-block; }
 @media (max-width: 520px) { .world-word { display: none; } }
 
 /* ---------- My Sky ---------- */

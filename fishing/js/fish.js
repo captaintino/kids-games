@@ -8,7 +8,7 @@ const TAU = Math.PI * 2;
 
 const GOLD = { top: '#fff7b8', belly: '#ffc21f', fin: '#ffb000', finDark: '#e08a00' };
 
-export const SPECIES = [
+const POND_SPECIES = [
   {
     id: 'sunny', name: 'Sunny Fish', kind: 'fish', rx: 30, ry: 23, tail: 'fan', tl: 22, th: 20,
     top: '#fff27a', belly: '#ffb21f', fin: '#ff8a1f', pattern: { type: 'cheeks' }, depth: [0.05, 0.6], speed: [45, 70],
@@ -73,8 +73,125 @@ export const SPECIES = [
   },
 ];
 
+POND_SPECIES.forEach((sp) => { sp.place = 'pond'; });
+
+const OCEAN_SPECIES = [
+  {
+    id: 'parrot', name: 'Parrot Fish', kind: 'fish', rx: 33, ry: 22, tail: 'round', tl: 20, th: 18,
+    top: '#7ff0d8', belly: '#2fc9a8', fin: '#ff7ac6', tailColor: '#ff9ad6', pattern: { type: 'scales', color: 'rgba(255,255,255,0.55)' }, beak: true,
+    depth: [0.1, 0.7], speed: [45, 70],
+  },
+  {
+    id: 'shark', name: 'Little Shark', kind: 'fish', shape: 'shark', rx: 44, ry: 18, tail: 'shark', tl: 28, th: 26,
+    top: '#9fb8d9', belly: '#6f8fc0', fin: '#7f9fcc', pattern: { type: 'belly' }, teeth: true, depth: [0.2, 0.7], speed: [55, 80],
+  },
+  {
+    id: 'sword', name: 'Swordfish', kind: 'fish', shape: 'shark', rx: 40, ry: 17, tail: 'fork', tl: 28, th: 24, sword: true,
+    top: '#6f9bff', belly: '#c9d9ff', fin: '#3d6fe0', pattern: { type: 'hstripes', color: 'rgba(255,255,255,0.35)' }, depth: [0.1, 0.6], speed: [75, 100],
+  },
+  {
+    id: 'ray', name: 'Stingray', kind: 'ray', r: 30, color: '#9fb5e0', dark: '#6a84c0', light: '#dbe6ff', spots: '#ffffff',
+    depth: [0.55, 0.95], speed: [28, 40],
+  },
+  {
+    id: 'turtle', name: 'Sea Turtle', kind: 'turtle', r: 26, shell: '#5cc9a0', shellDark: '#2f9a78', plate: '#a8f0cf', skin: '#c6f2a6', skinDark: '#7cc96a',
+    depth: [0.2, 0.75], speed: [26, 36],
+  },
+  {
+    id: 'seahorse', name: 'Seahorse', kind: 'seahorse', r: 22, color: '#ffb84d', dark: '#ff8a1f', light: '#ffe7a8', fin: '#ff9ad6',
+    depth: [0.25, 0.8], speed: [14, 22],
+  },
+  {
+    id: 'lobster', name: 'Lobster', kind: 'lobster', r: 24, color: '#ff5a4a', dark: '#c8282e', light: '#ffb0a0',
+    depth: [1, 1], speed: [26, 38],
+  },
+  {
+    id: 'goldseahorse', name: 'Golden Seahorse', rare: 'gold', kind: 'seahorse', r: 23, color: '#ffd93b', dark: '#ffb000', light: '#fff7b8', fin: '#ffffff',
+    depth: [0.25, 0.75], speed: [14, 22],
+  },
+  {
+    id: 'goldturtle', name: 'Golden Turtle', rare: 'gold', kind: 'turtle', r: 26, shell: '#ffd23a', shellDark: '#e0a000', plate: '#fff4b0', skin: '#fff2a6', skinDark: '#ffc21f',
+    depth: [0.2, 0.7], speed: [26, 36],
+  },
+];
+OCEAN_SPECIES.forEach((sp) => { sp.place = 'ocean'; });
+
+const ICE_SPECIES = [
+  {
+    id: 'char', name: 'Arctic Char', kind: 'fish', rx: 34, ry: 19, tail: 'fork', tl: 22, th: 18,
+    top: '#5f8fc0', belly: '#ff7a4a', fin: '#ff8a5c', pattern: { type: 'spots', color: '#ffd6e8' }, depth: [0.15, 0.75], speed: [50, 75],
+  },
+  {
+    id: 'icefish', name: 'Ice Fish', kind: 'fish', rx: 32, ry: 18, tail: 'fan', tl: 22, th: 18,
+    top: '#f2fbff', belly: '#a8dcf5', fin: '#cdeeff', pattern: { type: 'scales', color: 'rgba(120, 190, 240, 0.6)' }, depth: [0.1, 0.7], speed: [40, 60],
+  },
+  {
+    id: 'cod', name: 'Polar Cod', kind: 'fish', rx: 35, ry: 19, tail: 'round', tl: 20, th: 17,
+    top: '#c9d6ee', belly: '#8a9cc8', fin: '#9fb0d9', pattern: { type: 'hstripes', color: 'rgba(255,255,255,0.45)' }, whiskers: 'chin', depth: [0.3, 0.85], speed: [40, 60],
+  },
+  {
+    id: 'narwhal', name: 'Baby Narwhal', kind: 'fish', shape: 'plump', rx: 38, ry: 23, tail: 'fork', tl: 22, th: 22, horn: true,
+    top: '#b9c9e8', belly: '#e8f0ff', fin: '#9fb3d9', pattern: { type: 'spots', color: 'rgba(80, 100, 150, 0.35)' }, depth: [0.15, 0.6], speed: [35, 50],
+  },
+  {
+    id: 'snowcrab', name: 'Snow Crab', kind: 'crab', r: 25, color: '#ffa07a', dark: '#e0603a', light: '#ffd9c6',
+    depth: [1, 1], speed: [28, 40],
+  },
+  {
+    id: 'moonjelly', name: 'Moon Jelly', kind: 'jelly', r: 23, color: '#b3d4ff', dark: '#7aa0e0', light: '#eef6ff',
+    depth: [0.15, 0.65], speed: [14, 22],
+  },
+  {
+    id: 'goldchar', name: 'Golden Char', rare: 'gold', kind: 'fish', rx: 34, ry: 20, tail: 'fancy', tl: 32, th: 26,
+    top: GOLD.top, belly: GOLD.belly, fin: GOLD.fin, pattern: { type: 'spots', color: 'rgba(255,255,255,0.75)' }, crown: true,
+    depth: [0.15, 0.7], speed: [40, 60],
+  },
+];
+ICE_SPECIES.forEach((sp) => { sp.place = 'ice'; });
+
+const JUNGLE_SPECIES = [
+  {
+    id: 'piranha', name: 'Piranha', kind: 'fish', shape: 'tall', rx: 29, ry: 25, tail: 'fork', tl: 18, th: 16,
+    top: '#a6b8e0', belly: '#ff5a4a', fin: '#ff7a5a', pattern: { type: 'spots', color: 'rgba(255,255,255,0.4)' }, teeth: true,
+    depth: [0.2, 0.8], speed: [55, 80],
+  },
+  {
+    id: 'tetra', name: 'Neon Tetra', kind: 'fish', rx: 27, ry: 15, tail: 'fork', tl: 18, th: 14,
+    top: '#c9f4ff', belly: '#fff0f4', fin: '#bfe8ff', pattern: { type: 'neon' }, depth: [0.05, 0.6], speed: [65, 95],
+  },
+  {
+    id: 'discus', name: 'Discus Fish', kind: 'fish', shape: 'tall', rx: 30, ry: 29, tail: 'fan', tl: 15, th: 13,
+    top: '#ffcf6b', belly: '#ff8a3d', fin: '#ff9a4d', pattern: { type: 'waves', color: '#3fa0ff' }, depth: [0.1, 0.6], speed: [30, 45],
+  },
+  {
+    id: 'catfish', name: 'Catfish', kind: 'fish', rx: 38, ry: 18, tail: 'round', tl: 20, th: 16,
+    top: '#d9b88a', belly: '#a8845a', fin: '#c49a6a', pattern: { type: 'spots', color: 'rgba(90, 60, 30, 0.35)' }, whiskers: 'cat',
+    depth: [0.55, 0.95], speed: [30, 45],
+  },
+  {
+    id: 'guppy', name: 'Fancy Guppy', kind: 'fish', rx: 24, ry: 15, tail: 'fancy', tl: 30, th: 26,
+    top: '#fff0a6', belly: '#ffd23a', fin: '#ff7ac6', tailColor: '#7fd8ff', pattern: { type: 'cheeks' }, depth: [0.05, 0.55], speed: [50, 75],
+  },
+  {
+    id: 'riverturtle', name: 'River Turtle', kind: 'turtle', r: 23, shell: '#8fae4a', shellDark: '#5a7a2a', plate: '#c9e07a', skin: '#d9ec8a', skinDark: '#9cba4a', redEar: true,
+    depth: [0.3, 0.8], speed: [24, 34],
+  },
+  {
+    id: 'goldpiranha', name: 'Golden Piranha', rare: 'gold', kind: 'fish', shape: 'tall', rx: 29, ry: 25, tail: 'fancy', tl: 26, th: 22,
+    top: GOLD.top, belly: GOLD.belly, fin: GOLD.fin, pattern: { type: 'scales', color: 'rgba(255,255,255,0.6)' }, teeth: true, crown: true,
+    depth: [0.2, 0.75], speed: [45, 65],
+  },
+];
+JUNGLE_SPECIES.forEach((sp) => { sp.place = 'jungle'; });
+
+export const SPECIES = POND_SPECIES.concat(OCEAN_SPECIES, ICE_SPECIES, JUNGLE_SPECIES);
 export const BY_ID = {};
 SPECIES.forEach((s) => { BY_ID[s.id] = s; });
+
+/** Creatures that walk along the bottom. */
+export const isWalker = (sp) => sp.kind === 'crab' || sp.kind === 'lobster';
+/** Creatures drawn the same both ways (they don't flip to swim the other way). */
+export const isFlipless = (sp) => sp.kind === 'crab' || sp.kind === 'jelly' || sp.kind === 'octopus';
 
 const RAINBOW = ['#ff4d5e', '#ff9a2e', '#ffd93b', '#5cd65c', '#3d9bff', '#9d5cff'];
 
@@ -117,7 +234,13 @@ function bodyPath(c, sp) {
   const rx = sp.rx;
   const ry = sp.ry;
   c.beginPath();
-  if (sp.shape === 'tall') {
+  if (sp.shape === 'shark') {
+    c.moveTo(rx, ry * 0.12);
+    c.bezierCurveTo(rx * 0.92, -ry * 0.8, rx * 0.3, -ry, -rx * 0.2, -ry * 0.86);
+    c.bezierCurveTo(-rx * 0.6, -ry * 0.7, -rx, -ry * 0.3, -rx, 0);
+    c.bezierCurveTo(-rx, ry * 0.3, -rx * 0.6, ry * 0.72, -rx * 0.2, ry * 0.84);
+    c.bezierCurveTo(rx * 0.3, ry * 0.98, rx * 0.92, ry * 0.75, rx, ry * 0.12);
+  } else if (sp.shape === 'tall') {
     c.moveTo(rx, 0);
     c.bezierCurveTo(rx * 0.85, -ry * 0.6, rx * 0.25, -ry, -rx * 0.15, -ry);
     c.bezierCurveTo(-rx * 0.6, -ry * 0.9, -rx, -ry * 0.3, -rx, 0);
@@ -172,6 +295,20 @@ function paintFins(c, sp) {
     c.quadraticCurveTo(-rx * 0.75, ry * 1.05, -rx * 0.62, ry * 0.55);
     c.closePath();
     c.fillStyle = finFill(c, sp, 0, ry * 2);
+    c.fill(); inkStroke(c, 3);
+  } else if (sp.shape === 'shark') {
+    c.moveTo(-rx * 0.35, -ry * 0.8);
+    c.quadraticCurveTo(-rx * 0.15, -ry * 1.5, -rx * 0.05, -ry * 2.0);
+    c.quadraticCurveTo(rx * 0.05, -ry * 1.3, rx * 0.25, -ry * 0.86);
+    c.closePath();
+    c.fillStyle = finFill(c, sp, -ry * 2, -ry * 0.8);
+    c.fill(); inkStroke(c, 3);
+    c.beginPath();
+    c.moveTo(-rx * 0.1, ry * 0.75);
+    c.quadraticCurveTo(-rx * 0.25, ry * 1.6, -rx * 0.42, ry * 1.55);
+    c.quadraticCurveTo(-rx * 0.35, ry * 1.0, -rx * 0.38, ry * 0.7);
+    c.closePath();
+    c.fillStyle = finFill(c, sp, ry * 0.6, ry * 1.6);
     c.fill(); inkStroke(c, 3);
   } else {
     c.moveTo(-rx * 0.6, -ry * 0.7);
@@ -238,6 +375,42 @@ function paintPattern(c, sp) {
       c.quadraticCurveTo(-rx * 0.05, -ry * 0.25, rx * 0.32, -ry * 0.62);
       c.fill();
       break;
+    case 'belly':
+      c.fillStyle = '#f4f8ff';
+      c.beginPath();
+      c.moveTo(rx * 1.1, ry * 0.15);
+      c.quadraticCurveTo(0, ry * 0.05, -rx * 1.1, ry * 0.35);
+      c.lineTo(-rx * 1.1, ry * 1.2); c.lineTo(rx * 1.1, ry * 1.2);
+      c.closePath();
+      c.fill();
+      c.fillStyle = 'rgba(255,255,255,0.35)';
+      for (const [x, y] of [[-0.45, -0.45], [-0.1, -0.6], [-0.7, -0.15]]) { c.beginPath(); c.arc(x * rx, y * ry, ry * 0.12, 0, TAU); c.fill(); }
+      break;
+    case 'neon':
+      c.fillStyle = '#3fd0ff';
+      c.beginPath();
+      c.moveTo(rx * 0.5, -ry * 0.32); c.quadraticCurveTo(0, -ry * 0.42, -rx * 1.1, -ry * 0.2);
+      c.lineTo(-rx * 1.1, ry * 0.05); c.quadraticCurveTo(0, -ry * 0.12, rx * 0.5, -ry * 0.06);
+      c.closePath(); c.fill();
+      c.fillStyle = '#ff4d6d';
+      c.beginPath();
+      c.moveTo(rx * 0.05, ry * 0.12); c.quadraticCurveTo(-rx * 0.4, ry * 0.08, -rx * 1.1, ry * 0.2);
+      c.lineTo(-rx * 1.1, ry * 0.9); c.quadraticCurveTo(-rx * 0.4, ry * 0.9, rx * 0.05, ry * 0.6);
+      c.closePath(); c.fill();
+      break;
+    case 'waves':
+      c.strokeStyle = p.color;
+      c.lineWidth = 2.6;
+      c.lineCap = 'round';
+      for (let k = -3; k <= 3; k++) {
+        c.beginPath();
+        for (let x = -rx * 1.1; x <= rx * 0.4; x += 4) {
+          const y = k * ry * 0.27 + Math.sin(x * 0.35 + k) * 2;
+          if (x === -rx * 1.1) c.moveTo(x, y); else c.lineTo(x, y);
+        }
+        c.stroke();
+      }
+      break;
     case 'scales':
     case 'rainbow':
       if (p.type === 'rainbow') {
@@ -263,6 +436,25 @@ function paintPattern(c, sp) {
 function paintBody(c, sp, happy) {
   const rx = sp.rx;
   const ry = sp.ry;
+  if (sp.sword) {
+    c.beginPath();
+    c.moveTo(rx * 0.85, -ry * 0.12);
+    c.lineTo(rx * 1.85, -ry * 0.02);
+    c.lineTo(rx * 0.85, ry * 0.2);
+    c.closePath();
+    c.fillStyle = '#dfe8ff';
+    c.fill(); inkStroke(c, 2.6);
+  }
+  if (sp.horn) {
+    c.save();
+    c.translate(rx * 0.72, -ry * 0.45);
+    c.rotate(-0.42);
+    c.beginPath(); c.moveTo(0, -3.4); c.lineTo(rx * 0.95, 0); c.lineTo(0, 3.4); c.closePath();
+    c.fillStyle = '#fff6dc'; c.fill(); inkStroke(c, 2.4);
+    c.strokeStyle = 'rgba(160, 120, 60, 0.6)'; c.lineWidth = 1.4;
+    for (let k = 1; k < 5; k++) { const x = (k / 5) * rx * 0.95; c.beginPath(); c.moveTo(x - 2, -3.4 * (1 - k / 5)); c.lineTo(x + 2, 3.4 * (1 - k / 5)); c.stroke(); }
+    c.restore();
+  }
   paintFins(c, sp);
   bodyPath(c, sp);
   const g = c.createLinearGradient(0, -ry, 0, ry);
@@ -304,6 +496,33 @@ function paintBody(c, sp, happy) {
   eye(c, rx * 0.5, -ry * 0.18, er, happy);
   blush(c, rx * 0.45, ry * 0.32, er * 0.75);
   grin(c, rx * 0.8, ry * 0.32, er * 0.55, 2.2);
+  if (sp.teeth) {
+    c.fillStyle = '#ffffff';
+    for (const dx of [-0.1, 0.06]) {
+      const x = rx * (0.8 + dx);
+      const y = ry * 0.32 - er * 0.55 * 0.6 + er * 0.55 * 0.95;
+      c.beginPath(); c.moveTo(x - 2.4, y - 0.6); c.lineTo(x, y + 3.6); c.lineTo(x + 2.4, y - 0.6); c.closePath();
+      c.fill(); inkStroke(c, 1.2);
+    }
+  }
+  if (sp.beak) {
+    c.beginPath();
+    c.moveTo(rx * 0.86, ry * 0.0); c.quadraticCurveTo(rx * 1.12, ry * 0.15, rx * 0.9, ry * 0.42); c.closePath();
+    c.fillStyle = '#fff6dc'; c.fill(); inkStroke(c, 2);
+  }
+  if (sp.whiskers) {
+    c.strokeStyle = INK;
+    c.lineWidth = 2;
+    c.lineCap = 'round';
+    if (sp.whiskers === 'chin') {
+      c.beginPath(); c.moveTo(rx * 0.7, ry * 0.62); c.quadraticCurveTo(rx * 0.72, ry * 0.95, rx * 0.6, ry * 1.1); c.stroke();
+    } else {
+      for (const [dy, len] of [[0.05, 1], [0.25, 0.9]]) {
+        c.beginPath(); c.moveTo(rx * 0.92, ry * dy); c.quadraticCurveTo(rx * 1.25, ry * (dy + 0.1), rx * 1.32 * len, ry * (dy + 0.6)); c.stroke();
+      }
+      c.beginPath(); c.moveTo(rx * 0.8, ry * 0.5); c.quadraticCurveTo(rx * 0.9, ry * 0.95, rx * 0.75, ry * 1.15); c.stroke();
+    }
+  }
   if (sp.crown) {
     c.save();
     c.translate(rx * 0.1, -ry * 1.05);
@@ -337,6 +556,13 @@ function tailPath(c, sp) {
       c.quadraticCurveTo(-L * 0.6, -T * 0.25, -L * 0.55, 0);
       c.quadraticCurveTo(-L * 0.6, T * 0.25, -L, T);
       c.quadraticCurveTo(-L * 0.4, T * 0.3, 4, T * 0.22);
+      break;
+    case 'shark':
+      c.moveTo(4, -T * 0.2);
+      c.quadraticCurveTo(-L * 0.5, -T * 0.5, -L * 1.05, -T * 1.15);
+      c.quadraticCurveTo(-L * 0.75, -T * 0.2, -L * 0.62, T * 0.1);
+      c.quadraticCurveTo(-L * 0.75, T * 0.35, -L * 0.8, T * 0.7);
+      c.quadraticCurveTo(-L * 0.35, T * 0.35, 4, T * 0.2);
       break;
     case 'round':
       c.moveTo(4, -T * 0.32);

@@ -18,6 +18,30 @@ It's an installable **Progressive Web App**: once it has loaded, it works fully 
   You get up to 3 stars per level (lose no hearts for 3 stars). Finishing a level unlocks the next one.
 - **Endless**: bubbles keep coming faster and faster. Try to beat your best score!
 - **Endless Immortal**: a relaxed mode with no hearts, so you can't lose. Drag your finger around to pop every bubble it touches, leaving a sparkly trail. Use the pause button to stop. It keeps its own best score.
+- **🎓 Learn**: three gentle learning modes behind one button. No hearts, big slow bubbles, a
+  celebration after each round, and the next round starts by itself. Wrong bubbles just boing
+  ("Not that one!") and the game says what it was and what to look for. Tap the "Pop the..." chip
+  at the top to hear the question again.
+  - **🔢 Count & Pop**: "Pop 4 bubbles!" Each pop is counted out loud, from 2 up to 10, with some
+    "only blue ones" rounds later on.
+  - **🔺 Shape Pop**: bubbles carry a cute drawn shape (circle, square, triangle, star, heart, then
+    diamond, moon and hexagon). "Pop the stars!" is spoken and shown with the shape in the HUD. Each
+    right pop is counted and named ("Star!"); 5 to 8 pops finish a round. The first rounds mix 2 or 3
+    shapes, later rounds 3 to 5. The bubble colors are mixed, so the color never gives the answer away.
+  - **🔤 Letter Pop**: bubbles carry big capital letters. "Pop the B!" Popping one says "B!", and the
+    round ends with "B is for ball!" (with a picture). It starts with easy letters that look nothing
+    alike (B, O, X, A, S, M, T, L), then goes through the alphabet. Letters that are easy to mix up
+    (E/F, M/W, O/Q...) are never asked against each other.
+
+  Links that open a mode directly (used by the home screen): `bubbles/#count`, `bubbles/#shapes`,
+  `bubbles/#letters` (and `#learn` for the picker).
+
+**Sticker book:** winning a level, finishing a Count, Shape or Letter round, and every 50 pops in
+Endless (100 in Endless Immortal) earn a sticker for the album on the home screen (`earnSticker`
+from `shared/js/rewards.js`, at most one every 45 seconds). The grown-up corner's volumes and daily
+play limit apply here too (`startGrownups()` from `shared/js/grownups.js`).
+
+The Android back button (or Safari's back swipe) steps back: out of a game to its menu, then to the title.
 
 **Themes:** pick a world for the background: Bubble Party (its colors change by level), Under the Sea,
 Wild West, Knights & Castles, or Outer Space. Each one has a few moving details (fish, a tumbleweed,
@@ -30,6 +54,9 @@ sound setting are saved on the device.
 
 - No build step and no dependencies: plain HTML, CSS and ES modules.
 - Rendered on a `<canvas>`. Bubble sprites are drawn once at startup, so the game runs smoothly on phones.
+  Shape and letter bubbles (`js/learn.js` for the rounds, `buildLearnSprite` in `js/sprites.js` for the
+  art) are drawn once per shape/letter and color when a round first needs them, so no text is drawn
+  each frame.
 - All sounds are made live with the Web Audio API, so there are no audio files.
 - The [Fredoka](https://github.com/hafontia/Fredoka-One) font is included in `fonts/` (SIL Open Font License), so it works offline.
 - `sw.js` caches every file the first time the game loads.
