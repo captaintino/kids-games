@@ -4,6 +4,9 @@
 // Keeping the big picture cached means a whole scene costs one image copy per frame.
 // Shared by every game in the collection (Bubble Pop Party keeps its own copy with
 // per-level colors). The first world, Paint Party, takes each game's own colors.
+// Nine worlds: Paint Party, Under the Sea, Wild West, Knights & Castles, Outer Space,
+// Farm, City, Winter and Birthday Party. The moving bits use small sprites drawn once
+// (tractor, cars, hens, penguin, balloons...), so a frame is a handful of drawImage calls.
 
 // Paint Party sky colors: [top, middle, bottom]. One per screen, so the colors
 // change as you move between the title and each coloring mode.
