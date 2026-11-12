@@ -14,7 +14,7 @@ Where a file joins two calls (for example "woof … woof"), both come from the s
 | `sheep.mp3` | [Sheep #3](https://bigsoundbank.com/sheep-3-s2345.html) | Joseph Sardin, BigSoundBank.com | CC0 1.0 |
 | `horse.mp3` | [Neighing Horse #2](https://bigsoundbank.com/neighing-horse-2-s0859.html) | Joseph Sardin, BigSoundBank.com | CC0 1.0 |
 | `chicken.mp3` | [Hens Lays](https://bigsoundbank.com/hens-lays-s0978.html) | Joseph Sardin, BigSoundBank.com | CC0 1.0 |
-| `frog.mp3` | [One frog](https://bigsoundbank.com/one-frog-s0819.html) | Joseph Sardin, BigSoundBank.com | CC0 1.0 |
+| `frog.mp3` | [American bullfrog](https://umesc.usgs.gov/terrestrial/amphibians/armi/frog_calls.html), from the USGS frog and toad calls | U.S. Geological Survey, Upper Midwest Environmental Sciences Center | Public domain (U.S. government work) |
 | `lion.mp3` | [Lion raring-sound1TamilNadu178](https://commons.wikimedia.org/wiki/File:Lion_raring-sound1TamilNadu178.ogg), Wikimedia Commons | தகவலுழவன் (Wikimedia Commons user) | Public domain |
 | `owl.mp3` | [Tawny Owl #2](https://bigsoundbank.com/tawny-owl-2-s1764.html) | Joseph Sardin, BigSoundBank.com | CC0 1.0 |
 | `bee.mp3` | [Bumblebee #1](https://bigsoundbank.com/bumblebee-1-s1000.html) | Joseph Sardin, BigSoundBank.com | CC0 1.0 |
