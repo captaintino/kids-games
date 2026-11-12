@@ -6,11 +6,16 @@ import {
   overrideScene, animateBackground, pickOne, rand, clamp, wait,
 } from '../../shared/js/kit.js';
 import { SCENES, paintScene, createAnimator } from '../../shared/js/scenes.js';
+import { earnSticker } from '../../shared/js/rewards.js';
+import { addArt } from '../../shared/js/gallery.js';
 import { STICKERS, CATS, BY_ID } from './art.js';
 
 const PARTY = ['#ffb03b', '#ff6fb5', '#9b6bff'];
 const RAD = Math.PI / 180;
 const MAX_STICKERS = 80;
+const BUSY_SCENE = 8; // this many stickers in a world earns a sticker for the album (once per world per visit)
+// the tray opens on the stickers that fit the world
+const WORLD_TAB = { underwater: 'sea', space: 'space', farm: 'farm', city: 'town', winter: 'winter', birthday: 'fun' };
 const store = createStore('stickers', { tab: 'friends', scenes: {} });
 if (!BY_ID.kitty || !CATS.some((c) => c.key === store.data.tab)) store.data.tab = 'friends';
 
@@ -362,6 +367,22 @@ function voice(kind) {
     case 'blub':
       [0, 0.09, 0.2].forEach((d, i) => T({ f0: 260 + i * 90, f1: 900 + i * 200, dur: 0.07, vol: 0.2, delay: d }));
       break;
+    case 'moo':
+      T({ type: 'triangle', f0: 170, f1: 230, dur: 0.25, vol: 0.28 });
+      T({ type: 'triangle', f0: 230, f1: 140, dur: 0.6, vol: 0.28, delay: 0.22 });
+      break;
+    case 'oink':
+      [0, 0.2].forEach((d) => {
+        T({ type: 'square', f0: 300, f1: 420, dur: 0.07, vol: 0.06, delay: d });
+        T({ type: 'triangle', f0: 420, f1: 260, dur: 0.12, vol: 0.18, delay: d + 0.05 });
+      });
+      break;
+    case 'baa':
+      for (let i = 0; i < 6; i++) T({ type: 'triangle', f0: i % 2 ? 560 : 520, f1: i % 2 ? 520 : 560, dur: 0.07, vol: 0.18, delay: i * 0.06 });
+      break;
+    case 'squawk':
+      [0, 0.16].forEach((d, i) => T({ type: 'square', f0: 700 - i * 80, f1: 1100 - i * 120, dur: 0.12, vol: 0.06, delay: d }));
+      break;
     default:
       sfx.pop();
   }
@@ -487,6 +508,7 @@ function endDrag(p) {
   }
   select(st);
   saveScene();
+  if (d.fromTray) checkBusy();
 }
 
 onPointer(layer, {
@@ -548,13 +570,41 @@ function buildTabs() {
 function showTab(key, speak) {
   store.data.tab = key;
   store.persist();
-  $$('.tab').forEach((b) => b.classList.toggle('on', b.dataset.cat === key));
+  $$('.tab').forEach((b) => {
+    b.classList.toggle('on', b.dataset.cat === key);
+    if (b.dataset.cat === key) scrollTabIntoView(b);
+  });
   const list = STICKERS.filter((s) => s.cat === key);
   itemsEl.innerHTML = list.map((s) =>
     `<div class="item" data-id="${s.id}" role="button" aria-label="${s.name}"><img src="${art[s.id].src}" alt="" draggable="false"></div>`).join('');
   itemsEl.scrollLeft = 0;
   itemsEl.scrollTop = 0;
   if (speak) say(CATS.filter((c) => c.key === key)[0].name);
+}
+
+// the tab strip scrolls when there are more tabs than room (phones)
+function scrollTabIntoView(b) {
+  const strip = $('#tabs');
+  if (!strip || !b.offsetParent) return;
+  if (strip.scrollWidth > strip.clientWidth + 2) {
+    const left = b.offsetLeft - strip.offsetLeft;
+    if (left < strip.scrollLeft + 10 || left + b.offsetWidth > strip.scrollLeft + strip.clientWidth - 10) {
+      strip.scrollLeft = Math.max(0, left - (strip.clientWidth - b.offsetWidth) / 2);
+    }
+  }
+  if (strip.scrollHeight > strip.clientHeight + 2) {
+    const top = b.offsetTop - strip.offsetTop;
+    if (top < strip.scrollTop + 10 || top + b.offsetHeight > strip.scrollTop + strip.clientHeight - 10) {
+      strip.scrollTop = Math.max(0, top - (strip.clientHeight - b.offsetHeight) / 2);
+    }
+  }
+}
+
+// A busy scene (lots of stickers) earns a sticker for the album, once per world per visit.
+const busyRewarded = {};
+function checkBusy() {
+  if (!worldId || busyRewarded[worldId] || items.length < BUSY_SCENE) return;
+  if (earnSticker('stickers', { delay: 1300 })) busyRewarded[worldId] = true;
 }
 
 let trayTouch = null;
@@ -684,6 +734,7 @@ function tapItem(type, itemEl) {
     }
     select(st);
     saveScene();
+    checkBusy();
   }));
 }
 
@@ -848,6 +899,7 @@ function enterWorld(id) {
   animateBackground(false);
   selected = null;
   loadScene(id);
+  if (WORLD_TAB[id] && WORLD_TAB[id] !== store.data.tab) showTab(WORLD_TAB[id], false);
   layoutStage();
   items.forEach((st, i) => setTimeout(() => popEl(st), Math.min(600, i * 30)));
   say(items.length ? sc.name : `${sc.name}! Drag a sticker in!`);
@@ -890,7 +942,9 @@ async function savePicture() {
   const r = $('[data-action="save"]').getBoundingClientRect();
   fx.sparkles(r.left + r.width / 2, r.top + r.height / 2, 10, 40);
   say('Click! What a picture!');
+  try { addArt(cv, { game: 'stickers', title: 'My sticker scene' }); } catch (err) { /* storage full */ }
   saveImage(cv, 'my-sticker-scene', 'My sticker scene');
+  earnSticker('stickers', { delay: 1600 });
 }
 async function clearAll() {
   const roots = ordered().filter((s) => !s.p).reverse();

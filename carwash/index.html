@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Template Game</title>
-  <meta name="description" content="A starting point for a new game.">
-  <meta name="theme-color" content="#7b5cff">
+  <title>Car Wash</title>
+  <meta name="description" content="Scrub, rinse, dry and shine muddy cars, trucks and pets.">
+  <meta name="theme-color" content="#2f8cff">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -18,27 +18,85 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <!-- Title screen: data-start marks it as the game's home (back from here = game list) -->
+  <!-- Title -->
   <section id="screen-title" class="screen active" data-start>
     <button class="round-btn corner-left" data-action="hub" aria-label="All games">🏠</button>
     <button class="round-btn corner-right" data-action="sound" aria-label="Toggle sound">🔊</button>
-    <div class="panel">
-      <h1 class="logo"><span>Template</span><span>Game</span></h1>
+    <div class="panel title-panel">
+      <div class="mascot" id="mascot" aria-hidden="true"></div>
+      <h1 class="logo"><span>Car</span><span>Wash</span></h1>
+      <div class="tagline">Scrub scrub!</div>
       <div class="btn-col">
-        <button class="btn btn-pink" data-action="play"><span class="btn-icon">▶️</span> Play</button>
+        <button class="btn btn-blue" data-action="picker"><span class="btn-icon">🧽</span> Wash!</button>
+        <button class="btn btn-pink" data-action="surprise"><span class="btn-icon">🎲</span> Surprise</button>
+      </div>
+      <div class="best-line" id="title-count"></div>
+    </div>
+  </section>
+
+  <!-- Pick a vehicle -->
+  <section id="screen-picker" class="screen">
+    <div class="panel picker-panel">
+      <div class="picker-head">
+        <button class="round-btn" data-action="title" aria-label="Back">⬅️</button>
+        <h2 class="heading">Who's muddy?</h2>
+        <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
+      </div>
+      <div class="picker-scroll scroll-y" id="picker-scroll">
+        <div class="veh-grid" id="veh-grid"></div>
       </div>
     </div>
   </section>
 
-  <!-- Play area (not a .screen: shown while no screen is active) -->
-  <div id="play" class="play hidden">
-    <div class="hud">
-      <button class="round-btn" data-action="back" aria-label="Back">⬅️</button>
-      <div class="pill" id="score">Taps: 0</div>
+  <!-- Washing -->
+  <section id="play" class="play" aria-label="Car wash">
+    <div class="bar bar-l">
+      <button class="round-btn" data-action="back" aria-label="Back to vehicles">⬅️</button>
+      <button class="round-btn" data-action="photo" id="photo-btn" aria-label="Save a picture">📷</button>
+    </div>
+    <div class="bar bar-r">
       <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
     </div>
-    <div id="target" class="target">Tap me!</div>
-  </div>
+    <div class="stage" id="stage">
+      <div class="bay" id="bay">
+        <div class="bay-arch" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="bay-floor" aria-hidden="true"></div>
+        <div class="bay-bubbles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="rig" id="rig">
+          <div class="rig-shadow"></div>
+          <svg id="veh" class="veh" viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg">
+            <g id="veh-art"></g>
+            <g id="veh-stickers"></g>
+          </svg>
+          <canvas id="grime" class="grime"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="tray hidden" id="tray">
+      <div class="tray-row" id="tray-paint"></div>
+      <div class="tray-row" id="tray-stickers"></div>
+    </div>
+    <div class="dock" id="dock"></div>
+    <canvas id="spray" class="spray" aria-hidden="true"></canvas>
+    <div id="tool" class="tool-cursor hidden" aria-hidden="true"></div>
+  </section>
+
+  <!-- All clean! -->
+  <section id="screen-done" class="screen dim">
+    <div class="panel card done-card">
+      <h2 class="heading" id="done-title">All clean!</h2>
+      <div class="done-body">
+        <div class="done-thumb" id="done-thumb"></div>
+        <div class="btn-col">
+          <button class="btn btn-green" data-action="again"><span class="btn-icon">🔁</span> Again</button>
+          <div class="btn-row">
+            <button class="btn btn-blue btn-small" data-action="picker" aria-label="Pick another"><span class="btn-icon">🚗</span> More</button>
+            <button class="btn btn-orange btn-small" data-action="photo" aria-label="Save a picture"><span class="btn-icon">📷</span> Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <script type="module" src="js/main.js"></script>
   <script nomodule>

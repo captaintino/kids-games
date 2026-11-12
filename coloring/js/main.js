@@ -108,7 +108,7 @@ function resize() {
   fxDirty = true;
   unit = clamp(Math.min(W, H) / 400, 0.8, 1.8);
   rebuildBackground(false);
-  if (ed.pic) layoutDock();
+  if (ed.pic || ed.page) layoutDock();
   fitPaper();
 }
 
@@ -372,10 +372,7 @@ function stepBack() {
     case 'screen-install': showScreen('screen-title'); return true;
     case 'screen-gallery': case 'screen-themes': goHome(); return true;
     default: // the coloring page, or the "You did it!" card
-      ed.pointer = null;
-      finishAllAnims();
-      persistNow();
-      openGallery();
+      leaveEditor();
       return true;
   }
 }
@@ -556,6 +553,9 @@ const ed = {
   wrong: new Map(),
   // magic
   magic: null,
+  // free drawing: the open page (see "Free drawing" below) and the chosen stamp
+  page: null,
+  stamp: 'star',
   // pointer
   pointer: null,
 };
@@ -582,7 +582,8 @@ function layoutDock() {
   // Landscape: the palette sits beside the picture. Use the biggest swatches that fit
   // the height while keeping the dock narrow enough to leave room for the picture.
   const toolsOn = !tools.classList.contains('hidden');
-  const toolsW = toolsOn ? tools.firstElementChild.offsetWidth + tools.lastElementChild.offsetWidth + 10 : 0;
+  const stampsW = $('#stamps').classList.contains('hidden') ? 0 : $('#stamps').scrollWidth;
+  const toolsW = toolsOn ? Math.max(tools.querySelector('.seg').offsetWidth + $('#sizes').offsetWidth + 10, stampsW) : 0;
   const toolsH = toolsOn ? tools.offsetHeight + 10 : 0;
   const hintH = $('#dock-hint').classList.contains('hidden') ? 0 : 80;
   if (!n) { dock.style.width = hintH ? `${Math.min(300, Math.max(200, W * 0.3))}px` : ''; return; }
@@ -614,6 +615,7 @@ if ('ResizeObserver' in window) new ResizeObserver(fitPaper).observe($('#stage')
 
 function openPicture(pic) {
   finishAllAnims();
+  ed.page = null;
   ed.pic = pic;
   ed.info = analyze(pic);
   ed.undo = [];
@@ -654,16 +656,23 @@ function openPicture(pic) {
 
 // ---------------- Dock (tools + palette) ----------------
 function buildDock() {
-  const free = ed.mode === 'fill' || ed.mode === 'paint';
+  const draw = ed.mode === 'draw';
+  const free = ed.mode === 'fill' || ed.mode === 'paint' || draw;
   $('#tools').classList.toggle('hidden', !free);
   $('#palette').classList.toggle('hidden', ed.mode === 'magic');
   const hint = $('#dock-hint');
   hint.classList.toggle('hidden', ed.mode !== 'magic');
-  $('#undo-btn').classList.toggle('invisible', ed.mode !== 'fill' && ed.mode !== 'paint');
+  $('#undo-btn').classList.toggle('invisible', !free);
+  // the blank page has a brush, an eraser and stamps; the pictures have the fill bucket and brush
+  $$('.seg-btn').forEach((b) => {
+    b.classList.toggle('hidden', draw ? b.dataset.tool === 'fill' : b.dataset.tool === 'eraser');
+  });
+  $('#stamps').classList.toggle('hidden', !draw);
 
   if (free) {
     if (ed.mode === 'paint' && ed.toolMode !== 'paint') ed.tool = 'brush';
     if (ed.mode === 'fill' && ed.toolMode !== 'fill') ed.tool = 'fill';
+    if (draw && ed.toolMode !== 'draw') ed.tool = 'brush';
     ed.toolMode = ed.mode;
     if (!HEX[ed.key] && !MAGIC.some((m) => m.key === ed.key)) ed.key = 'red';
     $('#palette').innerHTML =
@@ -685,22 +694,31 @@ function buildDock() {
 function setKey(key, quiet = false) {
   ed.key = key;
   $$('#palette .swatch').forEach((s) => s.classList.toggle('on', s.dataset.key === key));
-  // brush size dots show the current color (or magic paint)
-  $$('.size-btn i').forEach((i) => {
-    i.className = HEX[key] ? '' : `m-${key}`;
-    i.style.background = HEX[key] || '';
-  });
+  updateSizeDots();
+  if (ed.mode === 'draw') paintStampIcons();
   if (ed.mode === 'number') {
     ed.labels.forEach((el, r) => el.classList.toggle('hot', ed.pic.shapes[r].c === key));
   }
   if (!quiet) sfx.pick(keyIndex(key));
 }
 
+// brush size dots show the current color (or magic paint), or white for the eraser
+function updateSizeDots() {
+  const key = ed.tool === 'eraser' && ed.mode === 'draw' ? 'white' : ed.key;
+  $$('.size-btn i').forEach((i) => {
+    i.className = HEX[key] ? '' : `m-${key}`;
+    i.style.background = HEX[key] || '';
+  });
+}
+
 function setTool(tool, quiet = false) {
   ed.tool = tool;
+  const draw = ed.mode === 'draw';
   $$('.seg-btn').forEach((b) => b.classList.toggle('on', b.dataset.tool === tool));
-  $('#sizes').classList.toggle('invisible', tool !== 'brush');
+  $('#sizes').classList.toggle('invisible', draw ? false : tool !== 'brush');
   $$('.size-btn').forEach((b) => b.classList.toggle('on', b.dataset.size === ed.size));
+  $$('.stamp-btn').forEach((b) => b.classList.toggle('on', tool === 'stamp' && b.dataset.stamp === ed.stamp));
+  updateSizeDots();
   if (!quiet) sfx.click();
 }
 
@@ -709,16 +727,25 @@ $('#palette').addEventListener('click', (e) => {
   if (!s) return;
   sfx.unlock();
   s.classList.remove('hint');
+  // picking a color while erasing goes back to the brush
+  if (ed.mode === 'draw' && ed.tool === 'eraser') setTool('brush', true);
   setKey(s.dataset.key);
 });
 $('#tools').addEventListener('click', (e) => {
   const t = e.target.closest('[data-tool]');
   const z = e.target.closest('[data-size]');
+  const st = e.target.closest('[data-stamp]');
   sfx.unlock();
   if (t) setTool(t.dataset.tool);
   if (z) {
     ed.size = z.dataset.size;
-    setTool('brush');
+    if (ed.mode === 'draw') setTool(ed.tool);
+    else setTool('brush');
+  }
+  if (st) {
+    ed.stamp = st.dataset.stamp;
+    setTool('stamp', true);
+    sfx.pop(1 + STAMPS.findIndex((x) => x.key === ed.stamp) * 0.08);
   }
 });
 
@@ -742,6 +769,7 @@ function inputDown(id, e, target) {
   if (ed.pointer) return false; // one finger at a time
   if (!$('#editor').classList.contains('active')) return false;
   const pt = toLocal(e);
+  if (ed.mode === 'draw') return drawDown(id, pt, e);
   if (ed.mode === 'magic') {
     if (ed.magic.done) return false;
     startReveal(id, pt, e);
@@ -764,6 +792,10 @@ function inputDown(id, e, target) {
 function inputMove(id, list) {
   const p = ed.pointer;
   if (!p || p.id !== id || !list.length) return;
+  if (p.kind === 'line') {
+    for (const ev of list) extendLine(toLocal(ev), ev);
+    return;
+  }
   for (const ev of list) {
     const pt = toLocal(ev);
     if (p.kind === 'stroke') extendStroke(pt, ev);
@@ -782,6 +814,7 @@ function inputUp(id) {
   const p = ed.pointer;
   if (!p || p.id !== id) return;
   ed.pointer = null;
+  if (p.kind === 'line') commitLine(p);
   if (p.kind === 'stroke') {
     ed.art.s.push(p.s);
     ed.undo.push({ t: 'stroke', s: p.s, el: p.el });
@@ -933,11 +966,15 @@ function checkFreeDone() {
   setTimeout(() => {
     sfx.win();
     confetti();
-    showBanner(pickOne(['Beautiful!', 'So pretty!', 'Wonderful!', 'Masterpiece!']), 'Keep coloring or tap 📷 to save');
+    const cheer = pickOne(['Beautiful!', 'So pretty!', 'Wonderful!', 'Masterpiece!']);
+    showBanner(cheer, 'Keep coloring or tap 📷 to save');
+    say(cheer);
+    earnSticker('coloring');
   }, 350);
 }
 
 function undo() {
+  if (ed.page) { undoDrawing(); return; }
   const u = ed.undo.pop();
   if (!u) { sfx.boing(); return; }
   if (u.t === 'fill') {
@@ -954,7 +991,7 @@ function undo() {
   persist();
 }
 function updateUndo() {
-  $('#undo-btn').classList.toggle('off', ed.undo.length === 0);
+  $('#undo-btn').classList.toggle('off', (ed.page ? ed.page.ops.length : ed.undo.length) === 0);
 }
 
 // ---------------- Color by Number ----------------
@@ -1151,12 +1188,260 @@ function checkReveal(pt, e) {
   setTimeout(() => celebrate(), 900);
 }
 
+// ---------------- Free drawing (a blank page) ----------------
+// The page is a canvas. Every stroke and stamp is kept as an "op" so undo can redraw
+// the page: `cache` holds the saved picture plus the older ops, and only the newest
+// ops are redrawn on top of it. The picture itself is saved as a PNG under its own key.
+const MAX_PAGES = 6;
+const STAMP_R = { s: 24, m: 38, l: 58 };
+const pageKey = (id) => `${SAVE_KEY}.page.${id}`;
+
+function pageImage(id) {
+  try { return localStorage.getItem(pageKey(id)); } catch (err) { return null; }
+}
+function dropPageImage(id) {
+  try { localStorage.removeItem(pageKey(id)); } catch (err) { /* ignore */ }
+}
+
+function buildPages() {
+  let html = '';
+  if (save.pages.length < MAX_PAGES) {
+    html += '<button class="pic-card new-page" data-page="new" aria-label="New page">' +
+      '<span class="thumb"><span class="plus">+</span></span><span class="pic-name">New page</span></button>';
+  }
+  save.pages.forEach((pg, n) => {
+    const url = pageImage(pg.id);
+    html += `<button class="pic-card" data-page="${pg.id}" style="animation-delay:${(n + 1) * 25}ms" aria-label="Drawing ${n + 1}">` +
+      `<span class="thumb">${url ? `<img src="${url}" alt="" draggable="false">` : ''}</span>` +
+      `<span class="pic-name">✏️ ${n + 1}</span></button>`;
+  });
+  $('#pic-grid').innerHTML = html;
+}
+
+function newCanvas() {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = DRAW_PX;
+  return cv;
+}
+
+function openDrawing(id) {
+  finishAllAnims();
+  if (!id || !save.pages.some((p) => p.id === id)) {
+    if (save.pages.length >= MAX_PAGES) { sfx.boing(); return; }
+    id = Date.now().toString(36);
+    save.pages.unshift({ id, t: Date.now() });
+    persist();
+  }
+  ed.pic = null;
+  ed.undo = [];
+  ed.pointer = null;
+  ed.celebrated = false;
+  const cv = newCanvas();
+  cv.id = 'art';
+  cv.className = 'draw-cv';
+  paper.innerHTML = '';
+  paper.appendChild(cv);
+  svg = cv;
+  const cache = newCanvas();
+  const pg = {
+    id, cv, ctx: cv.getContext('2d'), cache, cc: cache.getContext('2d'), cacheN: 0, ops: [],
+    base: null, ready: false, saved: true, artAdded: false, timer: 0,
+  };
+  ed.page = pg;
+  blank(pg.ctx);
+  blank(pg.cc);
+  const url = pageImage(id);
+  if (url) {
+    const img = new Image();
+    img.onload = () => {
+      if (ed.page !== pg) return;
+      pg.base = img;
+      rebuildCache(0);
+      renderPage();
+      pg.ready = true;
+    };
+    img.onerror = () => { pg.ready = true; };
+    img.src = url;
+  } else {
+    pg.ready = true;
+  }
+  $('#pic-name').textContent = `✏️ ${save.pages.findIndex((p) => p.id === id) + 1}`;
+  buildDock();
+  layoutDock();
+  updateUndo();
+  setTheme('draw');
+  showScreen(null);
+  showEditor(true);
+  requestAnimationFrame(fitPaper);
+}
+
+// The stamp buttons show the stamps in the chosen color.
+function paintStampIcons() {
+  $$('.stamp-btn canvas').forEach((cv) => stampIcon(cv, cv.parentNode.dataset.stamp, ed.key));
+}
+
+function rebuildCache(n) {
+  const pg = ed.page;
+  blank(pg.cc);
+  if (pg.base) pg.cc.drawImage(pg.base, 0, 0, DRAW_PX, DRAW_PX);
+  pg.cacheN = clamp(n, 0, pg.ops.length);
+  for (let i = 0; i < pg.cacheN; i++) drawOp(pg.cc, pg.ops[i]);
+}
+
+function renderPage() {
+  const pg = ed.page;
+  pg.ctx.setTransform(1, 0, 0, 1, 0, 0);
+  pg.ctx.drawImage(pg.cache, 0, 0);
+  for (let i = pg.cacheN; i < pg.ops.length; i++) drawOp(pg.ctx, pg.ops[i]);
+}
+
+// A new op is on the page: keep undo quick by baking older ops into the cache.
+function addOp(op) {
+  const pg = ed.page;
+  pg.ops.push(op);
+  if (pg.ops.length - pg.cacheN > 24) {
+    const to = pg.ops.length - 12;
+    for (let i = pg.cacheN; i < to; i++) drawOp(pg.cc, pg.ops[i]);
+    pg.cacheN = to;
+  }
+  updateUndo();
+  pageChanged();
+}
+
+function pageChanged() {
+  const pg = ed.page;
+  pg.saved = false;
+  clearTimeout(pg.timer);
+  pg.timer = setTimeout(savePageNow, 2500);
+}
+
+function savePageNow() {
+  const pg = ed.page;
+  if (!pg || pg.saved || ed.pointer) return;
+  clearTimeout(pg.timer);
+  pg.saved = true;
+  if (!pg.base && !pg.ops.length) { dropPageImage(pg.id); return; }
+  const entry = save.pages.find((p) => p.id === pg.id);
+  if (entry) { entry.t = Date.now(); persist(); }
+  let url = '';
+  try { url = pg.cv.toDataURL('image/png'); } catch (err) { return; }
+  try {
+    localStorage.setItem(pageKey(pg.id), url);
+  } catch (err) {
+    // the device is short of room: a JPEG is much smaller
+    try { localStorage.setItem(pageKey(pg.id), pg.cv.toDataURL('image/jpeg', 0.9)); } catch (err2) { /* keep it in memory */ }
+  }
+}
+
+// After real drawing (not just a dot or the eraser), put the drawing in the shared
+// gallery once per visit, so Jigsaw can make a puzzle of it, and give a sticker.
+function drawingToGallery() {
+  const pg = ed.page;
+  if (!pg || pg.artAdded || inkAmount(pg.ops) < 120) return;
+  pg.artAdded = true;
+  try { addArt(pg.cv, { game: 'coloring', title: 'My drawing' }); } catch (err) { /* full or blocked */ }
+  earnSticker('coloring');
+}
+
+// Leaving the page: save it, and forget it if it ended up empty.
+function closeDrawing() {
+  const pg = ed.page;
+  if (!pg) return;
+  ed.pointer = null;
+  savePageNow();
+  drawingToGallery();
+  if (!pg.base && !pg.ops.length) {
+    save.pages = save.pages.filter((p) => p.id !== pg.id);
+    dropPageImage(pg.id);
+    persist();
+  }
+  ed.page = null;
+}
+
+function leaveEditor() {
+  ed.pointer = null;
+  finishAllAnims();
+  closeDrawing();
+  persistNow();
+  openGallery();
+}
+
+function drawDown(id, pt, e) {
+  const pg = ed.page;
+  if (!pg.ready) return false;
+  if (ed.tool === 'stamp') {
+    const op = {
+      t: 'stamp', s: ed.stamp, k: ed.key, x: round1(pt.x), y: round1(pt.y),
+      r: round1(STAMP_R[ed.size] * rand(0.82, 1.18)), a: randInt(-24, 24),
+    };
+    drawOp(pg.ctx, op);
+    addOp(op);
+    sfx.pop(rand(0.85, 1.3));
+    vibrate(10);
+    splashFx(e.clientX, e.clientY, fxColor(ed.key));
+    return false;
+  }
+  const eraser = ed.tool === 'eraser';
+  const op = { t: 'line', k: eraser ? 'eraser' : ed.key, w: SIZES[ed.size] * (eraser ? 1.5 : 1), p: [round1(pt.x), round1(pt.y)] };
+  const style = beginLine(pg.ctx, op);
+  ed.pointer = { id, kind: 'line', op, style, lx: pt.x, ly: pt.y, sound: 0 };
+  sfx.scribble();
+  if (!eraser) trailFx(e.clientX, e.clientY, fxColor(ed.key));
+  return true;
+}
+
+function extendLine(pt, ev) {
+  const p = ed.pointer;
+  if (Math.hypot(pt.x - p.lx, pt.y - p.ly) < 1.5) return;
+  p.op.p.push(round1(pt.x), round1(pt.y));
+  p.lx = pt.x;
+  p.ly = pt.y;
+  lineSegment(ed.page.ctx, p.op, p.op.p.length / 2 - 1, p.style);
+  const now = performance.now();
+  if (now - p.sound > 90) {
+    p.sound = now;
+    sfx.scribble();
+    if (p.op.k !== 'eraser') trailFx(ev.clientX, ev.clientY, fxColor(p.op.k));
+  }
+}
+
+function commitLine(p) {
+  if (!ed.page) return;
+  addOp(p.op);
+}
+
+function undoDrawing() {
+  const pg = ed.page;
+  if (ed.pointer || !pg.ops.length) { sfx.boing(); return; }
+  pg.ops.pop();
+  if (pg.ops.length < pg.cacheN) rebuildCache(pg.ops.length - 12);
+  renderPage();
+  sfx.whoosh();
+  updateUndo();
+  pageChanged();
+}
+
+function clearDrawing() {
+  const pg = ed.page;
+  pg.ops = [];
+  pg.base = null;
+  rebuildCache(0);
+  renderPage();
+  pg.saved = false;
+  savePageNow();
+  updateUndo();
+  sfx.whoosh();
+}
+
 // ---------------- Finished! ----------------
 function celebrate() {
   sfx.win();
   confetti(110);
   const pic = ed.pic;
-  $('#done-title').textContent = pickOne(['You did it!', 'Amazing!', 'Beautiful!', 'Wonderful!']);
+  const cheer = pickOne(['You did it!', 'Amazing!', 'Beautiful!', 'Wonderful!']);
+  $('#done-title').textContent = cheer;
+  say(cheer);
+  earnSticker('coloring');
   $('#done-thumb').innerHTML = `${svgOpen()}${pictureMarkup(pic, { prefix: 'dn', fill: (i) => pic.shapes[i].c })}</svg>`;
   $$('#screen-done .rstar').forEach((s, i) => {
     s.classList.remove('on');
@@ -1172,6 +1457,7 @@ function nextPicture() {
 }
 
 function clearPicture() {
+  if (ed.page) { clearDrawing(); return; }
   const id = ed.pic.id;
   if (ed.mode === 'fill' || ed.mode === 'paint') {
     save.art[id] = { f: {}, s: [] };
@@ -1188,14 +1474,20 @@ function clearPicture() {
 async function saveImage() {
   finishAllAnims();
   try {
-    const cv = await svgToCanvas(svg);
-    const name = `coloring-${ed.pic.id}.png`;
+    const drawing = ed.page;
+    if (drawing) {
+      savePageNow();
+      drawingToGallery();
+    }
+    const cv = drawing ? drawing.cv : await svgToCanvas(svg);
+    const name = drawing ? 'my-drawing.png' : `coloring-${ed.pic.id}.png`;
+    const title = drawing ? 'My Drawing' : ed.pic.name;
     const blob = await canvasToBlob(cv);
     let file = null;
     try { file = new File([blob], name, { type: 'image/png' }); } catch (err) { /* very old browsers */ }
     if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
-        await navigator.share({ files: [file], title: ed.pic.name });
+        await navigator.share({ files: [file], title });
         return;
       } catch (err) {
         if (err && err.name === 'AbortError') return;
@@ -1309,7 +1601,7 @@ document.addEventListener('click', (e) => {
     case 'themes': buildThemeGrid(); showScreen('screen-themes'); break;
     case 'home': goHome(); break;
     case 'hub': persistNow(); window.location.href = '../'; break;
-    case 'gallery': finishAllAnims(); persistNow(); openGallery(); break;
+    case 'gallery': leaveEditor(); break;
     case 'undo': undo(); break;
     case 'clear':
       if (ed.mode === 'magic') { sfx.whoosh(); openPicture(ed.pic); } else showScreen('screen-confirm');
@@ -1325,6 +1617,7 @@ document.addEventListener('click', (e) => {
     case 'sound':
       save.muted = !save.muted;
       sfx.setMuted(save.muted);
+      setSpeechMuted(save.muted);
       persist();
       updateSoundButtons();
       sfx.click();
@@ -1349,6 +1642,7 @@ document.addEventListener('click', (e) => {
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
+    savePageNow();
     persistNow();
     sfx.suspend();
   } else {
@@ -1356,7 +1650,14 @@ document.addEventListener('visibilitychange', () => {
     last = performance.now();
   }
 });
-window.addEventListener('pagehide', persistNow);
+window.addEventListener('pagehide', () => {
+  // closing the app on a drawing counts as leaving it
+  if (ed.page && $('#editor').classList.contains('active')) {
+    savePageNow();
+    drawingToGallery();
+  }
+  persistNow();
+});
 
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
@@ -1380,12 +1681,14 @@ window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', () => setTimeout(resize, 300));
 // unlock sound on the very first touch anywhere (iOS needs it inside a tap)
 ['pointerdown', 'touchstart', 'touchend', 'mousedown'].forEach((type) => {
-  window.addEventListener(type, () => sfx.unlock(), { capture: true, passive: true });
+  window.addEventListener(type, () => { sfx.unlock(); unlockSpeech(); }, { capture: true, passive: true });
 });
 // stop pinch-zoom on older iOS, which ignores user-scalable=no
 document.addEventListener('gesturestart', (e) => e.preventDefault());
+startGrownups();
 resize();
 sfx.setMuted(save.muted);
+setSpeechMuted(save.muted);
 updateSoundButtons();
 updateTitle();
 requestAnimationFrame((t) => { last = t; requestAnimationFrame(frame); });
@@ -1397,4 +1700,4 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 }
 
 // tiny hook for automated testing
-window.__coloring = { ed, save, openGallery, openPicture, showScreen, PICTURES };
+window.__coloring = { ed, save, openGallery, openPicture, openDrawing, showScreen, PICTURES };

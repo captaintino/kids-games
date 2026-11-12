@@ -1,7 +1,7 @@
 import * as sfx from '../../shared/js/audio.js';
 import { say, numberWord, setSpeechMuted, unlockSpeech } from '../../shared/js/speech.js';
 import { COLORS, THEMES, LEVELS, endlessParams, immortalParams, countParams, countRound } from './levels.js';
-import { buildSprites, buildSparkle, buildLearnSprite, drawShape, SPRITE_SIZE, SPRITE_R } from './sprites.js';
+import { buildSprites, buildSparkle, buildLearnSprite, drawShape, drawLetter, SPRITE_SIZE, SPRITE_R } from './sprites.js';
 import { SCENES, paintScene, createAnimator } from './scenes.js';
 import { SHAPES, LETTER_WORDS, shapeRound, letterRound, letterPrompt } from './learn.js';
 import { earnSticker } from '../../shared/js/rewards.js';
@@ -323,12 +323,14 @@ function freeLearnSprites(keep) {
 }
 // Letters are drawn with the game font: if it wasn't ready yet, draw them again.
 function redrawLetterSprites() {
-  let any = false;
   learnSprites.forEach((cv, key) => {
-    if (key.indexOf('letter|') === 0) { learnSprites.delete(key); any = true; }
+    if (key.indexOf('letter|') === 0) learnSprites.delete(key);
   });
-  if (!any) return;
   for (const b of bubbles) if (b.kind === 'letter') b.sprite = spriteFor(b);
+  if (state.mode === 'letters') {
+    setLearnIcon($('#hud-learn-icon'), 46);
+    setLearnIcon($('#banner-icon'), 110);
+  }
 }
 
 // Which shape or letter the next bubble carries: the one to pop about half the
@@ -1392,23 +1394,32 @@ function startLetterRound() {
   say(learnPrompt());
 }
 
-// The shape or letter to pop, drawn into a HUD chip or the round banner.
+// The shape or letter to pop, drawn into a HUD chip or the round banner
+// (once per round, so it is the same drawing as on the bubbles).
 function setLearnIcon(el, fallback) {
   const shape = state.mode === 'shapes';
   const size = el.clientWidth || fallback; // the CSS decides (smaller on short screens)
   const cv = el.querySelector('canvas');
-  const letter = el.querySelector('.learn-letter');
-  cv.classList.toggle('hidden', !shape);
-  letter.classList.toggle('hidden', shape);
+  const k = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = cv.height = Math.round(size * k);
+  cv.style.width = cv.style.height = `${size}px`;
+  const c = cv.getContext('2d');
+  c.setTransform(k, 0, 0, k, 0, 0);
+  const m = size / 2;
   if (shape) {
-    const k = Math.min(2, window.devicePixelRatio || 1);
-    cv.width = cv.height = Math.round(size * k);
-    cv.style.width = cv.style.height = `${size}px`;
-    const c = cv.getContext('2d');
-    c.setTransform(k, 0, 0, k, 0, 0);
-    drawShape(c, state.sym, size / 2, size / 2, size * 0.42, '#ffffff', '#ffe28a');
+    drawShape(c, state.sym, m, m, size * 0.42, '#ffffff', '#ffe28a');
   } else {
-    letter.textContent = state.sym;
+    // the letter in a little pink bubble
+    const g = c.createRadialGradient(m * 0.8, m * 0.7, 0, m, m, m);
+    g.addColorStop(0, '#ffd6f0');
+    g.addColorStop(0.65, '#ff74c8');
+    g.addColorStop(1, '#e33f9f');
+    c.fillStyle = g;
+    c.beginPath(); c.arc(m, m, m - 2, 0, Math.PI * 2); c.fill();
+    c.lineWidth = Math.max(2, size * 0.035);
+    c.strokeStyle = '#ffffff';
+    c.stroke();
+    drawLetter(c, state.sym, m, m, size * 0.66, size * 0.72, '#ffffff', '#ffe6f6');
   }
   const name = el.parentNode.querySelector('.learn-name');
   if (name) {

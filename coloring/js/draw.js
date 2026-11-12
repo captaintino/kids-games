@@ -170,22 +170,29 @@ export function styleFor(c, key) {
 // ---------------------------------------------------------------------------
 // Lines
 // ---------------------------------------------------------------------------
-export function beginLine(c, op) {
+function lineStyle(c, op, st) {
   c.setTransform(1, 0, 0, 1, 0, 0);
+  c.globalAlpha = 1;
   c.lineCap = 'round';
   c.lineJoin = 'round';
   c.lineWidth = op.w * K;
-  const st = styleFor(c, op.k);
   c.strokeStyle = st;
   c.fillStyle = st;
-  // a tap leaves a round dot
+}
+
+/** Start a line: draws its first dot (a tap leaves a round dot) and returns its paint for lineSegment. */
+export function beginLine(c, op) {
+  const st = styleFor(c, op.k);
+  lineStyle(c, op, st);
   c.beginPath();
   c.arc(op.p[0] * K, op.p[1] * K, (op.w * K) / 2, 0, Math.PI * 2);
   c.fill();
+  return st;
 }
 
-/** Draw the line's segment from point index i - 1 to i (call after beginLine). */
-export function lineSegment(c, op, i) {
+/** Draw the line's segment from point index i - 1 to i, in the paint beginLine returned. */
+export function lineSegment(c, op, i, st) {
+  lineStyle(c, op, st);
   c.beginPath();
   c.moveTo(op.p[i * 2 - 2] * K, op.p[i * 2 - 1] * K);
   c.lineTo(op.p[i * 2] * K, op.p[i * 2 + 1] * K);
@@ -193,7 +200,8 @@ export function lineSegment(c, op, i) {
 }
 
 function drawLine(c, op) {
-  beginLine(c, op);
+  const st = beginLine(c, op);
+  lineStyle(c, op, st);
   const n = op.p.length / 2;
   if (n < 2) return;
   c.beginPath();

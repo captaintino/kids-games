@@ -370,6 +370,156 @@ const fluffy = svg(
   eye(84, 104, 6.5) + eye(116, 104, 6.5) + smile(100, 116, 9) + blush(74, 120, 7) + blush(126, 120, 7));
 
 // ---------------------------------------------------------------------------
+// Farm, town and winter things (for the Farm, City and Winter worlds)
+// ---------------------------------------------------------------------------
+const cow = svg(
+  rope('M138 166Q178 158 168 118', '#ffffff', 8) + p(cloud(168, 112, 9, 9, 6), '#3a3550', O4) +
+  el(100, 160, 44, 32, '#ffffff') +
+  el(84, 152, 13, 9, '#3a3550', 'stroke="none"', -15) + el(122, 170, 10, 7, '#3a3550', 'stroke="none"', 10) +
+  el(78, 188, 15, 9, '#ffffff') + el(122, 188, 15, 9, '#ffffff') +
+  `<path d="M68 192H88M112 192H132" stroke="${INK}" stroke-width="6" stroke-linecap="round"/>` +
+  p('M68 56Q50 36 60 18Q70 34 82 46Z', '#ffe9b0') + p('M132 56Q150 36 140 18Q130 34 118 46Z', '#ffe9b0') +
+  el(50, 78, 19, 10, '#ffffff', O, -22) + el(150, 78, 19, 10, '#ffffff', O, 22) +
+  el(52, 79, 10, 4.5, '#ffb3c9', 'stroke="none"', -22) + el(148, 79, 10, 4.5, '#ffb3c9', 'stroke="none"', 22) +
+  c(100, 86, 45, '#ffffff') +
+  el(124, 62, 13, 9, '#3a3550', 'stroke="none"', 25) + el(74, 70, 8, 6, '#3a3550', 'stroke="none"', -20) +
+  eye(84, 80, 7) + eye(116, 80, 7) +
+  el(100, 110, 30, 19, '#ffb3c9', O4) +
+  el(90, 106, 3.5, 5, INK, 'stroke="none"') + el(110, 106, 3.5, 5, INK, 'stroke="none"') +
+  line('M92 118Q100 124 108 118', 4) + blush(66, 98) + blush(134, 98));
+
+const pig = svg(
+  rope('M140 160Q156 152 152 142Q148 132 140 138', '#ffb3c9', 6) +
+  el(100, 160, 42, 32, '#ffb3c9') + el(100, 166, 22, 17, '#ffd3e2', 'stroke="none"') +
+  el(80, 188, 15, 9, '#ffb3c9') + el(120, 188, 15, 9, '#ffb3c9') +
+  p('M62 64L54 28L92 46Z', '#ff9cbf') + p('M138 64L146 28L108 46Z', '#ff9cbf') +
+  c(100, 88, 46, '#ffb3c9') +
+  eye(82, 80, 7.5) + eye(118, 80, 7.5) +
+  el(100, 104, 21, 15, '#ff8fb5', O4) +
+  el(93, 104, 3.5, 5.5, INK, 'stroke="none"') + el(107, 104, 3.5, 5.5, INK, 'stroke="none"') +
+  smile(100, 121, 9) + blush(66, 100) + blush(134, 100));
+
+const sheep = svg(
+  `<path d="M80 168V194M120 168V194" stroke="${INK}" stroke-width="15" stroke-linecap="round"/>` +
+  `<path d="M80 168V192M120 168V192" stroke="#4a4060" stroke-width="7" stroke-linecap="round"/>` +
+  p(cloud(100, 152, 56, 34, 11), '#ffffff') +
+  el(58, 92, 17, 8, '#4a4060', O, -25) + el(142, 92, 17, 8, '#4a4060', O, 25) +
+  el(100, 96, 30, 36, '#4a4060') +
+  p(cloud(100, 62, 34, 16, 7), '#ffffff') +
+  c(88, 94, 8, '#ffffff', O4) + c(112, 94, 8, '#ffffff', O4) +
+  c(89, 95, 4.5, INK, 'stroke="none"') + c(113, 95, 4.5, INK, 'stroke="none"') +
+  c(87.5, 93.5, 1.6, '#fff', 'stroke="none"') + c(111.5, 93.5, 1.6, '#fff', 'stroke="none"') +
+  el(80, 110, 6, 3.6, '#ff7aa8', 'stroke="none"') + el(120, 110, 6, 3.6, '#ff7aa8', 'stroke="none"') +
+  `<path d="M92 116Q100 123 108 116" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>`);
+
+const hen = svg(
+  `<path d="M88 166V188L78 192M88 188L96 192M112 166V188L104 192M112 188L120 192" fill="none" stroke="${INK}" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>` +
+  `<path d="M88 166V188L78 192M88 188L96 192M112 166V188L104 192M112 188L120 192" fill="none" stroke="#ff9a2e" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>` +
+  p('M58 116Q24 76 44 56Q56 84 76 96Z', '#ffffff') +
+  el(100, 130, 50, 40, '#ffffff') +
+  p('M128 40Q130 26 140 30Q146 18 156 26Q168 24 164 40Z', '#ff4d5e') +
+  c(142, 66, 28, '#ffffff') +
+  p('M120 92Q144 120 134 140Q112 128 108 110Z', '#ffffff', 'stroke="none"') +
+  p('M166 62L186 70L166 78Z', '#ffc21f', O4) +
+  el(160, 88, 6, 10, '#ff4d5e', O4) +
+  el(92, 130, 26, 18, '#f1ece4', O4, -15) + line('M76 134Q92 144 110 130', 4) +
+  eye(148, 60, 6) + blush(140, 78, 6));
+
+const tractor = svg(
+  `<rect x="128" y="34" width="10" height="44" fill="#5b5670" ${O4}/>` +
+  p('M96 84H176Q184 84 184 92V122Q184 130 176 130H96Z', '#43b649') +
+  `<path d="M150 96V124M160 96V124M170 96V124" stroke="#2f8f3a" stroke-width="4"/>` +
+  c(178, 98, 6, '#fff59a', O4) +
+  p('M34 132L38 40H102L108 132Z', '#43b649') +
+  p('M48 92L50 54H92L94 92Z', '#bfeaff', O4) +
+  c(72, 80, 11, '#ffd2a6', O4) + p('M60 76Q60 62 72 62Q84 62 84 76Z', '#ff4d5e', O4) + c(76, 80, 2, INK, 'stroke="none"') +
+  `<rect x="26" y="30" width="88" height="14" rx="6" fill="#ffd93b" ${O}/>` +
+  c(66, 146, 40, '#3a3550') + c(66, 146, 22, '#ffd93b', O4) + c(66, 146, 7, '#fff6c8', O4) +
+  c(156, 160, 26, '#3a3550') + c(156, 160, 13, '#ffd93b', O4) + c(156, 160, 4, '#fff6c8', O4) +
+  p('M22 128Q26 88 66 88Q106 88 110 128Z', '#ffd93b'));
+
+const haybale = svg(
+  p('M70 56H150Q182 56 182 102Q182 150 150 150H70Z', '#e9b543') +
+  line('M96 80H160M96 102H170M96 124H160', 4) +
+  c(70, 103, 50, '#ffd766') +
+  `<path d="M70 103m-6 0a6 6 0 1 1 12 0a12 12 0 1 1 -24 0a18 18 0 1 1 36 0a24 24 0 1 1 -48 0a30 30 0 1 1 60 0a36 36 0 1 1 -72 0" fill="none" stroke="#d9a23a" stroke-width="5" stroke-linecap="round"/>` +
+  line('M40 176L54 150M152 174L144 152', 4));
+
+const strawHat = svg(
+  p('M8 132Q30 156 100 156Q170 156 192 132Q168 118 100 126Q32 118 8 132Z', '#f5c95a') +
+  p('M54 128Q50 70 100 66Q150 70 146 128Q100 136 54 128Z', '#f5c95a') +
+  p('M54 112Q100 122 146 112L147 126Q100 136 53 126Z', '#ff4d5e', O4) +
+  line('M70 84Q100 76 130 84M62 100Q100 92 138 100', 3) +
+  p(cloud(132, 112, 10, 9, 5), '#ffd93b', O4));
+
+const car = svg(
+  p('M50 92L66 54Q70 46 80 46H128Q138 46 144 56L160 92Z', '#ff5d6d') +
+  p('M70 88L80 60H102V88Z', '#c9eeff', O4) + p('M112 88V60H130Q136 60 138 66L146 88Z', '#c9eeff', O4) +
+  p('M16 102Q16 88 34 88H170Q186 88 186 104V128Q186 138 176 138H24Q16 138 16 128Z', '#ff5d6d') +
+  `<path d="M28 104H120" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".5"/>` +
+  el(178, 106, 6, 8, '#fff59a', O4) + `<rect x="14" y="104" width="8" height="12" fill="#ffd93b" ${O4}/>` +
+  c(56, 138, 22, '#3a3550') + c(56, 138, 9, '#c9d1df', O4) +
+  c(148, 138, 22, '#3a3550') + c(148, 138, 9, '#c9d1df', O4));
+
+const bus = svg(
+  `<rect x="8" y="44" width="184" height="104" rx="18" fill="#ffc21f" ${O}/>` +
+  `<rect x="8" y="114" width="184" height="10" fill="#2d2442"/>` +
+  `<rect x="20" y="58" width="30" height="34" rx="6" fill="#c9eeff" ${O4}/>` +
+  `<rect x="58" y="58" width="30" height="34" rx="6" fill="#c9eeff" ${O4}/>` +
+  `<rect x="96" y="58" width="30" height="34" rx="6" fill="#c9eeff" ${O4}/>` +
+  `<rect x="140" y="58" width="24" height="58" rx="4" fill="#c9eeff" ${O4}/>` +
+  c(35, 82, 8, '#ffd2a6', 'stroke="none"') + c(111, 82, 8, '#a5673f', 'stroke="none"') + c(73, 80, 8, '#ffd2a6', 'stroke="none"') +
+  `<path d="M140 87H164" stroke="${INK}" stroke-width="4"/>` +
+  el(186, 104, 5, 8, '#fff59a', O4) + `<rect x="168" y="62" width="18" height="16" rx="4" fill="#ff4d5e" ${O4}/>` +
+  c(50, 150, 20, '#3a3550') + c(50, 150, 8, '#c9d1df', O4) +
+  c(156, 150, 20, '#3a3550') + c(156, 150, 8, '#c9d1df', O4));
+
+const trafficLight = svg(
+  `<rect x="92" y="150" width="16" height="46" fill="#5b5670" ${O4}/>` +
+  `<rect x="60" y="8" width="80" height="150" rx="20" fill="#3a3550" ${O}/>` +
+  c(100, 40, 20, '#ff4d5e', O4) + c(100, 83, 20, '#ffd93b', O4) + c(100, 126, 20, '#3ee07a', O4) +
+  shine(93, 33, 6, 4) + shine(93, 76, 6, 4) + shine(93, 119, 6, 4) +
+  eye(93, 124, 3) + eye(107, 124, 3) + line('M94 133Q100 137 106 133', 3));
+
+const hardHat = svg(
+  p('M34 132Q34 58 100 56Q166 58 166 132Z', '#ffc21f') +
+  `<rect x="90" y="54" width="20" height="78" rx="6" fill="#ffd95a" ${O4}/>` +
+  p('M14 132Q14 122 28 122H172Q188 122 188 132Q188 144 172 144H28Q14 144 14 132Z', '#ffb000') +
+  shine(62, 88, 9, 5, -55));
+
+const snowman = svg(
+  line('M60 140L26 116M30 122L18 118M140 140L176 112M170 118L182 110', 5) +
+  c(100, 158, 40, '#ffffff') + c(100, 150, 4, INK, 'stroke="none"') + c(100, 166, 4, INK, 'stroke="none"') +
+  c(100, 74, 40, '#ffffff') +
+  p('M66 104Q100 120 134 104L136 116Q100 132 64 116Z', '#ff4d5e') + p('M112 112L132 112L134 146L114 142Z', '#ff4d5e') +
+  eye(86, 66, 6) + eye(114, 66, 6) + blush(76, 84, 6) + blush(124, 84, 6) +
+  p('M98 76L132 84L98 90Z', '#ff9a2e', O4) +
+  `<path d="M90 96Q100 101 110 96" fill="none" stroke="${INK}" stroke-width="4" stroke-linecap="round" stroke-dasharray="0.1 6"/>`);
+
+const penguin = svg(
+  el(80, 188, 16, 8, '#ff9a2e') + el(120, 188, 16, 8, '#ff9a2e') +
+  el(48, 128, 12, 30, '#3a3550', O, 25) + el(152, 128, 12, 30, '#3a3550', O, -25) +
+  el(100, 118, 54, 70, '#3a3550') +
+  el(100, 132, 38, 52, '#ffffff', 'stroke="none"') +
+  el(86, 82, 18, 20, '#ffffff', 'stroke="none"') + el(114, 82, 18, 20, '#ffffff', 'stroke="none"') +
+  eye(88, 80, 6.5) + eye(112, 80, 6.5) +
+  p('M90 94H110L100 108Z', '#ff9a2e', O4) +
+  blush(74, 98, 6) + blush(126, 98, 6));
+
+const snowflake = svg(
+  [0, 60, 120].map((a) => `<g transform="rotate(${a} 100 100)">` +
+    rope('M100 16V184M100 46L82 30M100 46L118 30M100 154L82 170M100 154L118 170', '#bfe9ff', 8) + '</g>').join('') +
+  c(100, 100, 16, '#ffffff', O4) +
+  eye(94, 98, 3.5) + eye(106, 98, 3.5) + line('M95 106Q100 109 105 106', 2.5));
+
+const beanie = svg(
+  p('M40 134Q36 64 100 60Q164 64 160 134Z', '#3d9bff') +
+  line('M64 76V128M84 66V128M104 64V128M124 66V128M144 76V128', 3) +
+  `<rect x="30" y="118" width="140" height="30" rx="14" fill="#ff4d5e" ${O}/>` +
+  line('M48 124V142M66 124V142M84 124V142M102 124V142M120 124V142M138 124V142M156 124V142', 3) +
+  p(cloud(100, 52, 18, 16, 8), '#ffffff'));
+
+// ---------------------------------------------------------------------------
 // The sticker list
 // ---------------------------------------------------------------------------
 export const CATS = [
@@ -379,6 +529,9 @@ export const CATS = [
   { key: 'flowers', name: 'Flowers', icon: '🌸' },
   { key: 'sea', name: 'Sea', icon: '🐠' },
   { key: 'space', name: 'Space', icon: '🚀' },
+  { key: 'farm', name: 'Farm', icon: '🐮' },
+  { key: 'town', name: 'Town', icon: '🚗' },
+  { key: 'winter', name: 'Winter', icon: '⛄' },
   { key: 'fun', name: 'Fun', icon: '🌈' },
 ];
 
@@ -451,6 +604,42 @@ export const STICKERS = [
   { id: 'alienface', cat: 'space', name: 'Alien', emoji: '👽', s: 0.6 },
   { id: 'glowstar', cat: 'space', name: 'Twinkle', emoji: '🌟', s: 0.5 },
 
+  { id: 'cow', cat: 'farm', name: 'Cow', svg: cow, kind: 'friend', s: 1.3, voice: 'moo', anchors: anchors(100, 86, 45, { top: 50, eyeY: 80, eyeSpan: 32, noseY: 110 }) },
+  { id: 'pig', cat: 'farm', name: 'Piggy', svg: pig, kind: 'friend', s: 1.3, voice: 'oink', anchors: anchors(100, 88, 46, { top: 50, eyeY: 80, eyeSpan: 36, noseY: 104 }) },
+  { id: 'sheep', cat: 'farm', name: 'Sheep', svg: sheep, kind: 'friend', s: 1.3, voice: 'baa', anchors: anchors(100, 94, 32, { top: 54, eyeY: 94, eyeSpan: 24, noseY: 112 }) },
+  { id: 'hen', cat: 'farm', name: 'Hen', svg: hen, s: 0.7 },
+  { id: 'tractor', cat: 'farm', name: 'Tractor', svg: tractor, s: 1 },
+  { id: 'haybale', cat: 'farm', name: 'Hay Bale', svg: haybale, s: 0.75 },
+  { id: 'strawhat', cat: 'farm', name: 'Straw Hat', svg: strawHat, kind: 'wear', fit: 'head', at: [0, 0.24], span: 0.58, s: 0.9 },
+  { id: 'chick', cat: 'farm', name: 'Chick', emoji: '🐤', s: 0.45 },
+  { id: 'duck', cat: 'farm', name: 'Duck', emoji: '🦆', s: 0.6 },
+  { id: 'goat', cat: 'farm', name: 'Goat', emoji: '🐐', s: 0.75 },
+  { id: 'rooster', cat: 'farm', name: 'Rooster', emoji: '🐓', s: 0.7 },
+  { id: 'corn', cat: 'farm', name: 'Corn', emoji: '🌽', s: 0.5 },
+  { id: 'carrot', cat: 'farm', name: 'Carrot', emoji: '🥕', s: 0.5 },
+
+  { id: 'car', cat: 'town', name: 'Car', svg: car, s: 0.95 },
+  { id: 'bus', cat: 'town', name: 'Bus', svg: bus, s: 1.15 },
+  { id: 'trafficlight', cat: 'town', name: 'Traffic Light', svg: trafficLight, s: 0.8 },
+  { id: 'hardhat', cat: 'town', name: 'Hard Hat', svg: hardHat, kind: 'wear', fit: 'head', at: [0, 0.22], span: 0.62, s: 0.8 },
+  { id: 'firetruck', cat: 'town', name: 'Fire Truck', emoji: '🚒', s: 0.95 },
+  { id: 'police', cat: 'town', name: 'Police Car', emoji: '🚓', s: 0.8 },
+  { id: 'taxi', cat: 'town', name: 'Taxi', emoji: '🚕', s: 0.8 },
+  { id: 'ambulance', cat: 'town', name: 'Ambulance', emoji: '🚑', s: 0.9 },
+  { id: 'bike', cat: 'town', name: 'Bike', emoji: '🚲', s: 0.75 },
+  { id: 'house', cat: 'town', name: 'House', emoji: '🏠', s: 1.1 },
+
+  { id: 'snowman', cat: 'winter', name: 'Snowman', svg: snowman, kind: 'friend', s: 1.3, voice: 'hello', anchors: anchors(100, 74, 40, { top: 38, eyeY: 66, eyeSpan: 28, noseY: 84 }) },
+  { id: 'penguin', cat: 'winter', name: 'Penguin', svg: penguin, kind: 'friend', s: 1.2, voice: 'squawk', anchors: anchors(100, 86, 42, { top: 52, eyeY: 80, eyeSpan: 24, noseY: 100 }) },
+  { id: 'snowflake', cat: 'winter', name: 'Snowflake', svg: snowflake, s: 0.6 },
+  { id: 'beanie', cat: 'winter', name: 'Winter Hat', svg: beanie, kind: 'wear', fit: 'head', at: [0, 0.2], span: 0.62, s: 0.8 },
+  { id: 'gloves', cat: 'winter', name: 'Gloves', emoji: '🧤', s: 0.5 },
+  { id: 'sled', cat: 'winter', name: 'Sled', emoji: '🛷', s: 0.8 },
+  { id: 'pine', cat: 'winter', name: 'Pine Tree', emoji: '🌲', s: 1.1 },
+  { id: 'skate', cat: 'winter', name: 'Ice Skate', emoji: '⛸️', s: 0.55 },
+  { id: 'deer', cat: 'winter', name: 'Deer', emoji: '🦌', s: 0.8 },
+  { id: 'cocoa', cat: 'winter', name: 'Hot Cocoa', emoji: '☕', s: 0.5 },
+
   { id: 'rainbow', cat: 'fun', name: 'Rainbow', svg: rainbow, s: 1 },
   { id: 'heart', cat: 'fun', name: 'Heart', svg: heart, s: 0.55 },
   { id: 'balloon', cat: 'fun', name: 'Balloon', svg: balloon, s: 0.75 },
@@ -466,6 +655,11 @@ export const STICKERS = [
   { id: 'cake', cat: 'fun', name: 'Cake', emoji: '🎂', s: 0.7 },
   { id: 'gift', cat: 'fun', name: 'Present', emoji: '🎁', s: 0.6 },
   { id: 'tada', cat: 'fun', name: 'Party', emoji: '🎉', s: 0.6 },
+  { id: 'cupcake', cat: 'fun', name: 'Cupcake', emoji: '🧁', s: 0.55 },
+  { id: 'confetti', cat: 'fun', name: 'Confetti', emoji: '🎊', s: 0.6 },
+  { id: 'candy', cat: 'fun', name: 'Candy', emoji: '🍬', s: 0.45 },
+  { id: 'pizza', cat: 'fun', name: 'Pizza', emoji: '🍕', s: 0.55 },
+  { id: 'ribbon', cat: 'fun', name: 'Ribbon', emoji: '🎀', s: 0.5 },
 ];
 
 export const BY_ID = {};

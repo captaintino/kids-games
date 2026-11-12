@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Color Splash Party</title>
-  <meta name="description" content="Color lots of cute pictures! Tap to fill, paint, color by number or rub to reveal magic colors. A coloring game for kids that works offline.">
+  <meta name="description" content="Color lots of cute pictures! Tap to fill, paint, color by number, rub to reveal magic colors, or draw on a blank page with stamps. A coloring game for kids that works offline.">
   <meta name="theme-color" content="#ff6fb5">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -38,8 +38,11 @@
         <button class="btn btn-purple" data-action="mode" data-mode="magic">
           <span class="btn-icon">✨</span> Magic Reveal
         </button>
+        <button class="btn btn-orange" data-action="mode" data-mode="draw">
+          <span class="btn-icon">✏️</span> Draw
+        </button>
         <div class="btn-row">
-          <button class="btn btn-orange btn-small" data-action="themes">
+          <button class="btn btn-blue btn-small" data-action="themes">
             <span class="btn-icon">🌍</span> Themes
           </button>
           <button class="btn btn-green btn-small hidden" id="install-btn" data-action="install">
@@ -58,7 +61,7 @@
     <div class="panel gallery-panel">
       <div class="gallery-head">
         <button class="round-btn" data-action="home" aria-label="Home">🏠</button>
-        <h2 class="heading">Pick a Picture</h2>
+        <h2 class="heading" id="gallery-heading">Pick a Picture</h2>
         <div class="round-spacer"></div>
       </div>
       <div class="mode-chip" id="mode-chip"></div>
@@ -99,11 +102,20 @@
         <div class="seg">
           <button class="seg-btn" data-tool="fill" aria-label="Fill bucket">🪣</button>
           <button class="seg-btn" data-tool="brush" aria-label="Paint brush">🖌️</button>
+          <button class="seg-btn hidden" data-tool="eraser" aria-label="Eraser">🧽</button>
         </div>
         <div class="sizes" id="sizes">
           <button class="size-btn" data-size="s" aria-label="Thin brush"><i></i></button>
           <button class="size-btn" data-size="m" aria-label="Medium brush"><i></i></button>
           <button class="size-btn" data-size="l" aria-label="Fat brush"><i></i></button>
+        </div>
+        <div class="stamps hidden" id="stamps">
+          <button class="stamp-btn" data-stamp="star" aria-label="Star stamp"><canvas width="88" height="88"></canvas></button>
+          <button class="stamp-btn" data-stamp="heart" aria-label="Heart stamp"><canvas width="88" height="88"></canvas></button>
+          <button class="stamp-btn" data-stamp="flower" aria-label="Flower stamp"><canvas width="88" height="88"></canvas></button>
+          <button class="stamp-btn" data-stamp="smiley" aria-label="Smiley stamp"><canvas width="88" height="88"></canvas></button>
+          <button class="stamp-btn" data-stamp="paw" aria-label="Paw print stamp"><canvas width="88" height="88"></canvas></button>
+          <button class="stamp-btn" data-stamp="butterfly" aria-label="Butterfly stamp"><canvas width="88" height="88"></canvas></button>
         </div>
       </div>
       <div class="dock-hint hidden" id="dock-hint"></div>

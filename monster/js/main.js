@@ -1,9 +1,10 @@
 // Build a Monster: mix and match parts, color it in, then watch it dance.
+// Then feed it (feed.js) or watch every saved monster in the parade (parade.js).
 import * as sfx from '../../shared/js/audio.js';
 import { say } from '../../shared/js/speech.js';
 import {
   boot, $, $$, fx, showScreen, onPointer, createStore, centerOf, replayClass, saveImage,
-  pickOne, rand, wait, FONT,
+  pickOne, rand, wait, FONT, currentScreen,
 } from '../../shared/js/kit.js';
 import { paintScene } from '../../shared/js/scenes.js';
 import {
@@ -11,6 +12,10 @@ import {
   monsterSVG, layout, randomMonster, cleanMonster, monsterName,
 } from './parts.js';
 import { createBeat } from './beat.js';
+import { createFeed } from './feed.js';
+import { createParade } from './parade.js';
+import { addArt, removeArt } from '../../shared/js/gallery.js';
+import { earnSticker } from '../../shared/js/rewards.js';
 
 const PARTY = ['#5cd65c', '#2fc6b0', '#7b5cff'];
 const MAX_SHELF = 12;
@@ -29,7 +34,8 @@ const TABS = [
 ];
 const tabOf = (key) => TABS.filter((t) => t.key === key)[0];
 
-const store = createStore('monster', { cur: null, shelf: [], tab: 'head', brush: 0, target: 'body' });
+const store = createStore('monster', { cur: null, shelf: [], tab: 'head', brush: 0, target: 'body', art: {} });
+if (!store.data.art || typeof store.data.art !== 'object') store.data.art = {};
 store.data.shelf = (store.data.shelf || []).map(cleanMonster).filter(Boolean).slice(0, MAX_SHELF);
 let m = cleanMonster(store.data.cur) || randomMonster();
 if (!tabOf(store.data.tab)) store.data.tab = 'head';
@@ -384,9 +390,65 @@ function saveToShelf() {
   persist();
 }
 
+// ---------------------------------------------------------------------------
+// The finished monster goes to the art gallery too (Jigsaw makes puzzles of it)
+// ---------------------------------------------------------------------------
+function artCanvas(mm) {
+  const S = 480;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = S;
+  const c = cv.getContext('2d');
+  const g = c.createLinearGradient(0, 0, 0, S);
+  g.addColorStop(0, '#f2fff0');
+  g.addColorStop(1, '#e6f4ff');
+  c.fillStyle = g;
+  c.fillRect(0, 0, S, S);
+  // soft polka dots, so the puzzle pieces are not all blank
+  const dots = ['#ffd6ea', '#d9f7c8', '#d8e8ff', '#fff2b8'];
+  for (let i = 0; i < 26; i++) {
+    c.fillStyle = dots[i % dots.length];
+    c.beginPath();
+    c.arc(((i * 97) % 470) + 5, ((i * 61 + (i % 3) * 37) % 440) + 10, 10 + (i % 4) * 5, 0, Math.PI * 2);
+    c.fill();
+  }
+  c.fillStyle = 'rgba(92, 214, 92, .35)';
+  c.beginPath();
+  c.ellipse(S / 2, S * 0.97, S * 0.6, S * 0.12, 0, 0, Math.PI * 2);
+  c.fill();
+  const h = S * 0.94;
+  const w = h * 400 / 480;
+  const svg = monsterSVG(mm).replace('<svg ', `<svg width="${Math.round(w * 2)}" height="${Math.round(h * 2)}" `);
+  return new Promise((res) => {
+    const img = new Image();
+    img.onload = () => { c.drawImage(img, (S - w) / 2, S - h - 4, w, h); res(cv); };
+    img.onerror = () => res(null);
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  });
+}
+async function toGallery(mm) {
+  const copy = JSON.parse(JSON.stringify(mm));
+  const sig = JSON.stringify(copy);
+  const old = store.data.art[copy.id];
+  if (old && old.sig === sig) return;
+  const cv = await artCanvas(copy);
+  if (!cv) return;
+  if (old) removeArt(old.art);
+  const item = addArt(cv, { game: 'monster', title: copy.name || 'My monster' });
+  if (!item) return;
+  store.data.art[copy.id] = { sig, art: item.id };
+  // forget monsters that are long gone from the shelf
+  const keep = {};
+  store.data.shelf.forEach((x) => { if (store.data.art[x.id]) keep[x.id] = store.data.art[x.id]; });
+  keep[copy.id] = store.data.art[copy.id];
+  store.data.art = keep;
+  store.persist();
+}
+
 async function done() {
   if (!m.name) m.name = monsterName();
   saveToShelf();
+  toGallery(m);
+  earnSticker('monster', { delay: 2600 });
   dancing = true;
   $('#play').classList.add('dancing');
   updateName();
@@ -418,7 +480,7 @@ function rename() {
   m.name = monsterName();
   updateName();
   persist();
-  if (store.data.shelf.some((x) => x.id === m.id)) saveToShelf();
+  if (store.data.shelf.some((x) => x.id === m.id)) { saveToShelf(); toGallery(m); }
   replayClass($('#mon-name'), 'bounce');
   sfx.sparkle();
   react('wiggle');
@@ -498,12 +560,14 @@ function buildShelf() {
   const grid = $('#shelf-grid');
   const list = store.data.shelf;
   $('#shelf-edit').classList.toggle('hidden', !list.length);
+  $('#shelf-parade').classList.toggle('hidden', !list.length);
   $('#shelf-edit').classList.toggle('on', shelfEdit);
   grid.classList.toggle('editing', shelfEdit);
   let html = `<button class="shelf-tile new-tile" data-action="new" aria-label="New monster"><span class="new-plus">➕</span><span class="shelf-name">New</span></button>`;
   list.forEach((mm, i) => {
     html += `<button class="shelf-tile" data-action="shelf-open" data-i="${i}" aria-label="${mm.name}">` +
-      `${monsterSVG(mm)}<span class="shelf-name">${mm.name}</span><span class="shelf-x">✖</span></button>`;
+      `${monsterSVG(mm)}<span class="shelf-name">${mm.name}</span><span class="shelf-x">✖</span>` +
+      `<span class="shelf-feed" data-action="shelf-feed" data-i="${i}" role="button" aria-label="Feed ${mm.name}">🍽️</span></button>`;
   });
   grid.innerHTML = html;
 }
@@ -515,6 +579,51 @@ function openShelf() {
 }
 function buildTitle() {
   $('#title-mon').innerHTML = monsterSVG(m);
+}
+
+// ---------------------------------------------------------------------------
+// Feed me! and the parade
+// ---------------------------------------------------------------------------
+const feed = createFeed({ beat: danceBeat, giggle });
+const parade = createParade({ giggle });
+let feedFrom = null;
+function openFeed(mm, from) {
+  feedFrom = from;
+  stopMusic();
+  if (from === 'play') {
+    $('#play').classList.add('hidden');
+    playing = false;
+  }
+  showScreen(null);
+  fx.clear();
+  feed.start(cleanMonster(mm));
+}
+function closeFeed() {
+  feed.stop();
+  fx.clear();
+  if (feedFrom === 'play') {
+    $('#play').classList.remove('hidden');
+    playing = true;
+    A.idleDirty = true;
+    A.cheerT = A.t;
+    showScreen(null);
+  } else {
+    buildShelf();
+    showScreen('screen-shelf');
+  }
+}
+let paradeFrom = null;
+function openParade(from) {
+  paradeFrom = from;
+  const list = store.data.shelf.length ? store.data.shelf : [Object.assign({}, m, { name: m.name || 'Who am I?' })];
+  showScreen(null);
+  fx.clear();
+  parade.start(list.slice(0, MAX_SHELF).map(cleanMonster));
+}
+function closeParade() {
+  parade.stop();
+  fx.clear();
+  if (paradeFrom === 'shelf') { buildShelf(); showScreen('screen-shelf'); } else { buildTitle(); showScreen('screen-title'); }
 }
 
 function newMonster() {
@@ -589,6 +698,18 @@ boot({
         else { render(); showTab(tab, false); react('spin'); sfx.whoosh(); say('A new monster!'); }
         break;
       case 'rename': rename(); break;
+      case 'feed': openFeed(m, 'play'); break;
+      case 'shelf-feed': {
+        if (shelfEdit) break;
+        const mm = store.data.shelf[+el.dataset.i];
+        if (mm) openFeed(mm, 'shelf');
+        break;
+      }
+      case 'feed-back': closeFeed(); break;
+      case 'feed-again': feed.again(); break;
+      case 'feed-tickle': feed.tickle(); break;
+      case 'parade': openParade(currentScreen() === 'screen-shelf' ? 'shelf' : 'title'); break;
+      case 'parade-back': closeParade(); break;
       case 'save': savePicture(); break;
       case 'shelf-edit':
         shelfEdit = !shelfEdit;
@@ -614,6 +735,8 @@ boot({
     }
   },
   onBack(screen) {
+    if (feed.open) { closeFeed(); return true; }
+    if (parade.open) { closeParade(); return true; }
     if (screen === null && playing) { leavePlay(); return true; }
     if (screen === 'screen-shelf') { showScreen('screen-title'); return true; }
     return false;
@@ -621,6 +744,12 @@ boot({
   onFrame(dt, t) {
     animate(t);
     danceFrame();
+    feed.frame(dt, t);
+    parade.frame(dt, t);
+  },
+  onResize() {
+    feed.layout();
+    parade.layout();
   },
 });
 
@@ -631,4 +760,6 @@ window.__monster = {
   beat: () => beatNow(),
   layout: () => layout(m),
   store,
+  feed,
+  parade,
 };

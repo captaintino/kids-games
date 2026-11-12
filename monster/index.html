@@ -28,6 +28,7 @@
       <div class="btn-col">
         <button class="btn btn-green" data-action="build"><span class="btn-icon">🛠️</span> Build!</button>
         <button class="btn btn-purple" data-action="shelf"><span class="btn-icon">👾</span> My Monsters</button>
+        <button class="btn btn-orange" data-action="parade"><span class="btn-icon">🎉</span> Parade</button>
       </div>
     </div>
   </section>
@@ -38,6 +39,7 @@
       <div class="shelf-head">
         <button class="round-btn" data-action="home" aria-label="Back">⬅️</button>
         <h2 class="heading">My Monsters</h2>
+        <button class="round-btn parade-round" id="shelf-parade" data-action="parade" aria-label="Monster parade">🎉</button>
         <button class="round-btn" id="shelf-edit" data-action="shelf-edit" aria-label="Remove monsters">🗑️</button>
       </div>
       <div class="shelf-grid" id="shelf-grid"></div>
@@ -69,6 +71,7 @@
     </div>
 
     <div class="dance-row" id="dance-row">
+      <button class="btn btn-orange feed-btn" data-action="feed" aria-label="Feed me!"><span class="btn-icon">🍽️</span><span class="feed-text">Feed me!</span></button>
       <button class="round-btn big-round" data-action="again" aria-label="Dance again">🔁</button>
       <button class="round-btn big-round" data-action="edit" aria-label="Change my monster">✏️</button>
       <button class="round-btn big-round" data-action="new" aria-label="New monster">🆕</button>
@@ -81,6 +84,35 @@
         <div class="swatches" id="swatches"></div>
         <div class="pats" id="pats"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- Feed me! -->
+  <div id="feed" class="feed hidden">
+    <div class="topbar">
+      <button class="round-btn" data-action="feed-back" aria-label="Back">⬅️</button>
+      <div class="name-pill feed-name" id="feed-name">👾</div>
+      <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
+    </div>
+    <div class="tummy" id="tummy" aria-label="Tummy"></div>
+    <div class="feed-stage"><div class="mon feed-mon" id="feed-mon" data-action="feed-tickle" data-quiet></div></div>
+    <div class="tray" id="feed-tray"></div>
+    <div class="feed-end">
+      <button class="round-btn big-round" data-action="feed-again" aria-label="More food">🔁</button>
+      <button class="round-btn big-round" data-action="feed-back" aria-label="All done">👍</button>
+    </div>
+    <div class="pieces" id="feed-pieces"></div>
+  </div>
+
+  <!-- Monster parade -->
+  <div id="parade" class="parade hidden">
+    <div class="bunting" aria-hidden="true"></div>
+    <div class="parade-road" aria-hidden="true"></div>
+    <div class="parade-lane" id="parade-lane"></div>
+    <div class="topbar parade-top">
+      <button class="round-btn" data-action="parade-back" aria-label="Back">⬅️</button>
+      <div class="pill parade-pill">🎉 Monster Parade!</div>
+      <button class="round-btn" data-action="sound" aria-label="Toggle sound">🔊</button>
     </div>
   </div>
 

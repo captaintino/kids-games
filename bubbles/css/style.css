@@ -769,33 +769,8 @@ canvas#game {
   justify-content: center;
 }
 .learn-icon canvas { display: block; filter: drop-shadow(0 3px 2px rgba(40, 10, 90, .35)); }
-/* the letter to pop, in a little glossy bubble */
-.learn-letter {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  border: 3px solid rgba(255,255,255,.95);
-  background: radial-gradient(circle at 35% 28%, #fff 0 10%, rgba(255,255,255,0) 26%),
-    radial-gradient(circle at 50% 50%, #ffc4ea 0%, #ff74c8 62%, #e33f9f 100%);
-  box-shadow: 0 4px 10px rgba(40, 10, 90, .35);
-  display: -webkit-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 32px;
-  line-height: 1;
-  color: #fff;
-  text-shadow: -2px -2px 0 #2d2442, 2px -2px 0 #2d2442, -2px 2px 0 #2d2442, 2px 2px 0 #2d2442, 0 -2px 0 #2d2442, 0 2px 0 #2d2442, -2px 0 0 #2d2442, 2px 0 0 #2d2442, 0 4px 0 rgba(45, 36, 66, .5);
-}
 .banner-icon { width: 110px; height: 110px; margin: 0 auto 6px; }
-.banner-icon .learn-letter {
-  font-size: 80px;
-  border-width: 4px;
-  text-shadow: -3px -3px 0 #2d2442, 3px -3px 0 #2d2442, -3px 3px 0 #2d2442, 3px 3px 0 #2d2442, 0 -3px 0 #2d2442, 0 3px 0 #2d2442, -3px 0 0 #2d2442, 3px 0 0 #2d2442, 0 6px 0 rgba(45, 36, 66, .5);
-}
 @media (max-height: 560px) and (orientation: landscape) {
   .banner-icon { width: 80px; height: 80px; }
-  .banner-icon .learn-letter { font-size: 58px; }
   .learn-panel > * + * { margin-top: 12px; }
 }
