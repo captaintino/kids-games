@@ -1,7 +1,7 @@
 // Butterfly Fold: paint on a paper with a butterfly outline, press 🦋 Fold and the
 // paper folds over and opens again with the paint blotted onto the other side.
 // Then it is cut out into a butterfly (body, antennae) that flaps its wings.
-import { paintColor, specks, blob, bubbleCluster, blotMirror, hasPaint } from './paint.js';
+import { paintColor, specks, blob, bubbleCluster, blotMirror, hasPaint, pictureLayer, drawAt, setTransform } from './paint.js';
 
 const TAU = Math.PI * 2;
 const INK = '#2d2442';
@@ -138,9 +138,20 @@ export function createButterfly(hooks) {
     wings: null,
     flutter: 0,
     blotted: false,
+    // while painting, the paper is layers (a still picture under and over the paint
+    // canvas), so a brush stroke only changes the paint; folding and flying use the stage
+    usesStage: false,
   };
 
-  B.layout = function (w, h) {
+  const underL = pictureLayer();
+  const overL = pictureLayer();
+  paint.className = 'layer paint-sheet';
+  B.layers = [underL.el, paint, overL.el];
+  let shownMirror = null;
+  let layersOn = true;
+  let dpr = 1;
+
+  B.layout = function (w, h, d) {
     const m = 14;
     const k = Math.min((w - m * 2) / PW, (h - m * 2) / PH);
     B.k = k;
@@ -149,7 +160,55 @@ export function createButterfly(hooks) {
     B.x = (w - B.w) / 2;
     B.y = (h - B.h) / 2;
     B.dirty = true;
+    dpr = d || 1;
+    drawAt(underL, B.x - 2, B.y - 2, B.w + 8, B.h + 14, dpr, (c) => {
+      paperShadow(c);
+      rrect(c, B.x, B.y, B.w, B.h, 18);
+      c.fillStyle = '#ffffff';
+      c.fill();
+    });
+    paint.style.width = `${B.w}px`;
+    paint.style.height = `${B.h}px`;
+    setTransform(paint, `translate(${B.x}px,${B.y}px)`);
+    shownMirror = null;
+    showLayers();
   };
+
+  /** The dashed butterfly, the fold line and the paper's edge, over the paint. */
+  function drawOver() {
+    shownMirror = B.mirror;
+    drawAt(overL, B.x - 4, B.y - 4, B.w + 8, B.h + 8, dpr, (c) => {
+      c.save();
+      butterflyPath(c, B.x, B.y, B.w, B.h);
+      c.setLineDash([10, 9]);
+      c.lineWidth = 3;
+      c.strokeStyle = 'rgba(45, 36, 66, .38)';
+      c.stroke();
+      c.setLineDash([2, 10]);
+      c.lineCap = 'round';
+      c.lineWidth = B.mirror ? 7 : 5;
+      c.strokeStyle = B.mirror ? 'rgba(255, 61, 154, .85)' : 'rgba(157, 92, 255, .7)';
+      c.beginPath();
+      c.moveTo(B.x + B.w / 2, B.y + 8);
+      c.lineTo(B.x + B.w / 2, B.y + B.h - 8);
+      c.stroke();
+      c.restore();
+      rrect(c, B.x, B.y, B.w, B.h, 18);
+      c.lineWidth = 3;
+      c.strokeStyle = 'rgba(45, 36, 66, .25)';
+      c.stroke();
+    });
+  }
+
+  /** The paper layers show while painting; the stage takes over for fold, cut and fly. */
+  function showLayers() {
+    const on = B.state === 'paint';
+    B.usesStage = !on;
+    if (on && shownMirror !== B.mirror) drawOver();
+    if (on === layersOn) return;
+    layersOn = on;
+    B.layers.forEach((el) => { el.style.visibility = on ? '' : 'hidden'; });
+  }
 
   B.clear = function () {
     pc.clearRect(0, 0, PW, PH);
@@ -336,9 +395,10 @@ export function createButterfly(hooks) {
     }
     if (B.state === 'made') B.phase = (B.phase || 0) + (B.flutter > 0 ? 11 : 3.2) * dt;
     if (B.flutter > 0) B.flutter = Math.max(0, B.flutter - dt);
+    showLayers();
   };
 
-  B.busy = () => B.state !== 'paint' || B.dirty;
+  B.busy = () => B.state !== 'paint';
 
   // ---------------------------------------------------------------------
   // Drawing
@@ -347,37 +407,6 @@ export function createButterfly(hooks) {
     c.fillStyle = 'rgba(40, 10, 90, .22)';
     rrect(c, B.x + 4, B.y + 10, B.w, B.h, 18);
     c.fill();
-  }
-
-  function drawPaintState(c) {
-    paperShadow(c);
-    rrect(c, B.x, B.y, B.w, B.h, 18);
-    c.fillStyle = '#ffffff';
-    c.fill();
-    c.save();
-    c.clip();
-    c.drawImage(paint, B.x, B.y, B.w, B.h);
-    c.restore();
-    // the butterfly to cut out (dashed) and the fold line (dotted)
-    c.save();
-    butterflyPath(c, B.x, B.y, B.w, B.h);
-    c.setLineDash([10, 9]);
-    c.lineWidth = 3;
-    c.strokeStyle = 'rgba(45, 36, 66, .38)';
-    c.stroke();
-    c.setLineDash([2, 10]);
-    c.lineCap = 'round';
-    c.lineWidth = B.mirror ? 7 : 5;
-    c.strokeStyle = B.mirror ? 'rgba(255, 61, 154, .85)' : 'rgba(157, 92, 255, .7)';
-    c.beginPath();
-    c.moveTo(B.x + B.w / 2, B.y + 8);
-    c.lineTo(B.x + B.w / 2, B.y + B.h - 8);
-    c.stroke();
-    c.restore();
-    rrect(c, B.x, B.y, B.w, B.h, 18);
-    c.lineWidth = 3;
-    c.strokeStyle = 'rgba(45, 36, 66, .25)';
-    c.stroke();
   }
 
   function drawFold(c) {
@@ -441,8 +470,7 @@ export function createButterfly(hooks) {
 
   B.draw = function (c, dpr) {
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
-    if (B.state === 'paint') drawPaintState(c);
-    else if (B.state === 'fold') drawFold(c);
+    if (B.state === 'paint') { /* the layers show the paper */ } else if (B.state === 'fold') drawFold(c);
     else if (B.state === 'cut') {
       const a = Math.min(1, (B.t - B.stateT) / 1.0);
       // the paper around the butterfly falls away

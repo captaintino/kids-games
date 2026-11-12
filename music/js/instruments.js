@@ -1,10 +1,107 @@
-// The three instruments, drawn on one canvas. Each one lays itself out in the
-// free area of the screen, draws itself (only while something moves), and tells
-// which key / bar / drum is under a finger.
+// The three instruments. Each one lays itself out in the free area of the screen,
+// builds itself out of little pictures on the page (see Layers below: while you play,
+// only CSS transforms and opacities change, nothing is repainted), and tells which
+// key / bar / drum is under a finger.
 //
 // Xylophone and piano are drawn in their own "virtual" coordinates: u runs across
 // the keys from low to high, v along a key. On a tall phone the whole instrument is
 // turned a quarter turn (low notes at the bottom), so the keys stay big.
+
+// ---------------------------------------------------------------------------
+// Layers
+// ---------------------------------------------------------------------------
+// The instruments are drawn as layers on the page instead of being repainted on one
+// big canvas every frame. Every part (a bar, its glow, a key's lit look, a drum's
+// skin) is drawn once into a little picture; while you play, only CSS transforms
+// (a bar wobbling, a drum squashing) and opacities (glows fading) change, which the
+// browser's compositor handles without repainting anything.
+//
+// Each picture is drawn into a canvas and then shown as an <img>: a canvas on the
+// page is copied to the compositor again on every page update in some browsers
+// (Chrome without a GPU), an image is not. The canvas stays visible until its image
+// is ready, so nothing ever blinks.
+
+export function setTransform(el, t) {
+  if (el._tf === t) return;
+  el._tf = t;
+  el.style.webkitTransform = t;
+  el.style.transform = t;
+}
+
+/** Fade a part in or out (0 hides it completely). */
+export function setAlpha(el, a) {
+  const v = a <= 0.001 ? 0 : Math.min(1, Math.round(a * 1000) / 1000);
+  if (el._a === v) return;
+  el._a = v;
+  el.style.visibility = v ? '' : 'hidden';
+  if (v) el.style.opacity = String(v);
+}
+
+export function show(el, on) {
+  setAlpha(el, on ? 1 : 0);
+}
+
+// pictures are turned into images a few at a time, so making many never stalls a frame
+const queue = [];
+let pumping = false;
+function pump() {
+  const end = Date.now() + 6;
+  while (queue.length && Date.now() < end) queue.shift()();
+  if (queue.length) requestAnimationFrame(pump);
+  else pumping = false;
+}
+function later(job) {
+  queue.push(job);
+  if (!pumping) { pumping = true; requestAnimationFrame(pump); }
+}
+
+/** A group that moves its children together (a bar, a key, a drum). */
+export function group(cls) {
+  const el = document.createElement('div');
+  el.className = cls ? `part ${cls}` : 'part';
+  return el;
+}
+
+/**
+ * A still picture covering the box (x, y, w, h) in its parent's coordinates (CSS px).
+ * draw(c) paints it in those same coordinates. The box is snapped to the picture's
+ * pixel grid.
+ */
+export function picture(x, y, w, h, dpr, draw, cls) {
+  const px0 = Math.floor(x * dpr);
+  const py0 = Math.floor(y * dpr);
+  const pw = Math.max(1, Math.ceil((x + w) * dpr) - px0);
+  const ph = Math.max(1, Math.ceil((y + h) * dpr) - py0);
+  const bx = px0 / dpr;
+  const by = py0 / dpr;
+  const el = document.createElement('div');
+  el.className = cls ? `part pic ${cls}` : 'part pic';
+  el.style.width = `${pw / dpr}px`;
+  el.style.height = `${ph / dpr}px`;
+  setTransform(el, `translate(${bx}px,${by}px)`);
+  const cv = document.createElement('canvas');
+  cv.width = pw;
+  cv.height = ph;
+  const c = cv.getContext('2d');
+  c.setTransform(dpr, 0, 0, dpr, -bx * dpr, -by * dpr);
+  draw(c);
+  el.appendChild(cv);
+  later(() => {
+    let url = '';
+    try { url = cv.toDataURL('image/png'); } catch (err) { return; }
+    const img = new Image();
+    img.alt = '';
+    img.onload = () => {
+      if (cv.parentNode !== el) return;
+      el.replaceChild(img, cv);
+      cv.width = cv.height = 1;
+    };
+    img.src = url;
+  });
+  return el;
+}
+
+// ---------------------------------------------------------------------------
 
 const INK = '#2d2442';
 const TAU = Math.PI * 2;
@@ -101,9 +198,15 @@ class Keyed {
       this.m = [1, 0, 0, 1, area.x + (area.w - uSize) / 2, area.y + (area.h - vSize) / 2];
     }
   }
-  apply(c, dpr) {
+  /** The instrument's frame on the page: (u, v) virtual coordinates to the screen. */
+  frameTransform() {
     const m = this.m;
-    c.setTransform(m[0] * dpr, m[1] * dpr, m[2] * dpr, m[3] * dpr, m[4] * dpr, m[5] * dpr);
+    return `translate(${m[4]}px,${m[5]}px) matrix(${m[0]},${m[1]},${m[2]},${m[3]},0,0)`;
+  }
+  /** Put the built instrument on the page. */
+  mount(root) {
+    while (root.firstChild) root.removeChild(root.firstChild);
+    if (this.dom) root.appendChild(this.dom);
   }
   keyCenter(i) {
     const k = this.keys[i];
@@ -131,7 +234,7 @@ export class Xylophone extends Keyed {
     const L0 = Math.min(along * 0.96, t * 5.4);
     return { gap, t, L0, size: t * L0 };
   }
-  layout(area) {
+  layout(area, dpr) {
     // lie the bars whichever way makes them biggest (tall phones: sideways, low notes at the bottom)
     const a = this.measure(area.w, area.h);
     const b = this.measure(area.h, area.w);
@@ -153,6 +256,7 @@ export class Xylophone extends Keyed {
     });
     this.L0 = L0;
     this.setFrame(area, across, along, uSize, L0);
+    this.build(dpr);
   }
   pick(x, y) {
     const p = this.toVirtual(x, y);
@@ -162,101 +266,156 @@ export class Xylophone extends Keyed {
     }
     return -1;
   }
-  draw(c, dpr, t) {
-    this.apply(c, dpr);
+  /** Build the xylophone out of pictures: the rails, then each bar on its own. */
+  build(dpr) {
     const ks = this.keys;
     const s = this.thick / 80;
+    this.s = s;
+    this.dpr = dpr;
+    const frame = group();
+    setTransform(frame, this.frameTransform());
     // the wooden frame: two rails under the bars, closer together at the high end
     const railAt = (k, f) => k.v + k.h * f;
     const a = ks[0];
     const b = ks[ks.length - 1];
     const pad = this.thick * 0.45;
-    [0.2, 0.8].forEach((f) => {
-      const y0 = railAt(a, f);
-      const y1 = railAt(b, f);
-      c.lineCap = 'round';
-      c.strokeStyle = INK;
-      c.lineWidth = 20 * s;
-      c.beginPath();
-      c.moveTo(a.u - pad, y0);
-      c.lineTo(b.u + b.w + pad, y1);
-      c.stroke();
-      c.strokeStyle = '#c47a3f';
-      c.lineWidth = 13 * s;
-      c.stroke();
-      c.strokeStyle = 'rgba(255,255,255,.35)';
-      c.lineWidth = 4 * s;
-      c.beginPath();
-      c.moveTo(a.u - pad, y0 - 3 * s);
-      c.lineTo(b.u + b.w + pad, y1 - 3 * s);
-      c.stroke();
-    });
-    for (const k of ks) this.drawBar(c, k, t, s);
-  }
-  drawBar(c, k, t, s) {
-    const age = t - k.hitT;
-    const kk = decay(age, 4);
-    const cx = k.u + k.w / 2;
-    const cy = k.v + k.h / 2;
-    c.save();
-    c.translate(cx, cy);
-    if (kk > 0.01) {
-      c.rotate(0.06 * kk * Math.sin(age * 34));
-      const sc = 1 + 0.06 * kk;
-      c.scale(sc, 1 + 0.02 * kk);
+    const m = 14 * s;
+    frame.appendChild(picture(a.u - pad - m, -m, b.u + b.w - a.u + (pad + m) * 2, this.L0 + m * 2, dpr, (c) => {
+      [0.2, 0.8].forEach((f) => {
+        const y0 = railAt(a, f);
+        const y1 = railAt(b, f);
+        c.lineCap = 'round';
+        c.strokeStyle = INK;
+        c.lineWidth = 20 * s;
+        c.beginPath();
+        c.moveTo(a.u - pad, y0);
+        c.lineTo(b.u + b.w + pad, y1);
+        c.stroke();
+        c.strokeStyle = '#c47a3f';
+        c.lineWidth = 13 * s;
+        c.stroke();
+        c.strokeStyle = 'rgba(255,255,255,.35)';
+        c.lineWidth = 4 * s;
+        c.beginPath();
+        c.moveTo(a.u - pad, y0 - 3 * s);
+        c.lineTo(b.u + b.w + pad, y1 - 3 * s);
+        c.stroke();
+      });
+    }));
+    // each bar: glow, the bar, the bar lit up from inside (faded in), and later a star
+    for (const k of ks) {
+      const g = group('move');
+      setTransform(g, `translate(${k.u + k.w / 2}px,${k.v + k.h / 2}px)`);
+      k.el = { g, glow: this.glowPic(k, false), body: this.bodyPic(k, 0), bright: this.bodyPic(k, 0.5), glowLit: null, star: null };
+      k.el.glow.classList.add('fade');
+      k.el.bright.classList.add('fade');
+      g.appendChild(k.el.glow);
+      g.appendChild(k.el.body);
+      g.appendChild(k.el.bright);
+      frame.appendChild(g);
     }
-    if (k.down) c.translate(0, 2 * s);
-    if (k.lit) c.scale(1.06, 1.03);
+    this.dom = frame;
+    this.update(1e6); // at rest until the first frame
+  }
+  glowPic(k, lit) {
+    const s = this.s;
+    const g = (lit ? 13 : 8) * s;
+    const blur = (lit ? 44 : 30) * s;
+    const m = g + blur / this.dpr * 1.6 + 2;
     const x = -k.w / 2;
     const y = -k.h / 2;
-    const glow = k.lit ? 1 : Math.max(kk * 0.9, k.hint ? 0.35 + 0.35 * Math.sin(t * 6) : 0);
-    if (glow > 0.02) {
-      c.save();
-      c.globalAlpha = Math.min(1, glow);
-      c.shadowColor = k.lit ? '#fff7a8' : k.color;
-      c.shadowBlur = (k.lit ? 44 : 30) * s;
-      c.fillStyle = k.lit ? '#fffbd0' : shade(k.color, 0.5);
-      const g = (k.lit ? 13 : 8) * s;
+    return picture(x - m, y - m, k.w + m * 2, k.h + m * 2, this.dpr, (c) => {
+      c.shadowColor = lit ? '#fff7a8' : k.color;
+      c.shadowBlur = blur;
+      c.fillStyle = lit ? '#fffbd0' : shade(k.color, 0.5);
       rr(c, x - g, y - g, k.w + g * 2, k.h + g * 2, k.w * 0.4);
       c.fill();
-      c.restore();
-    }
-    // the bar
-    rr(c, x, y, k.w, k.h, k.w * 0.3);
-    c.fillStyle = k.color;
-    c.fill();
-    // lit / just-hit bars glow from inside
-    const bright = k.lit ? 0.45 : kk * 0.5;
-    c.save();
-    c.clip();
-    c.fillStyle = 'rgba(0,0,0,.14)';
-    c.fillRect(x + k.w * 0.72, y, k.w * 0.4, k.h);
-    c.fillStyle = 'rgba(255,255,255,.45)';
-    rr(c, x + k.w * 0.14, y + k.w * 0.25, k.w * 0.17, k.h - k.w * 0.5, k.w * 0.1);
-    c.fill();
-    if (bright > 0.01) {
-      c.fillStyle = `rgba(255,255,255,${bright})`;
-      c.fillRect(x, y, k.w, k.h);
-    }
-    c.restore();
-    rr(c, x, y, k.w, k.h, k.w * 0.3);
-    c.lineWidth = 4.5 * s;
-    c.strokeStyle = INK;
-    c.stroke();
-    // screws where the bar sits on the rails
-    [0.2, 0.8].forEach((f) => {
-      const sy = y + k.h * f;
-      c.beginPath();
-      c.arc(0, sy, 6 * s, 0, TAU);
-      c.fillStyle = '#eef0f7';
+    }, 'fade');
+  }
+  bodyPic(k, bright) {
+    const s = this.s;
+    const x = -k.w / 2;
+    const y = -k.h / 2;
+    const m = 4 * s;
+    return picture(x - m, y - m, k.w + m * 2, k.h + m * 2, this.dpr, (c) => {
+      // the bar
+      rr(c, x, y, k.w, k.h, k.w * 0.3);
+      c.fillStyle = k.color;
       c.fill();
-      c.lineWidth = 3 * s;
+      // lit / just-hit bars glow from inside
+      c.save();
+      c.clip();
+      c.fillStyle = 'rgba(0,0,0,.14)';
+      c.fillRect(x + k.w * 0.72, y, k.w * 0.4, k.h);
+      c.fillStyle = 'rgba(255,255,255,.45)';
+      rr(c, x + k.w * 0.14, y + k.w * 0.25, k.w * 0.17, k.h - k.w * 0.5, k.w * 0.1);
+      c.fill();
+      if (bright > 0.01) {
+        c.fillStyle = `rgba(255,255,255,${bright})`;
+        c.fillRect(x, y, k.w, k.h);
+      }
+      c.restore();
+      rr(c, x, y, k.w, k.h, k.w * 0.3);
+      c.lineWidth = 4.5 * s;
       c.strokeStyle = INK;
       c.stroke();
+      // screws where the bar sits on the rails
+      [0.2, 0.8].forEach((f) => {
+        const sy = y + k.h * f;
+        c.beginPath();
+        c.arc(0, sy, 6 * s, 0, TAU);
+        c.fillStyle = '#eef0f7';
+        c.fill();
+        c.lineWidth = 3 * s;
+        c.strokeStyle = INK;
+        c.stroke();
+      });
     });
-    if (k.lit) litStar(c, 0, 0, k.w * 0.3, t);
-    c.restore();
   }
+  /** Move, fade and light the bars for time t (only what changed is touched). */
+  update(t) {
+    const s = this.s;
+    for (const k of this.keys) {
+      const e = k.el;
+      if (!e) continue;
+      const age = t - k.hitT;
+      const kk = decay(age, 4);
+      let tf = `translate(${k.u + k.w / 2}px,${k.v + k.h / 2}px)`;
+      if (kk > 0.01) tf += ` rotate(${(0.06 * kk * Math.sin(age * 34)).toFixed(5)}rad) scale(${(1 + 0.06 * kk).toFixed(5)},${(1 + 0.02 * kk).toFixed(5)})`;
+      if (k.down) tf += ` translate(0px,${2 * s}px)`;
+      if (k.lit) tf += ' scale(1.06,1.03)';
+      setTransform(e.g, tf);
+      const glow = k.lit ? 1 : Math.max(kk * 0.9, k.hint ? 0.35 + 0.35 * Math.sin(t * 6) : 0);
+      setAlpha(e.glow, !k.lit && glow > 0.02 ? glow : 0);
+      if (k.lit && !e.glowLit) {
+        e.glowLit = this.glowPic(k, true);
+        e.g.insertBefore(e.glowLit, e.body);
+      }
+      if (e.glowLit) show(e.glowLit, k.lit);
+      const bright = k.lit ? 0.45 : kk * 0.5;
+      setAlpha(e.bright, bright > 0.01 ? bright / 0.5 : 0);
+      if (k.lit && !e.star) {
+        e.star = starPic(k.w * 0.3, this.dpr);
+        e.g.appendChild(e.star);
+      }
+      if (e.star) {
+        show(e.star, k.lit);
+        if (k.lit) setTransform(e.star, starTransform(0, 0, t));
+      }
+    }
+  }
+}
+
+// the "light" star in Follow the Lights, as a picture that pulses and rocks
+function starPic(r, dpr) {
+  const m = r * 1.15 + r * 0.9 / dpr * 1.6 + 2;
+  const g = group('move');
+  g.appendChild(picture(-m, -m, m * 2, m * 2, dpr, (c) => litStar(c, 0, 0, r, 0)));
+  return g;
+}
+function starTransform(x, y, t) {
+  const pulse = 1 + 0.12 * Math.sin(t * 9);
+  return `translate(${x}px,${y}px) rotate(${(Math.sin(t * 3) * 0.2).toFixed(4)}rad) scale(${pulse.toFixed(4)})`;
 }
 
 // ---------------------------------------------------------------------------
@@ -295,7 +454,7 @@ export class Piano extends Keyed {
     const kl = Math.min(along - top - pad * 2, kw * (across > 700 ? 6 : 4.8));
     return { pad, kw, top, kl, size: kw * Math.min(kl, kw * 4) };
   }
-  layout(area) {
+  layout(area, dpr) {
     const a = this.measure(area.w, area.h);
     const b = this.measure(area.h, area.w);
     // only phones turn the piano sideways; on a tablet it stays a real-looking keyboard
@@ -331,6 +490,7 @@ export class Piano extends Keyed {
     this.m[4] += this.vertical ? (top + pad) : pad;
     if (this.vertical) this.m[5] -= pad;
     else this.m[5] += top + pad;
+    this.build(dpr);
   }
   pick(x, y) {
     const p = this.toVirtual(x, y);
@@ -346,143 +506,233 @@ export class Piano extends Keyed {
     const k = this.keys[i];
     return this.toScreen(k.u + k.w / 2, k.h * (k.black ? 0.6 : 0.78));
   }
-  draw(c, dpr, t) {
-    this.apply(c, dpr);
+  /** Build the piano out of pictures: case, lights, white keys, felt, black keys. */
+  build(dpr) {
     const kw = this.kw;
     const kl = this.kl;
     const pad = this.pad;
     const top = this.top;
     const s = kw / 70;
     const W12 = kw * 12;
-    // the case
-    rr(c, -pad, -top - pad, W12 + pad * 2, kl + top + pad * 2, 22 * s);
-    c.fillStyle = '#7b4fd6';
-    c.fill();
-    c.lineWidth = 5 * s;
-    c.strokeStyle = INK;
-    c.stroke();
-    rr(c, -pad + 6 * s, -top - pad + 5 * s, W12 + pad * 2 - 12 * s, top * 0.45, 12 * s);
-    c.fillStyle = 'rgba(255,255,255,.22)';
-    c.fill();
+    this.s = s;
+    this.dpr = dpr;
+    const frame = group();
+    setTransform(frame, this.frameTransform());
+    const lightAt = (i) => ({ x: i * kw + kw / 2, y: -top / 2 - 2 * s, r: Math.min(kw * 0.2, top * 0.26) });
+    // the case, the lights (off) and the dark gaps between the keys
+    const m = 6 * s;
+    frame.appendChild(picture(-pad - m, -top - pad - m, W12 + (pad + m) * 2, kl + top + (pad + m) * 2, dpr, (c) => {
+      rr(c, -pad, -top - pad, W12 + pad * 2, kl + top + pad * 2, 22 * s);
+      c.fillStyle = '#7b4fd6';
+      c.fill();
+      c.lineWidth = 5 * s;
+      c.strokeStyle = INK;
+      c.stroke();
+      rr(c, -pad + 6 * s, -top - pad + 5 * s, W12 + pad * 2 - 12 * s, top * 0.45, 12 * s);
+      c.fillStyle = 'rgba(255,255,255,.22)';
+      c.fill();
+      for (let i = 0; i < 12; i++) {
+        const L = lightAt(i);
+        c.beginPath();
+        c.arc(L.x, L.y, L.r, 0, TAU);
+        c.fillStyle = this.keys[i].deep;
+        c.globalAlpha = 0.55;
+        c.fill();
+        c.globalAlpha = 1;
+        c.lineWidth = 2.5 * s;
+        c.strokeStyle = INK;
+        c.stroke();
+      }
+      c.fillStyle = INK;
+      c.fillRect(0, 0, W12, kl);
+    }));
     // a little light above each white key (they glow when it plays)
     for (let i = 0; i < 12; i++) {
       const k = this.keys[i];
-      const on = k.lit ? 1 : decay(t - k.hitT, 3);
-      const lx = i * kw + kw / 2;
-      const ly = -top / 2 - 2 * s;
-      const r = Math.min(kw * 0.2, top * 0.26);
-      if (on > 0.05) {
-        c.save();
-        c.globalAlpha = on;
+      const L = lightAt(i);
+      const blur = 16 * s;
+      const gm = L.r * 1.3 + blur / dpr * 1.6 + 2;
+      const glow = picture(L.x - gm, L.y - gm, gm * 2, gm * 2, dpr, (c) => {
         c.shadowColor = k.glowColor;
-        c.shadowBlur = 16 * s;
+        c.shadowBlur = blur;
         c.beginPath();
-        c.arc(lx, ly, r * 1.3, 0, TAU);
+        c.arc(L.x, L.y, L.r * 1.3, 0, TAU);
         c.fillStyle = k.glowColor;
         c.fill();
-        c.restore();
-      }
-      c.beginPath();
-      c.arc(lx, ly, r, 0, TAU);
-      c.fillStyle = on > 0.05 ? '#fff' : k.deep;
-      c.globalAlpha = on > 0.05 ? 1 : 0.55;
-      c.fill();
-      c.globalAlpha = 1;
-      c.lineWidth = 2.5 * s;
-      c.strokeStyle = INK;
-      c.stroke();
+      }, 'fade');
+      const om = L.r + 3 * s;
+      const on = picture(L.x - om, L.y - om, om * 2, om * 2, dpr, (c) => {
+        c.beginPath();
+        c.arc(L.x, L.y, L.r, 0, TAU);
+        c.fillStyle = '#fff';
+        c.fill();
+        c.lineWidth = 2.5 * s;
+        c.strokeStyle = INK;
+        c.stroke();
+      });
+      k.light = { glow, on };
+      frame.appendChild(glow);
+      frame.appendChild(on);
     }
-    // white keys, then black keys on top
-    c.fillStyle = INK;
-    c.fillRect(0, 0, W12, kl);
-    for (const k of this.keys) if (!k.black) this.drawWhite(c, k, t, s);
-    // the felt strip at the back of the keys
-    c.fillStyle = '#ff5fa8';
-    c.fillRect(0, 0, W12, 5 * s);
-    c.fillStyle = INK;
-    c.fillRect(0, 5 * s, W12, 2 * s);
-    for (const k of this.keys) if (k.black) this.drawBlack(c, k, t, s);
+    // white keys, then the felt strip, then black keys on top
+    for (const k of this.keys) {
+      if (k.black) continue;
+      const g = group('move');
+      k.el = { g, body: this.whitePic(k, false, 0), glow: this.whitePic(k, false, 1), lit: null, star: null };
+      k.el.glow.classList.add('fade');
+      g.appendChild(k.el.body);
+      g.appendChild(k.el.glow);
+      frame.appendChild(g);
+    }
+    frame.appendChild(picture(-1, -1, W12 + 2, 7 * s + 2, dpr, (c) => {
+      c.fillStyle = '#ff5fa8';
+      c.fillRect(0, 0, W12, 5 * s);
+      c.fillStyle = INK;
+      c.fillRect(0, 5 * s, W12, 2 * s);
+    }));
+    for (const k of this.keys) {
+      if (!k.black) continue;
+      const g = group('move');
+      k.el = { g, glow: this.blackGlowPic(k), body: this.blackPic(k, k.color), hit: this.blackPic(k, '#5a3f9c'), lit: null, star: null };
+      k.el.glow.classList.add('fade');
+      g.appendChild(k.el.glow);
+      g.appendChild(k.el.body);
+      g.appendChild(k.el.hit);
+      frame.appendChild(g);
+    }
+    this.dom = frame;
+    this.update(1e6); // at rest until the first frame
   }
-  drawWhite(c, k, t, s) {
-    const age = t - k.hitT;
-    const kk = decay(age, 4);
-    const press = k.down ? 1 : kk > 0.3 ? (kk - 0.3) / 0.7 : 0;
+  /** A white key at rest; `glow` 1 is the same key with its glow color laid over it. */
+  whitePic(k, lit, glow) {
+    const s = this.s;
     const g = 2 * s;
     const x = k.u + g;
     const w = k.w - g * 2;
-    const h = k.h - g + press * 4 * s;
-    const glow = k.lit ? 1 : (k.hint ? 0.3 + 0.3 * Math.sin(t * 6) : 0);
-    c.save();
-    rr(c, x, -10, w, h + 10, 12 * s);
-    c.fillStyle = k.lit ? k.glowColor : k.color;
-    c.fill();
-    c.clip();
-    if (glow > 0.02 || kk > 0.02) {
-      c.fillStyle = k.glowColor;
-      c.globalAlpha = Math.max(glow, kk * 0.8);
-      c.fillRect(x, 0, w, h);
-      c.globalAlpha = 1;
-    }
-    // the rounded front lip of the key
-    c.fillStyle = 'rgba(255,255,255,.55)';
-    c.fillRect(x + w * 0.12, 8 * s, w * 0.16, h - 30 * s);
-    c.fillStyle = 'rgba(60,20,110,.12)';
-    c.fillRect(x, h - 16 * s, w, 16 * s);
-    c.restore();
-    rr(c, x, -10, w, h + 10, 12 * s);
-    c.lineWidth = 3 * s;
-    c.strokeStyle = INK;
-    c.stroke();
-    if (k.lit) litStar(c, x + w / 2, h * 0.62, Math.min(w * 0.32, 30 * s), t);
-    // a star on each C so kids can find "home"
-    if (k.semi % 12 === 0) {
-      const cx = x + w / 2;
-      const cy = h - 34 * s;
-      const r = Math.min(w * 0.22, 12 * s);
-      c.beginPath();
-      for (let i = 0; i < 10; i++) {
-        const a = -Math.PI / 2 + i * Math.PI / 5;
-        const rad = i % 2 ? r * 0.45 : r;
-        c.lineTo(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad);
-      }
-      c.closePath();
-      c.fillStyle = '#fff';
-      c.fill();
-      c.lineWidth = 2 * s;
-      c.strokeStyle = k.deep;
-      c.stroke();
-    }
-  }
-  drawBlack(c, k, t, s) {
-    const age = t - k.hitT;
-    const kk = decay(age, 4);
-    const press = k.down ? 1 : kk > 0.3 ? (kk - 0.3) / 0.7 : 0;
-    const h = k.h + press * 4 * s;
-    const glow = k.lit ? 1 : Math.max(kk * 0.9, k.hint ? 0.35 + 0.3 * Math.sin(t * 6) : 0);
-    if (glow > 0.02) {
+    const h = k.h - g;
+    const m = 3 * s;
+    return picture(x - m, -10 - m, w + m * 2, h + 10 + m * 2, this.dpr, (c) => {
       c.save();
-      c.globalAlpha = Math.min(1, glow);
+      rr(c, x, -10, w, h + 10, 12 * s);
+      c.fillStyle = lit ? k.glowColor : k.color;
+      c.fill();
+      c.clip();
+      if (glow > 0.02) {
+        c.fillStyle = k.glowColor;
+        c.globalAlpha = glow;
+        c.fillRect(x, 0, w, h);
+        c.globalAlpha = 1;
+      }
+      // the rounded front lip of the key
+      c.fillStyle = 'rgba(255,255,255,.55)';
+      c.fillRect(x + w * 0.12, 8 * s, w * 0.16, h - 30 * s);
+      c.fillStyle = 'rgba(60,20,110,.12)';
+      c.fillRect(x, h - 16 * s, w, 16 * s);
+      c.restore();
+      rr(c, x, -10, w, h + 10, 12 * s);
+      c.lineWidth = 3 * s;
+      c.strokeStyle = INK;
+      c.stroke();
+      // a star on each C so kids can find "home"
+      if (k.semi % 12 === 0) {
+        const cx = x + w / 2;
+        const cy = h - 34 * s;
+        const r = Math.min(w * 0.22, 12 * s);
+        c.beginPath();
+        for (let i = 0; i < 10; i++) {
+          const a = -Math.PI / 2 + i * Math.PI / 5;
+          const rad = i % 2 ? r * 0.45 : r;
+          c.lineTo(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad);
+        }
+        c.closePath();
+        c.fillStyle = '#fff';
+        c.fill();
+        c.lineWidth = 2 * s;
+        c.strokeStyle = k.deep;
+        c.stroke();
+      }
+    });
+  }
+  blackGlowPic(k) {
+    const s = this.s;
+    const h = k.h;
+    const blur = 18 * s;
+    const m = blur / this.dpr * 1.6 + 2;
+    return picture(k.u - 3 * s - m, -6 - m, k.w + 6 * s + m * 2, h + 9 * s + m * 2, this.dpr, (c) => {
       c.shadowColor = k.glowColor;
-      c.shadowBlur = 18 * s;
+      c.shadowBlur = blur;
       rr(c, k.u - 3 * s, -6, k.w + 6 * s, h + 9 * s, 10 * s);
       c.fillStyle = k.glowColor;
       c.fill();
-      c.restore();
+    }, 'fade');
+  }
+  blackPic(k, color) {
+    const s = this.s;
+    const h = k.h;
+    const m = 3 * s;
+    return picture(k.u - m, -10 - m, k.w + m * 2, h + 10 + m * 2, this.dpr, (c) => {
+      rr(c, k.u, -10, k.w, h + 10, 9 * s);
+      c.fillStyle = color;
+      c.fill();
+      c.lineWidth = 3 * s;
+      c.strokeStyle = INK;
+      c.stroke();
+      // shine
+      rr(c, k.u + k.w * 0.2, 6 * s, k.w * 0.22, h - 22 * s, 5 * s);
+      c.fillStyle = 'rgba(255,255,255,.28)';
+      c.fill();
+      rr(c, k.u + k.w * 0.12, h - 12 * s, k.w * 0.76, 7 * s, 4 * s);
+      c.fillStyle = 'rgba(255,255,255,.18)';
+      c.fill();
+    }, 'fade');
+  }
+  /** Press, light and fade the keys for time t (only what changed is touched). */
+  update(t) {
+    const s = this.s;
+    for (const k of this.keys) {
+      const e = k.el;
+      if (!e) continue;
+      const age = t - k.hitT;
+      const kk = decay(age, 4);
+      const press = k.down ? 1 : kk > 0.3 ? (kk - 0.3) / 0.7 : 0;
+      // a pressed key reaches a little further down (it grows from its hidden top end)
+      const len = k.black ? k.h + 10 : k.h - 2 * s + 10;
+      const sy = (len + press * 4 * s) / len;
+      setTransform(e.g, sy === 1 ? 'none' : `translate(0px,-10px) scale(1,${sy.toFixed(5)}) translate(0px,10px)`);
+      if (!k.black) {
+        const on = k.lit ? 1 : decay(age, 3);
+        setAlpha(k.light.glow, on > 0.05 ? on : 0);
+        show(k.light.on, on > 0.05);
+        const glow = k.lit ? 1 : (k.hint ? 0.3 + 0.3 * Math.sin(t * 6) : 0);
+        setAlpha(e.glow, glow > 0.02 || kk > 0.02 ? Math.max(glow, kk * 0.8) : 0);
+        if (k.lit && !e.lit) {
+          e.lit = this.whitePic(k, true, 1);
+          e.g.appendChild(e.lit);
+        }
+        if (e.lit) show(e.lit, k.lit);
+      } else {
+        const glow = k.lit ? 1 : Math.max(kk * 0.9, k.hint ? 0.35 + 0.3 * Math.sin(t * 6) : 0);
+        setAlpha(e.glow, glow > 0.02 ? glow : 0);
+        show(e.hit, !k.lit && kk > 0.05);
+        if (k.lit && !e.lit) {
+          e.lit = this.blackPic(k, k.deep);
+          e.g.appendChild(e.lit);
+        }
+        if (e.lit) show(e.lit, k.lit);
+      }
+      if (k.lit && !e.star) {
+        if (k.black) e.star = starPic(k.w * 0.36, this.dpr);
+        else e.star = starPic(Math.min((k.w - 4 * s) * 0.32, 30 * s), this.dpr);
+        e.g.appendChild(e.star);
+      }
+      if (e.star) {
+        show(e.star, k.lit);
+        if (k.lit) {
+          const h = k.black ? k.h : k.h - 2 * s;
+          setTransform(e.star, starTransform(k.u + k.w / 2, h * (k.black ? 0.6 : 0.62), t));
+        }
+      }
     }
-    rr(c, k.u, -10, k.w, h + 10, 9 * s);
-    c.fillStyle = k.lit ? k.deep : (kk > 0.05 ? '#5a3f9c' : k.color);
-    c.fill();
-    c.lineWidth = 3 * s;
-    c.strokeStyle = INK;
-    c.stroke();
-    // shine
-    rr(c, k.u + k.w * 0.2, 6 * s, k.w * 0.22, h - 22 * s, 5 * s);
-    c.fillStyle = 'rgba(255,255,255,.28)';
-    c.fill();
-    rr(c, k.u + k.w * 0.12, h - 12 * s, k.w * 0.76, 7 * s, 4 * s);
-    c.fillStyle = 'rgba(255,255,255,.18)';
-    c.fill();
-    if (k.lit) litStar(c, k.u + k.w / 2, h * 0.6, k.w * 0.36, t);
   }
 }
 
@@ -490,8 +740,8 @@ export class Piano extends Keyed {
 // Drum kit
 // ---------------------------------------------------------------------------
 // Each piece: the stand (static) and the part you hit (squashes, wobbles or swings).
-// Both are drawn once into small sprites at layout time, so a busy drum solo only
-// costs a few drawImage calls per frame.
+// Both are drawn once into little pictures at layout time, so a busy drum solo only
+// changes a few CSS transforms per frame.
 
 const PIECES = {
   crash: { name: 'Crash', word: 'Crash!', color: '#ffc93b', kind: 'cymbal', hit: [0, -0.2, 1.05] },
@@ -526,19 +776,6 @@ const KIT_LAYOUTS = [
     ['cowbell', 2.64, 0.3, 0.16], ['tambourine', 2.64, 0.75, 0.2],
   ] },
 ];
-
-function sprite(size, dpr, fn) {
-  const cv = document.createElement('canvas');
-  const px = Math.max(2, Math.ceil(size * dpr));
-  cv.width = px;
-  cv.height = px;
-  const c = cv.getContext('2d');
-  c.setTransform(dpr, 0, 0, dpr, size / 2 * dpr, size / 2 * dpr);
-  c.lineJoin = 'round';
-  c.lineCap = 'round';
-  fn(c);
-  return cv;
-}
 
 function strokeInk(c, w) {
   c.lineWidth = w;
@@ -858,7 +1095,6 @@ export class Drums {
     this.pieces = Object.keys(PIECES).map((id) => Object.assign({ id, hitT: -9, x: 0, y: 0, r: 10, down: 0 }, PIECES[id]));
     this.byId = {};
     this.pieces.forEach((p) => { this.byId[p.id] = p; });
-    this.cacheKey = '';
   }
   layout(area, dpr) {
     let best = null;
@@ -878,17 +1114,60 @@ export class Drums {
     });
     // draw order: back to front (higher on screen first), the big drum before what overlaps it
     this.order = this.pieces.slice().sort((a, b) => a.y - b.y);
-    const key = this.pieces.map((p) => Math.round(p.r)).join(',') + '@' + dpr;
-    if (key !== this.cacheKey) {
-      this.cacheKey = key;
-      for (const p of this.pieces) {
-        const d = DRAW[p.kind];
-        const size = p.r * 2.6;
-        p.base = sprite(size, dpr, (c) => d.base(c, p.r, p));
-        p.top = sprite(size, dpr, (c) => d.top(c, p.r, p));
-        p.size = size;
-      }
+    this.build(dpr);
+  }
+  /** Build the kit out of pictures: per piece its stand (with its shadow), then the part you hit. */
+  build(dpr) {
+    const root = group();
+    for (const p of this.order) {
+      const d = DRAW[p.kind];
+      const size = p.r * 2.6;
+      const half = size / 2;
+      p.size = size;
+      root.appendChild(picture(p.x - half, p.y - half, size, size, dpr, (c) => {
+        c.lineJoin = 'round';
+        c.lineCap = 'round';
+        // soft floor shadow
+        c.fillStyle = 'rgba(40,10,90,.18)';
+        ellipse(c, p.x, p.y + p.r * 1.08, p.r * 0.8, p.r * 0.13);
+        c.fill();
+        c.translate(p.x, p.y);
+        d.base(c, p.r, p);
+      }));
+      const piv = d.pivot * p.r;
+      const g = group('move');
+      const top = picture(-half, -half - piv, size, size, dpr, (c) => {
+        c.lineJoin = 'round';
+        c.lineCap = 'round';
+        c.translate(0, -piv);
+        d.top(c, p.r, p);
+      });
+      // a bright flash on the skin right after a hit
+      const flash = picture(-half, -half - piv, size, size, dpr, (c) => {
+        c.fillStyle = '#fff';
+        if (p.kind === 'kick' || p.kind === 'tambourine') {
+          c.beginPath();
+          c.arc(0, -piv, p.r * 0.72, 0, TAU);
+        } else if (p.kind === 'drum' || p.kind === 'snare') {
+          ellipse(c, 0, -piv - p.r * 0.32, p.r * 0.86, p.r * 0.3);
+        } else if (p.kind === 'cowbell') {
+          ellipse(c, 0, -piv, p.r * 0.45, p.r * 0.5);
+        } else {
+          ellipse(c, 0, 0, p.r * 0.9, p.r * 0.25);
+        }
+        c.fill();
+      }, 'fade');
+      g.appendChild(top);
+      g.appendChild(flash);
+      root.appendChild(g);
+      p.el = { g, flash };
     }
+    this.dom = root;
+    this.update(1e6); // at rest until the first frame
+  }
+  mount(root) {
+    while (root.firstChild) root.removeChild(root.firstChild);
+    if (this.dom) root.appendChild(this.dom);
   }
   pick(x, y) {
     let best = -1;
@@ -911,58 +1190,32 @@ export class Drums {
     for (const p of this.pieces) if (t - p.hitT < 1.6) return true;
     return false;
   }
-  draw(c, dpr, t) {
-    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  /** Wobble, squash and flash the pieces for time t (only what changed is touched). */
+  update(t) {
     for (const p of this.order) {
-      const half = p.size / 2;
-      // soft floor shadow
-      c.fillStyle = 'rgba(40,10,90,.18)';
-      ellipse(c, p.x, p.y + p.r * 1.08, p.r * 0.8, p.r * 0.13);
-      c.fill();
-      c.drawImage(p.base, p.x - half, p.y - half, p.size, p.size);
+      if (!p.el) continue;
       const age = t - p.hitT;
-      const d = DRAW[p.kind];
-      const piv = d.pivot * p.r;
-      c.save();
-      c.translate(p.x, p.y + piv);
+      const piv = DRAW[p.kind].pivot * p.r;
+      let tf = `translate(${p.x}px,${p.y + piv}px)`;
       if (age < 1.6) {
         if (p.kind === 'cymbal') {
-          c.rotate(0.22 * decay(age, 2.6) * Math.sin(age * 16));
+          tf += ` rotate(${(0.22 * decay(age, 2.6) * Math.sin(age * 16)).toFixed(5)}rad)`;
         } else if (p.kind === 'hihat') {
-          c.translate(0, p.r * 0.1 * decay(age, 18));
-          c.rotate(0.08 * decay(age, 5) * Math.sin(age * 30));
+          tf += ` translate(0px,${(p.r * 0.1 * decay(age, 18)).toFixed(3)}px) rotate(${(0.08 * decay(age, 5) * Math.sin(age * 30)).toFixed(5)}rad)`;
         } else if (p.kind === 'cowbell') {
-          c.rotate(0.18 * decay(age, 4) * Math.sin(age * 20));
+          tf += ` rotate(${(0.18 * decay(age, 4) * Math.sin(age * 20)).toFixed(5)}rad)`;
         } else if (p.kind === 'tambourine') {
-          c.rotate(0.3 * decay(age, 4) * Math.sin(age * 28));
           const sc = 1 + 0.08 * decay(age, 8);
-          c.scale(sc, sc);
+          tf += ` rotate(${(0.3 * decay(age, 4) * Math.sin(age * 28)).toFixed(5)}rad) scale(${sc.toFixed(5)})`;
         } else {
           const k = decay(age, 6);
           const sq = Math.cos(age * 26) * k;
-          c.scale(1 + 0.07 * sq, 1 - 0.1 * sq);
+          tf += ` scale(${(1 + 0.07 * sq).toFixed(5)},${(1 - 0.1 * sq).toFixed(5)})`;
         }
       }
-      c.drawImage(p.top, -half, -half - piv, p.size, p.size);
-      // a bright flash on the skin right after a hit
+      setTransform(p.el.g, tf);
       const fl = decay(age, 9);
-      if (fl > 0.03) {
-        c.globalAlpha = fl * 0.55;
-        c.fillStyle = '#fff';
-        if (p.kind === 'kick' || p.kind === 'tambourine') {
-          c.beginPath();
-          c.arc(0, -piv, p.r * 0.72, 0, TAU);
-        } else if (p.kind === 'drum' || p.kind === 'snare') {
-          ellipse(c, 0, -piv - p.r * 0.32, p.r * 0.86, p.r * 0.3);
-        } else if (p.kind === 'cowbell') {
-          ellipse(c, 0, -piv, p.r * 0.45, p.r * 0.5);
-        } else {
-          ellipse(c, 0, 0, p.r * 0.9, p.r * 0.25);
-        }
-        c.fill();
-        c.globalAlpha = 1;
-      }
-      c.restore();
+      setAlpha(p.el.flash, fl > 0.03 ? fl * 0.55 : 0);
     }
   }
 }

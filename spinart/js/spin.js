@@ -1,9 +1,12 @@
 // Spin Paint: a round paper disc spins; touching it drips paint, which lands in
 // the disc's own (turning) frame and gets flung outward into spiral streaks.
 //
-// The paint lives in an offscreen canvas in disc coordinates, so it sticks to the
-// paper; each frame the whole paper is one rotated drawImage.
-import { paintColor, specks, bubbleCluster, blob } from './paint.js';
+// The paint lives in a canvas in disc coordinates, so it sticks to the paper.
+// Nothing is redrawn while the disc turns: the turntable and the paper are their own
+// layers on the page, turned with a CSS transform (the browser's compositor does the
+// spinning), and the paper canvas only changes where paint lands. The shadow under
+// the turntable and the rim + centre pin on top are drawn once into small canvases.
+import { paintColor, specks, bubbleCluster, blob, pictureLayer, drawAt, setTransform } from './paint.js';
 
 const TAU = Math.PI * 2;
 const INK = '#2d2442';
@@ -30,12 +33,21 @@ export function createSpin(P) {
     blobs: [],
     fingers: {},
     cx: 0, cy: 0, r: 100,     // on screen (CSS px)
-    platter: null,
     hub: null,
     dropT: -9,                // for the "new paper" bounce
     changed: false,
     t: 0,
+    usesStage: false,         // everything is drawn in the layers below
   };
+
+  // the layers, bottom to top: shadow, turntable, paper, rim + pin
+  const shadowL = pictureLayer();
+  const platterL = pictureLayer(true);
+  const topL = pictureLayer();
+  paint.className = 'layer moving';
+  S.layers = [shadowL.el, platterL.el, paint, topL.el];
+  let shownAngle = NaN;
+  let shownBounce = NaN;
 
   function clearPaper() {
     pc.globalCompositeOperation = 'source-over';
@@ -73,32 +85,31 @@ export function createSpin(P) {
     const pr = S.r * 1.09;
     const size = Math.ceil(pr * 2 + 8);
     // the turntable: a candy-colored ring with dots, so you can see it turn
-    S.platter = document.createElement('canvas');
-    S.platter.width = S.platter.height = Math.ceil(size * dpr);
-    const c = S.platter.getContext('2d');
-    c.setTransform(dpr, 0, 0, dpr, size / 2 * dpr, size / 2 * dpr);
-    const segs = 12;
-    const cols = ['#ff4d5e', '#ff9a2e', '#ffd93b', '#5cd65c', '#22c7b8', '#3d7bff', '#9d5cff', '#ff7ac6'];
-    for (let i = 0; i < segs; i++) {
+    platterL.draw(size, size, dpr, (c) => {
+      c.translate(size / 2, size / 2);
+      const segs = 12;
+      const cols = ['#ff4d5e', '#ff9a2e', '#ffd93b', '#5cd65c', '#22c7b8', '#3d7bff', '#9d5cff', '#ff7ac6'];
+      for (let i = 0; i < segs; i++) {
+        c.beginPath();
+        c.moveTo(0, 0);
+        c.arc(0, 0, pr, (i / segs) * TAU, ((i + 1) / segs) * TAU);
+        c.closePath();
+        c.fillStyle = cols[i % cols.length];
+        c.fill();
+      }
       c.beginPath();
-      c.moveTo(0, 0);
-      c.arc(0, 0, pr, (i / segs) * TAU, ((i + 1) / segs) * TAU);
-      c.closePath();
-      c.fillStyle = cols[i % cols.length];
-      c.fill();
-    }
-    c.beginPath();
-    c.arc(0, 0, pr, 0, TAU);
-    c.lineWidth = Math.max(4, pr * 0.025);
-    c.strokeStyle = INK;
-    c.stroke();
-    for (let i = 0; i < segs; i++) {
-      const a = ((i + 0.5) / segs) * TAU;
-      c.beginPath();
-      c.arc(Math.cos(a) * (pr - (pr - S.r) / 2), Math.sin(a) * (pr - (pr - S.r) / 2), Math.max(2, (pr - S.r) * 0.28), 0, TAU);
-      c.fillStyle = '#fff';
-      c.fill();
-    }
+      c.arc(0, 0, pr, 0, TAU);
+      c.lineWidth = Math.max(4, pr * 0.025);
+      c.strokeStyle = INK;
+      c.stroke();
+      for (let i = 0; i < segs; i++) {
+        const a = ((i + 0.5) / segs) * TAU;
+        c.beginPath();
+        c.arc(Math.cos(a) * (pr - (pr - S.r) / 2), Math.sin(a) * (pr - (pr - S.r) / 2), Math.max(2, (pr - S.r) * 0.28), 0, TAU);
+        c.fillStyle = '#fff';
+        c.fill();
+      }
+    });
     S.platterSize = size;
     // the centre pin
     const hs = Math.ceil(S.r * 0.24);
@@ -119,6 +130,63 @@ export function createSpin(P) {
     hc.strokeStyle = INK;
     hc.stroke();
     S.hubSize = hs;
+
+    S.dpr = dpr;
+    // the soft shadow under the turntable
+    const sr = S.r * 1.1;
+    const sy = S.cy + S.r * 0.08;
+    drawAt(shadowL, S.cx - sr - 1, sy - sr - 1, sr * 2 + 2, sr * 2 + 2, dpr, (c) => {
+      c.fillStyle = 'rgba(40, 10, 90, .22)';
+      c.beginPath();
+      c.ellipse(S.cx, sy, sr, sr, 0, 0, TAU);
+      c.fill();
+    });
+    // the rim and the centre pin, on top of the paper
+    drawAt(topL, S.cx - size / 2, S.cy - size / 2, size, size, dpr, (c) => drawTop(c, 1));
+    // the paper turns about the centre (the turntable too, see render)
+    paint.style.width = paint.style.height = `${S.r * 2}px`;
+    shownAngle = NaN;
+    shownBounce = 1;
+    S.render();
+  };
+
+  function drawTop(c, bounce) {
+    // a soft rim so the paper looks round and a little raised
+    c.beginPath();
+    c.arc(S.cx, S.cy, S.r * bounce, 0, TAU);
+    c.lineWidth = 3;
+    c.strokeStyle = 'rgba(45, 36, 66, .35)';
+    c.stroke();
+    const hs = S.hubSize;
+    c.drawImage(S.hub, S.cx - hs / 2, S.cy - hs / 2, hs, hs);
+  }
+
+  /** Turn the layers to the current angle (only touches what changed). */
+  S.render = function () {
+    if (!S.hub) return;
+    const age = S.t - S.dropT;
+    const bounce = age < 0.6 ? 1 + 0.08 * Math.sin(age * 16) * Math.exp(-age * 6) : 1;
+    if (S.angle !== shownAngle || bounce !== shownBounce) {
+      const rot = `translate(${S.cx.toFixed(2)}px,${S.cy.toFixed(2)}px) rotate(${(S.angle * 180 / Math.PI).toFixed(3)}deg)`;
+      const ps = S.platterSize;
+      setTransform(platterL.el, `${rot} translate(${(-ps / 2).toFixed(2)}px,${(-ps / 2).toFixed(2)}px)`);
+      setTransform(paint, `${rot} scale(${bounce.toFixed(4)}) translate(${(-S.r).toFixed(2)}px,${(-S.r).toFixed(2)}px)`);
+      shownAngle = S.angle;
+    }
+    if (bounce !== shownBounce) {
+      if (!isNaN(shownBounce)) {
+        // the rim bounces with the new paper: redraw it while it moves
+        const cv = topL.live();
+        const c = cv.getContext('2d');
+        const dpr = S.dpr;
+        c.setTransform(1, 0, 0, 1, 0, 0);
+        c.clearRect(0, 0, cv.width, cv.height);
+        c.setTransform(dpr, 0, 0, dpr, -topL.x * dpr, -topL.y * dpr);
+        drawTop(c, bounce);
+        if (bounce === 1) topL.still();
+      }
+      shownBounce = bounce;
+    }
   };
 
   // ---------------------------------------------------------------------
@@ -168,10 +236,8 @@ export function createSpin(P) {
     if (on) drip(f, d, true);
     return on;
   };
-  S.busy = function () {
-    for (const id in S.fingers) return true;
-    return S.omega > 0.001 || S.blobs.length > 0 || S.t - S.dropT < 0.7;
-  };
+  // the page's stage canvas is not used by Spin Paint (the layers show everything)
+  S.busy = function () { return false; };
   S.move = function (id, x, y) {
     const f = S.fingers[id];
     if (f) { f.sx = x; f.sy = y; }
@@ -299,34 +365,10 @@ export function createSpin(P) {
     S.angle = (S.angle + S.omega * dt) % TAU;
     feedFingers();
     simulate(dt);
+    S.render();
   };
 
-  S.draw = function (c, dpr) {
-    c.setTransform(dpr, 0, 0, dpr, 0, 0);
-    // soft shadow under the turntable
-    c.fillStyle = 'rgba(40, 10, 90, .22)';
-    c.beginPath();
-    c.ellipse(S.cx, S.cy + S.r * 0.08, S.r * 1.1, S.r * 1.1, 0, 0, TAU);
-    c.fill();
-    const age = S.t - S.dropT;
-    const bounce = age < 0.6 ? 1 + 0.08 * Math.sin(age * 16) * Math.exp(-age * 6) : 1;
-    c.save();
-    c.translate(S.cx, S.cy);
-    c.rotate(S.angle);
-    const ps = S.platterSize;
-    c.drawImage(S.platter, -ps / 2, -ps / 2, ps, ps);
-    c.scale(bounce, bounce);
-    c.drawImage(paint, -S.r, -S.r, S.r * 2, S.r * 2);
-    c.restore();
-    // a soft rim so the paper looks round and a little raised
-    c.beginPath();
-    c.arc(S.cx, S.cy, S.r * bounce, 0, TAU);
-    c.lineWidth = 3;
-    c.strokeStyle = 'rgba(45, 36, 66, .35)';
-    c.stroke();
-    const hs = S.hubSize;
-    c.drawImage(S.hub, S.cx - hs / 2, S.cy - hs / 2, hs, hs);
-  };
+  S.draw = function () {};
 
   /** The painting as a picture to save. */
   S.exportCanvas = function () {

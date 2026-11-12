@@ -28,25 +28,31 @@ let inst = null;
 let T = 0;            // the kit's clock (seconds), updated every frame
 let dirty = true;
 const stage = $('#stage');
-const sc = stage.getContext('2d');
 let area = { x: 0, y: 0, w: 100, h: 100 };
+// the instrument is built out of pictures on the page (see "Layers" in instruments.js); the stage
+// canvas under it only takes the touches
+const keysEl = document.createElement('div');
+keysEl.className = 'keys';
+keysEl.setAttribute('aria-hidden', 'true');
+stage.parentNode.insertBefore(keysEl, stage.nextSibling);
 
 // ---------------------------------------------------------------------------
 // Layout and drawing
 // ---------------------------------------------------------------------------
 function sizeStage() {
-  stage.width = Math.round(W * DPR);
-  stage.height = Math.round(H * DPR);
+  stage.width = 1;
+  stage.height = 1;
   const r = $('#area').getBoundingClientRect();
   area = { x: r.left, y: r.top, w: Math.max(50, r.width), h: Math.max(50, r.height) };
-  if (inst) inst.layout(area, DPR);
+  if (inst) {
+    inst.layout(area, DPR);
+    inst.mount(keysEl);
+  }
   dirty = true;
 }
 
 function draw() {
-  sc.setTransform(1, 0, 0, 1, 0, 0);
-  sc.clearRect(0, 0, stage.width, stage.height);
-  if (inst) inst.draw(sc, DPR, T);
+  if (inst) inst.update(T);
 }
 
 // ---------------------------------------------------------------------------
@@ -387,6 +393,7 @@ function leavePlay() {
   $('#play').classList.add('hidden');
   inst = null;
   instId = null;
+  while (keysEl.firstChild) keysEl.removeChild(keysEl.firstChild);
   fx.clear();
   setPartyColors(['#9d5cff', '#ff6fb5', '#6fc8ff']);
   showScreen('screen-title');

@@ -176,3 +176,17 @@
   .done-card .btn-col > * + * { margin-top: 0; margin-left: 10px; }
   .done-card .btn-col .btn { flex: 1 1 0; padding-left: 8px; padding-right: 8px; }
 }
+
+/* the instrument, built out of pictures ("Layers" in js/instruments.js) over the stage canvas, which takes the touches */
+.keys, .keys * { pointer-events: none; }
+.keys { position: absolute; top: 0; left: 0; width: 0; height: 0; }
+.part {
+  position: absolute;
+  top: 0;
+  left: 0;
+  -webkit-transform-origin: 0 0;
+  transform-origin: 0 0;
+}
+.part.move { will-change: transform; }
+.part.fade { will-change: opacity; }
+.pic > canvas, .pic > img { display: block; width: 100%; height: 100%; }

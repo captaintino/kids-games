@@ -92,7 +92,19 @@
   position: relative;
   min-height: 0;
   margin: 6px 0 8px;
+  overflow: hidden;
 }
+/* a mode's own layers (see "Layers" in js/paint.js), under the stage canvas that takes the touches */
+.layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  pointer-events: none;
+  -webkit-transform-origin: 0 0;
+  transform-origin: 0 0;
+}
+.layer.moving { will-change: transform; }
 #stage {
   position: absolute;
   top: 0;
@@ -625,3 +637,7 @@
   .gal-floor { height: calc(30px + var(--safe-bottom)); }
   .gal-scroll { padding-bottom: calc(46px + var(--safe-bottom)); }
 }
+.layer > canvas, .layer > img { display: block; }
+.layer.paint-sheet { border-radius: 18px; }
+/* the little spinning picture rests while the title screen is hidden */
+.screen:not(.active) .title-swirl canvas { animation-play-state: paused; }

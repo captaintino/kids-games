@@ -56,20 +56,40 @@ function mode(id) {
     if (id === 'fly') made[id] = createButterfly(flyHooks);
     if (id === 'bub') made[id] = createBubbles(bubHooks);
     if (id === 'splat') made[id] = createSplatter(splatHooks);
+    // a mode drawn in layers puts them under the stage canvas (which takes the touches)
+    if (made[id].layers) made[id].layers.forEach((el) => stage.parentNode.insertBefore(el, stage));
     made[id].restore(pics[id].data.img);
   }
   return made[id];
 }
 
+/** Only the open mode's layers are shown. */
+function showLayers() {
+  for (const k in made) {
+    if (made[k].layers) made[k].layers.forEach((el) => { el.style.display = k === modeId ? '' : 'none'; });
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Layout
 // ---------------------------------------------------------------------------
+// a mode that draws everything in its own layers leaves the stage as a 1px touch surface
+let stageOn = null;
 function sizeStage() {
   const r = $('#stage-wrap').getBoundingClientRect();
   rect = { left: r.left, top: r.top, width: Math.max(60, r.width), height: Math.max(60, r.height) };
-  stage.width = Math.round(rect.width * DPR);
-  stage.height = Math.round(rect.height * DPR);
+  stageOn = null;
+  fitStage();
   if (M) M.layout(rect.width, rect.height, DPR, unit);
+  fitStage();
+  redraw = true;
+}
+function fitStage() {
+  const on = !M || M.usesStage !== false;
+  if (on === stageOn) return;
+  stageOn = on;
+  stage.width = on ? Math.round(rect.width * DPR) : 1;
+  stage.height = on ? Math.round(rect.height * DPR) : 1;
   redraw = true;
 }
 
@@ -230,6 +250,7 @@ function openMode(id) {
   setPartyColors(I.party);
   showScreen(null);
   $('#play').classList.remove('hidden');
+  showLayers();
   setModeClass();
   syncTools();
   $('.fold-btn').classList.remove('ready');
@@ -585,6 +606,7 @@ boot({
     soundClock += dt;
     if (!M) return;
     M.update(dt);
+    fitStage();
     // a soft painty sound while a finger drips onto the spinning paper
     if (modeId === 'spin' && soundClock - lastSound > 0.16) {
       for (const id in M.fingers) {
@@ -592,10 +614,8 @@ boot({
         if (M.onDisc(f.sx, f.sy)) { lastSound = soundClock; sfx.scribble(); break; }
       }
     }
-    let need = redraw;
-    if (modeId === 'spin') need = need || M.busy();
-    else if (modeId === 'fly' || modeId === 'splat') need = need || M.busy();
-    else need = need || M.bubbles.length > 0 || M.changed;
+    // modes drawn in layers move them in M.update; the stage canvas is only for the rest
+    const need = M.usesStage !== false && (redraw || M.busy());
     if (need) {
       sc.setTransform(1, 0, 0, 1, 0, 0);
       sc.clearRect(0, 0, stage.width, stage.height);

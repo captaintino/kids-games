@@ -2,7 +2,7 @@
 // around it, a fast flick throws a long streak with droplets flying on ahead, and a
 // held finger makes a dribble: a puddle with drips running down the paper (move it
 // slowly to drizzle a line).
-import { paintColor, specks, blob, splat, streak } from './paint.js';
+import { paintColor, specks, blob, splat, streak, paperLayers } from './paint.js';
 
 const TAU = Math.PI * 2;
 export const SP = 800;    // paper size (square, in paper pixels)
@@ -26,7 +26,20 @@ export function createSplatter(hooks) {
     changed: false,
     dirty: true,
     unit: 1,
+    usesStage: false,     // the paper is a layer; paint in the air has its own canvas
   };
+
+  const paperL = paperLayers(paper);
+  // paint in the air: a canvas over the stage, only shown while something flies
+  const air = document.createElement('canvas');
+  air.className = 'layer';
+  air.style.visibility = 'hidden';
+  air.width = air.height = 1;
+  U.layers = paperL.layers.concat([air]);
+  let airW = 1;
+  let airH = 1;
+  let airDpr = 1;
+  let airShown = false;
 
   function clearPaper() {
     pc.fillStyle = '#fff';
@@ -45,6 +58,15 @@ export function createSplatter(hooks) {
     U.y = (h - U.s) / 2;
     U.unit = unit || 1;
     U.dirty = true;
+    paperL.layout(U.x, U.y, U.s, dpr);
+    airW = w;
+    airH = h;
+    airDpr = dpr;
+    air.width = air.height = 1;
+    air.style.width = `${w}px`;
+    air.style.height = `${h}px`;
+    air.style.visibility = 'hidden';
+    airShown = false;
   };
 
   const toPaper = (x, y) => ({ x: (x - U.x) / U.k, y: (y - U.y) / U.k });
@@ -275,22 +297,36 @@ export function createSplatter(hooks) {
       U.dirty = true;
     }
     runDrips(dt);
+    drawAir();
   };
 
-  U.busy = function () {
-    if (U.dirty || U.flyers.length || U.drips.length) return true;
-    for (const id in U.fingers) if (U.fingers[id].mode === 'hold') return true;
-    return false;
-  };
+  // the paper itself is a layer, so only paint in the air needs drawing
+  function drawAir() {
+    if (!U.flyers.length) {
+      if (airShown) {
+        airShown = false;
+        air.style.visibility = 'hidden';
+        // let the memory go while nothing flies
+        air.width = air.height = 1;
+      }
+      return;
+    }
+    if (!airShown) {
+      airShown = true;
+      air.width = Math.round(airW * airDpr);
+      air.height = Math.round(airH * airDpr);
+      air.style.visibility = '';
+    }
+    const c = air.getContext('2d');
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.clearRect(0, 0, air.width, air.height);
+    U.draw(c, airDpr);
+  }
+
+  U.busy = () => false;
 
   U.draw = function (c, dpr) {
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
-    c.fillStyle = 'rgba(40, 10, 90, .22)';
-    c.fillRect(U.x + 4, U.y + 10, U.s, U.s);
-    c.drawImage(paper, U.x, U.y, U.s, U.s);
-    c.lineWidth = 3;
-    c.strokeStyle = 'rgba(45, 36, 66, .25)';
-    c.strokeRect(U.x, U.y, U.s, U.s);
     // paint in the air: a glob that stretches as it flies
     for (const f of U.flyers) {
       const k = f.t / f.dur;

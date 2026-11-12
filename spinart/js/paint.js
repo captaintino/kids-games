@@ -325,3 +325,150 @@ export function hasColor(cv) {
   }
   return false;
 }
+
+// ---------------------------------------------------------------------------
+// Layers
+// ---------------------------------------------------------------------------
+// Little helpers for drawing a mode in layers on the page instead of repainting one
+// big canvas every frame. A layer is an absolutely placed element inside the stage
+// area, under the stage canvas (which still takes the touches; layers never take
+// pointer events). Moving layers are turned or slid with CSS transforms, so the
+// browser's compositor does the motion and nothing has to be repainted.
+//
+// Pictures that don't change (a shadow, the turntable, a frame) are drawn into a
+// canvas once and then shown as an <img>: a canvas on the page is copied to the
+// compositor again on every page update in some browsers (Chrome without a GPU),
+// an image is not. The canvas stays visible until its image is ready, so nothing
+// ever blinks.
+
+export function setTransform(el, t) {
+  el.style.webkitTransform = t;
+  el.style.transform = t;
+}
+
+const queue = [];
+let pumping = false;
+function pump() {
+  // one picture per frame, so making many never stalls a frame
+  const job = queue.shift();
+  if (job) job();
+  if (queue.length) requestAnimationFrame(pump);
+  else pumping = false;
+}
+function later(job) {
+  queue.push(job);
+  if (!pumping) { pumping = true; requestAnimationFrame(pump); }
+}
+
+/**
+ * A layer holding one picture. `moving` layers get their own compositing layer.
+ * draw(w, h, dpr, fn) paints a w x h (CSS px) picture: fn(ctx) draws in CSS px.
+ * live() shows the canvas for drawing every frame; still() turns it back into an image.
+ */
+export function pictureLayer(moving) {
+  const el = document.createElement('div');
+  el.className = moving ? 'layer moving' : 'layer';
+  const cv = document.createElement('canvas');
+  const img = new Image();
+  img.alt = '';
+  img.style.display = 'none';
+  el.appendChild(cv);
+  el.appendChild(img);
+  let token = 0;
+  let pw = 1;
+  let ph = 1;
+  const L = { el, cv, w: 0, h: 0 };
+
+  function showCanvas() {
+    token++;
+    cv.style.display = '';
+    img.style.display = 'none';
+  }
+  L.draw = function (w, h, dpr, fn) {
+    showCanvas();
+    cv.width = pw = Math.max(1, Math.ceil(w * dpr - 0.001));
+    cv.height = ph = Math.max(1, Math.ceil(h * dpr - 0.001));
+    L.w = cv.width / dpr;
+    L.h = cv.height / dpr;
+    el.style.width = cv.style.width = img.style.width = `${L.w}px`;
+    el.style.height = cv.style.height = img.style.height = `${L.h}px`;
+    const c = cv.getContext('2d');
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    fn(c);
+    L.still();
+  };
+  /** Keep the canvas on show (it is about to change every frame). */
+  L.live = function () {
+    if (cv.width !== pw || cv.height !== ph) {
+      // the canvas was emptied once the image took over: bring the picture back
+      cv.width = pw;
+      cv.height = ph;
+      cv.getContext('2d').drawImage(img, 0, 0, pw, ph);
+    }
+    showCanvas();
+    return cv;
+  };
+  L.still = function () {
+    const my = ++token;
+    later(() => {
+      if (my !== token) return;
+      let url = '';
+      try { url = cv.toDataURL('image/png'); } catch (err) { return; }
+      img.onload = () => {
+        if (my !== token) return;
+        img.style.display = '';
+        cv.style.display = 'none';
+        // the image has it now: let the canvas memory go
+        cv.width = 1;
+        cv.height = 1;
+      };
+      img.src = url;
+    });
+  };
+  return L;
+}
+
+/**
+ * Draw a still picture covering the box (x, y, w, h) of the stage, in stage
+ * coordinates (CSS px). The layer is snapped to the canvas pixel grid, so the
+ * picture lines up with what the stage canvas would have drawn.
+ */
+export function drawAt(L, x, y, w, h, dpr, fn) {
+  const px0 = Math.floor(x * dpr);
+  const py0 = Math.floor(y * dpr);
+  const bx = px0 / dpr;
+  const by = py0 / dpr;
+  L.draw(Math.ceil((x + w) * dpr) / dpr - bx, Math.ceil((y + h) * dpr) / dpr - by, dpr, (c) => {
+    c.translate(-bx, -by);
+    fn(c);
+  });
+  L.x = bx;
+  L.y = by;
+  setTransform(L.el, `translate(${bx}px,${by}px)`);
+}
+
+/**
+ * The square paper of Bubble Print and Splatter as layers: the shadow under it, the
+ * paper canvas itself (it only changes where paint lands) and the thin frame on top.
+ */
+export function paperLayers(paper) {
+  const shadow = pictureLayer();
+  const frame = pictureLayer();
+  paper.className = 'layer';
+  return {
+    layers: [shadow.el, paper, frame.el],
+    layout(x, y, s, dpr) {
+      drawAt(shadow, x + 4, y + 10, s, s, dpr, (c) => {
+        c.fillStyle = 'rgba(40, 10, 90, .22)';
+        c.fillRect(x + 4, y + 10, s, s);
+      });
+      paper.style.width = paper.style.height = `${s}px`;
+      setTransform(paper, `translate(${x}px,${y}px)`);
+      drawAt(frame, x - 2, y - 2, s + 4, s + 4, dpr, (c) => {
+        c.lineWidth = 3;
+        c.strokeStyle = 'rgba(45, 36, 66, .25)';
+        c.strokeRect(x, y, s, s);
+      });
+    },
+  };
+}

@@ -1,6 +1,6 @@
 // Bubble Print: hold a finger on the paper to blow painty bubbles. They float up
 // and wobble; tap one (or wait) and it pops onto the paper as a bubble print.
-import { paintColor, bubblePrint } from './paint.js';
+import { paintColor, bubblePrint, paperLayers, setTransform } from './paint.js';
 
 const TAU = Math.PI * 2;
 export const BP = 800;    // paper size (square, in paper pixels)
@@ -52,6 +52,14 @@ function bubbleSprite(color) {
   return cv;
 }
 
+// the bubbles float as little images moved by CSS transforms (no canvas repaints)
+const urlCache = {};
+function bubbleUrl(color) {
+  if (!urlCache[color]) urlCache[color] = bubbleSprite(color).toDataURL('image/png');
+  return urlCache[color];
+}
+const SPRITE = 96;
+
 export function createBubbles(hooks) {
   const paper = document.createElement('canvas');
   paper.width = paper.height = BP;
@@ -66,11 +74,33 @@ export function createBubbles(hooks) {
     t: 0,
     changed: false,
     unit: 1,
+    usesStage: false,      // the paper and the bubbles are layers (see "Layers" in js/paint.js)
   };
+
+  const paperL = paperLayers(paper);
+  const flock = document.createElement('div');
+  flock.className = 'layer';
+  U.layers = paperL.layers.concat([flock]);
+  const spare = [];
+  function bubbleEl(color) {
+    const el = spare.pop() || document.createElement('img');
+    el.className = 'layer moving';
+    el.alt = '';
+    el.style.width = el.style.height = `${SPRITE}px`;
+    el.src = bubbleUrl(color);
+    return el;
+  }
+  function dropEl(b) {
+    if (!b.el) return;
+    if (b.el.parentNode) b.el.parentNode.removeChild(b.el);
+    spare.push(b.el);
+    b.el = null;
+  }
 
   function clearPaper() {
     pc.fillStyle = '#fff';
     pc.fillRect(0, 0, BP, BP);
+    U.bubbles.forEach(dropEl);
     U.bubbles = [];
   }
   clearPaper();
@@ -83,6 +113,7 @@ export function createBubbles(hooks) {
     U.x = (w - U.s) / 2;
     U.y = (h - U.s) / 2;
     U.unit = unit || 1;
+    paperL.layout(U.x, U.y, U.s, dpr);
   };
 
   function quantColor(key) {
@@ -106,13 +137,18 @@ export function createBubbles(hooks) {
       // each bubble pops somewhere different, so the prints spread over the paper
       popAt: Math.min(y - r * 2, U.y + U.s * (0.06 + Math.random() * 0.7)),
       grow: 0,
+      el: bubbleEl(color),
     });
+    const nb = U.bubbles[U.bubbles.length - 1];
+    place(nb);
+    flock.appendChild(nb.el);
   }
 
   function popBubble(b, quiet) {
     const i = U.bubbles.indexOf(b);
     if (i < 0) return;
     U.bubbles.splice(i, 1);
+    dropEl(b);
     // print it where it popped, if it is over the paper
     const px = (b.x - U.x) / U.k;
     const py = (b.y - U.y) / U.k;
@@ -202,25 +238,23 @@ export function createBubbles(hooks) {
       if (b.life <= 0 || b.y < b.popAt || b.y - b.r * 0.6 < top) gone.push(b);
     }
     gone.forEach((b) => popBubble(b, false));
+    render();
   };
 
-  U.draw = function (c, dpr) {
-    c.setTransform(dpr, 0, 0, dpr, 0, 0);
-    c.fillStyle = 'rgba(40, 10, 90, .22)';
-    c.fillRect(U.x + 4, U.y + 10, U.s, U.s);
-    c.drawImage(paper, U.x, U.y, U.s, U.s);
-    c.lineWidth = 3;
-    c.strokeStyle = 'rgba(45, 36, 66, .25)';
-    c.strokeRect(U.x, U.y, U.s, U.s);
-    for (const b of U.bubbles) {
-      const sp = bubbleSprite(b.color);
-      const wob = Math.sin(U.t * 7 + b.phase) * 0.05;
-      const g = 0.4 + 0.6 * b.grow;
-      const rx = b.r * (1 + wob) * g;
-      const ry = b.r * (1 - wob) * g;
-      c.drawImage(sp, b.x - rx, b.y - ry, rx * 2, ry * 2);
-    }
-  };
+  /** Move the bubble images to where the bubbles are. */
+  function render() {
+    for (const b of U.bubbles) place(b);
+  }
+  function place(b) {
+    const wob = Math.sin(U.t * 7 + b.phase) * 0.05;
+    const g = 0.4 + 0.6 * b.grow;
+    const rx = b.r * (1 + wob) * g;
+    const ry = b.r * (1 - wob) * g;
+    setTransform(b.el, `translate(${(b.x - rx).toFixed(2)}px,${(b.y - ry).toFixed(2)}px) scale(${(rx * 2 / SPRITE).toFixed(4)},${(ry * 2 / SPRITE).toFixed(4)})`);
+  }
+  U.busy = () => false;
+
+  U.draw = function () {};
 
   U.exportCanvas = function () {
     const cv = document.createElement('canvas');
