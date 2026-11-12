@@ -33,6 +33,16 @@ with open(os.path.join(ROOT, 'js', 'version.js'), 'w', encoding='utf-8') as f:
             f"export const VERSION = 'v{version}';\n"
             f"export const BUILT = '{today}';\n")
 
+# ...and the same version goes into the About card's text in index.html, so it shows even
+# when the scripts are an older copy.
+hub = os.path.join(ROOT, 'index.html')
+html = open(hub, encoding='utf-8').read()
+html, n = re.subn(r'(<div class="gu-note gu-version" id="gu-version" data-version=")[^"]*(">)[^<]*(</div>)',
+                  lambda m: f'{m.group(1)}v{version}{m.group(2)}Version v{version} ({today}){m.group(3)}', html)
+if n != 1:
+    raise SystemExit('index.html: could not find the version card (#gu-version)')
+open(hub, 'w', encoding='utf-8').write(html)
+
 # Files git knows about (committed, staged or new but not ignored), so stray
 # local files never end up in the offline cache.
 out = subprocess.run(

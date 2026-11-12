@@ -222,12 +222,17 @@ function buildGrownups() {
 // Version info for debugging: the version of the page that's running, and which offline
 // copies are stored (an older one still listed means the update hasn't finished yet).
 function buildVersion() {
+  const box = $('#gu-version');
   const dpr = window.devicePixelRatio || 1;
-  const lines = [
-    `Version ${VERSION} (${BUILT})`,
-    `Screen ${window.innerWidth}×${window.innerHeight} at ${Math.round(dpr * 100) / 100}x`,
-  ];
-  const show = (more) => { $('#gu-version').textContent = lines.concat(more).join('\n'); };
+  const lines = [`Version ${VERSION} (${BUILT})`];
+  // the page and its scripts should always match: if not, an update only half arrived
+  const pageVersion = box.getAttribute('data-version');
+  if (pageVersion && pageVersion !== VERSION) {
+    lines.push(`⚠️ Out of sync: page ${pageVersion}, scripts ${VERSION}. Close and reopen the app.`);
+  }
+  lines.push(
+    `Screen ${window.innerWidth}×${window.innerHeight} at ${Math.round(dpr * 100) / 100}x`);
+  const show = (more) => { box.textContent = lines.concat(more).join('\n'); };
   show(['Offline copy: checking…']);
   const sw = navigator.serviceWorker;
   if (!sw || !window.caches) { show(['Offline copy: not supported on this browser']); return; }

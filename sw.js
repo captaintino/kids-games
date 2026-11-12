@@ -1,7 +1,7 @@
 // Service worker: caches every game so the whole collection works offline.
 // Run `python3 tools/update-sw.py` after changing files: it refreshes ASSETS and
 // bumps VERSION, so installed copies download the new files.
-const VERSION = 'v12';
+const VERSION = 'v13';
 const CACHE = `play-party-${VERSION}`;
 
 const ASSETS = [
@@ -165,7 +165,13 @@ const ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE)
-      .then((cache) => cache.addAll(ASSETS.map((u) => new Request(u, { cache: 'reload' }))))
+      // Each file is fetched with ?v=VERSION so no browser or CDN cache can hand back an
+      // older copy: a half-updated mix of files breaks things in confusing ways.
+      .then((cache) => Promise.all(ASSETS.map((u) =>
+        fetch(new Request(`${u}?v=${VERSION}`, { cache: 'reload' })).then((res) => {
+          if (!res.ok) throw new Error(`could not fetch ${u}`);
+          return cache.put(u, res);
+        }))))
       .then(() => self.skipWaiting())
   );
 });
