@@ -72,6 +72,96 @@ export function roundRectPath(c, x, y, w, h, r) {
   c.closePath();
 }
 
+// ---- glow + body split ----
+// Many sprites are a round glow with a picture on top. Drawn turned, the whole square
+// (mostly soft glow) has to be turned. Split in two, the round glow can be drawn
+// without turning (it looks the same at any angle) and only the picture, trimmed to
+// its own size, is turned: far fewer turned pixels, same look.
+export const GLOW = { skip: false, seen: null };
+const glowCache = new Map();
+
+/**
+ * full = the sprite as usual, drawn by draw(c). The first time it is drawn with
+ * eng.blitSplit, it is drawn again in the background (a few at a time, so neither
+ * loading nor play stutters) with the glow left out, and full.split = { glow, body }
+ * is added when the sprite starts with a glow (see GLOW). Until then it is drawn whole.
+ */
+export function splitGlow(full, w, h, res, draw) {
+  full.splitSrc = { w, h, res, draw };
+  return full;
+}
+function requestSplit(full) {
+  const src = full.splitSrc;
+  full.splitSrc = null;
+  splitQueue.push(() => makeSplit(full, src.w, src.h, src.res, src.draw));
+  if (!splitTimer) splitTimer = setTimeout(pumpSplits, 30);
+}
+const splitQueue = [];
+let splitTimer = 0;
+function pumpSplits() {
+  splitTimer = 0;
+  const t0 = Date.now();
+  while (splitQueue.length && Date.now() - t0 < 8) splitQueue.shift()();
+  if (splitQueue.length) splitTimer = setTimeout(pumpSplits, 40);
+}
+function makeSplit(full, w, h, res, draw) {
+  GLOW.seen = null;
+  GLOW.skip = true;
+  let body;
+  try { body = makeSprite(w, h, draw, res); } finally { GLOW.skip = false; }
+  const seen = GLOW.seen;
+  GLOW.seen = null;
+  if (!seen) return full;
+  const key = `${seen.key}|${w}|${h}|${res}`;
+  let glow = glowCache.get(key);
+  if (!glow) {
+    glow = makeSprite(w, h, seen.paint, res);
+    glowCache.set(key, glow);
+  }
+  full.split = { glow, body: trimSprite(body) };
+  return full;
+}
+
+/** A copy of sprite cv without its clear border: .bx/.by/.bw/.bh = the part kept, in sprite units. */
+export function trimSprite(cv) {
+  const W = cv.width;
+  const H = cv.height;
+  const whole = () => { cv.bx = 0; cv.by = 0; cv.bw = cv.w; cv.bh = cv.h; return cv; };
+  let d;
+  try { d = cv.getContext('2d').getImageData(0, 0, W, H).data; } catch (err) { return whole(); }
+  let x0 = W;
+  let y0 = H;
+  let x1 = -1;
+  let y1 = -1;
+  for (let y = 0; y < H; y++) {
+    const row = y * W * 4;
+    for (let x = 0; x < W; x++) {
+      if (d[row + x * 4 + 3]) {
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        y1 = y;
+      }
+    }
+  }
+  if (x1 < 0) return whole();
+  x0 = Math.max(0, x0 - 2);
+  y0 = Math.max(0, y0 - 2);
+  x1 = Math.min(W - 1, x1 + 2);
+  y1 = Math.min(H - 1, y1 + 2);
+  const kx = W / cv.w;
+  const ky = H / cv.h;
+  const out = document.createElement('canvas');
+  out.width = x1 - x0 + 1;
+  out.height = y1 - y0 + 1;
+  out.getContext('2d').drawImage(cv, x0, y0, out.width, out.height, 0, 0, out.width, out.height);
+  out.w = out.bw = out.width / kx;
+  out.h = out.bh = out.height / ky;
+  out.bx = x0 / kx;
+  out.by = y0 / ky;
+  return out;
+}
+
 // Shared little sprites
 export const sparkleImg = makeSprite(32, 32, (c) => {
   const g = c.createRadialGradient(16, 16, 0, 16, 16, 16);
@@ -133,6 +223,8 @@ export function createEngine(canvas, opts = {}) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     eng.unit = clamp(Math.min(W, H) / 400, 0.8, 1.8);
     textCache.clear();
+    sizedGlows.clear();
+    sizedPx = 0;
   };
 
   eng.begin = function begin(clear = true) {
@@ -157,6 +249,68 @@ export function createEngine(canvas, opts = {}) {
     ctx.setTransform(D, 0, 0, D, 0, 0);
     ctx.globalAlpha = 1;
   };
+
+  /** Like blit, for a sprite made by splitGlow: the glow unturned, the picture turned. */
+  eng.blitSplit = function blitSplit(img, x, y, w, h, rot = 0, sc = 1) {
+    const sp = img.split;
+    if (!sp) {
+      if (img.splitSrc) requestSplit(img);
+      eng.blit(img, x, y, w, h, rot, 1, sc, sc);
+      return;
+    }
+    // the glow: a soft round thing, so it is copied 1:1 from a copy made at its size
+    // (sizes in steps of 2%: too small a step to see on a soft glow)
+    const D0 = eng.DPR;
+    const gw = w * sc * D0;
+    const gi = Math.round(Math.log(gw) / LOG_STEP);
+    const g = glowAt(sp.glow, gi, h / w);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(g, Math.round(x * D0 - g.width / 2), Math.round(y * D0 - g.height / 2));
+    const b = sp.body;
+    const kx = w / img.w;
+    const ky = h / img.h;
+    const D = eng.DPR;
+    if (rot) {
+      const c = Math.cos(rot);
+      const s = Math.sin(rot);
+      ctx.setTransform(D * c * sc, D * s * sc, -D * s * sc, D * c * sc, D * x, D * y);
+    } else {
+      ctx.setTransform(D * sc, 0, 0, D * sc, D * x, D * y);
+    }
+    ctx.drawImage(b, b.bx * kx - w / 2, b.by * ky - h / 2, b.bw * kx, b.bh * ky);
+    ctx.setTransform(D, 0, 0, D, 0, 0);
+  };
+
+  const LOG_STEP = Math.log(1.02);
+  const sizedGlows = new Map();
+  let sizedPx = 0;
+  let glowIds = 0;
+  function glowAt(img, gi, aspect) {
+    if (!img.glowId) img.glowId = ++glowIds;
+    const key = img.glowId + '|' + gi;
+    let cv = sizedGlows.get(key);
+    if (cv) {
+      // most recently used last
+      sizedGlows.delete(key);
+      sizedGlows.set(key, cv);
+      return cv;
+    }
+    const gw = Math.exp(gi * LOG_STEP);
+    cv = document.createElement('canvas');
+    cv.width = Math.max(1, Math.round(gw));
+    cv.height = Math.max(1, Math.round(gw * aspect));
+    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+    sizedGlows.set(key, cv);
+    sizedPx += cv.width * cv.height;
+    // keep only what the items on screen need (about 12 MB at most)
+    while (sizedPx > 3e6 && sizedGlows.size > 1) {
+      const k = sizedGlows.keys().next().value;
+      const old = sizedGlows.get(k);
+      sizedPx -= old.width * old.height;
+      sizedGlows.delete(k);
+    }
+    return cv;
+  }
 
   // ---- performance watch (same idea as Bubble Pop Party) ----
   const perf = { frames: 0, time: 0, slow: 0, hold: 3 };

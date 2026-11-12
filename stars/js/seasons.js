@@ -1,7 +1,7 @@
 // The four seasons of Catch the Falling Stars: everything a season needs is drawn
 // once into offscreen canvases (falling things, its special, its gentle "oops"
 // drop and cloud, a basket overlay) plus a still backdrop painter.
-import { makeSprite, softStarPath, roundRectPath, starPath, INK } from './engine.js';
+import { makeSprite, softStarPath, roundRectPath, starPath, INK, GLOW, splitGlow } from './engine.js';
 import {
   eyes, cheeks, smile, hexA, cloudBody, rng, STAR_BOX, BASKET_W, BASKET_H, RIM_Y, BX, HALF,
   DROP_W, DROP_H, CLOUD_W, CLOUD_H,
@@ -46,11 +46,16 @@ function fillFor(c, pal, x0, y0, x1, y1) {
   return g;
 }
 function glow(c, color, r0 = 17) {
-  const g = c.createRadialGradient(C, C, r0, C, C, C);
-  g.addColorStop(0, color);
-  g.addColorStop(1, 'rgba(255,255,255,0)');
-  c.fillStyle = g;
-  c.fillRect(0, 0, STAR_BOX, STAR_BOX);
+  const paint = (cc) => {
+    const g = cc.createRadialGradient(C, C, r0, C, C, C);
+    g.addColorStop(0, color);
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    cc.fillStyle = g;
+    cc.fillRect(0, 0, STAR_BOX, STAR_BOX);
+  };
+  // (always the first thing drawn, so the sprite can be split: see splitGlow)
+  if (GLOW.skip) GLOW.seen = { key: color + '|' + r0, paint };
+  else paint(c);
 }
 function glowFor(pal) { return pal === 'rainbow' ? 'rgba(255,255,255,0.8)' : hexA(pal.mid, 0.5); }
 function shine(c, x, y, rx, ry, rot) {
@@ -733,7 +738,7 @@ function waterBalloon(c) {
 // ---------------------------------------------------------------------------
 // Sprite sets
 // ---------------------------------------------------------------------------
-const box = (draw) => makeSprite(STAR_BOX, STAR_BOX, draw, RES);
+const box = (draw) => splitGlow(makeSprite(STAR_BOX, STAR_BOX, draw, RES), STAR_BOX, STAR_BOX, RES, draw);
 /** open + blink frames for a face drawn by fn(c, eyesKind). */
 function look(fn, pop, motion) {
   return { open: box((c) => fn(c, 'open')), blink: box((c) => fn(c, 'closed')), pop, motion: motion || 'fall' };

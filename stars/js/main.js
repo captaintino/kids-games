@@ -10,7 +10,7 @@ import {
   vibrate, currentScene, setScene, setPartyColors, animateBackground, showBackground, centerOf, replayClass,
 } from '../../shared/js/kit.js';
 import { SCENES, paintScene, createAnimator } from '../../shared/js/scenes.js';
-import { createEngine, goFullscreen, sparkleImg, glowImg, dotSprite, makeSprite } from './engine.js';
+import { createEngine, trimSprite, goFullscreen, sparkleImg, glowImg, dotSprite, makeSprite } from './engine.js';
 import * as art from './art.js';
 import { SEASONS, SEASON_BY_ID, buildSeason, paintSeason, RAINBOW_ARC, WIND } from './seasons.js';
 import { CONSTELLATIONS, BY_ID as CON_BY_ID, drawConstellation, doneSprite, nextConstellation } from './sky.js';
@@ -1093,7 +1093,15 @@ function drawItem(it, t) {
   const pulse = 1 + Math.sin(t * 5 + it.phase) * 0.05;
   let sc = pulse;
   if (it.st === 'zoom' && it.t > 0) sc *= 1 - Math.min(1, it.t) * 0.4;
-  eng.blit(spriteOf(it), it.x, y, size, size, it.rot, 1, sc, sc);
+  eng.blitSplit(spriteOf(it), it.x, y, size, size, it.rot, sc);
+}
+
+// The basket pictures are roomy boxes (the back is just the rim's far edge): each is
+// drawn from a copy trimmed to what it holds, in the same place, so fewer pixels move.
+function drawTrimmed(img, x, y, k) {
+  if (!img.trimmed) img.trimmed = trimSprite(img);
+  const t = img.trimmed;
+  ctx.drawImage(t, x + t.bx * k, y + t.by * k, t.bw * k, t.bh * k);
 }
 
 function drawBasket(t) {
@@ -1130,7 +1138,7 @@ function drawBasket(t) {
   const w = art.BASKET_W * bs;
   const h = art.BASKET_H * bs;
   const top = -(art.BOTTOM_Y + 8) * bs;
-  ctx.drawImage(soggy ? BASKET.backWet : BASKET.back, -w / 2, top, w, h);
+  drawTrimmed(soggy ? BASKET.backWet : BASKET.back, -w / 2, top, bs);
   // the stars caught so far, peeking out of the basket
   const slots = [[-30, 6], [24, 4], [-6, 2], [38, -2], [-42, -2], [8, -8]];
   const rimY = top + art.RIM_Y * bs;
@@ -1148,7 +1156,7 @@ function drawBasket(t) {
   if (soggy) face = BASKET.soggy;
   else if (basket.joyT > 0) face = BASKET.joy;
   else if (basket.blinkT < 0.15) face = BASKET.blink;
-  ctx.drawImage(face, -w / 2, top, w, h);
+  drawTrimmed(face, -w / 2, top, bs);
   if (soggy && SEAS && SEAS.overlay) ctx.drawImage(SEAS.overlay, -w / 2, top, w, h);
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 }

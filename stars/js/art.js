@@ -1,6 +1,6 @@
 // Pre-rendered sprites for Catch the Falling Stars: everything is drawn once into
 // offscreen canvases, so each frame is just a handful of drawImage calls.
-import { makeSprite, softStarPath, roundRectPath, INK } from './engine.js';
+import { makeSprite, softStarPath, roundRectPath, INK, GLOW, splitGlow } from './engine.js';
 
 const TAU = Math.PI * 2;
 // Sprite resolution: big enough for retina tablets, built once.
@@ -76,11 +76,15 @@ function starBody(c, fill, glow, eyesKind, opts = {}) {
   const C = STAR_BOX / 2;
   const R = STAR_R;
   // glow
-  const g = c.createRadialGradient(C, C, R * 0.5, C, C, C);
-  g.addColorStop(0, glow);
-  g.addColorStop(1, 'rgba(255,255,255,0)');
-  c.fillStyle = g;
-  c.fillRect(0, 0, STAR_BOX, STAR_BOX);
+  const paintGlow = (cc) => {
+    const g = cc.createRadialGradient(C, C, R * 0.5, C, C, C);
+    g.addColorStop(0, glow);
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    cc.fillStyle = g;
+    cc.fillRect(0, 0, STAR_BOX, STAR_BOX);
+  };
+  if (GLOW.skip) GLOW.seen = { key: 'star|' + glow, paint: paintGlow };
+  else paintGlow(c);
   // body
   softStarPath(c, C, C + 1, R, R * 0.52);
   c.fillStyle = fill;
@@ -128,7 +132,7 @@ export function hexA(hex, a) {
 const RAINBOW = ['#ff4d5e', '#ff9a2e', '#ffd93b', '#5cd65c', '#3d9bff', '#9d5cff'];
 
 export function buildStarSprites() {
-  const make = (draw) => makeSprite(STAR_BOX, STAR_BOX, draw, RES);
+  const make = (draw) => splitGlow(makeSprite(STAR_BOX, STAR_BOX, draw, RES), STAR_BOX, STAR_BOX, RES, draw);
   const colors = STAR_COLORS.map((col) => ({
     open: make((c) => starBody(c, colorFill(c, col), hexA(col.mid, 0.55), 'open')),
     blink: make((c) => starBody(c, colorFill(c, col), hexA(col.mid, 0.55), 'closed')),
