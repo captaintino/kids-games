@@ -10,6 +10,7 @@
 //   holdGate(el, onOpen)     a button that only works when held for 3 seconds
 //
 // No side effects until startGrownups(), so any page can import it.
+import './tap.js'; // buttons that work however long they're pressed
 import * as sfx from './audio.js';
 import { setSpeechVolume, say, stopSpeech } from './speech.js';
 import { createStore } from './store.js';

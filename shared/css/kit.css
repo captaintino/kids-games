@@ -600,3 +600,8 @@ canvas#fx { z-index: 30; }
   .round-btn { width: 46px; height: 46px; font-size: 21px; }
   .tile-grid { grid-template-columns: repeat(2, 1fr); grid-gap: 10px; gap: 10px; }
 }
+
+/* No scrollbars anywhere: lists still scroll by swiping, but tablets and desktop browsers
+   would otherwise draw bars inside panels that don't span the whole screen. */
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { display: none; width: 0; height: 0; }

@@ -803,3 +803,8 @@ canvas.bg-pic {
   .banner.with-icon .banner-title { font-size: 52px; }
   .learn-panel > * + * { margin-top: 12px; }
 }
+
+/* No scrollbars anywhere: lists still scroll by swiping, but tablets and desktop browsers
+   would otherwise draw bars inside panels that don't span the whole screen. */
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { display: none; width: 0; height: 0; }
