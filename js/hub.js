@@ -263,7 +263,77 @@ function buildVersion() {
   }, () => show(['Offline copy: unknown']));
 }
 
+// Check for updates. The browser's own service-worker updater fetches sw.js straight from
+// the server (no cache in between); if it changed, the new version downloads every file
+// and takes over (skipWaiting + clients.claim in sw.js), and the page restarts into it.
+const vnum = (v) => { const m = /v(\d+)/.exec(v || ''); return m ? +m[1] : 0; };
+let updating = false;
+function updateNote(t) { $('#gu-update-note').textContent = t; }
+function checkForUpdates() {
+  if (updating) return;
+  updating = true;
+  updateNote('Checking…');
+  const fail = () => { updating = false; updateNote('Couldn\'t check right now. Is the device online?'); };
+  if (navigator.onLine === false) { fail(); return; }
+  const sw = navigator.serviceWorker;
+  if (!sw) {
+    // no offline support: just ask the server for the version number
+    fetch(`js/version.js?check=${Date.now()}`, { cache: 'no-store' })
+      .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then((src) => {
+        const m = /VERSION = '(v\d+)'/.exec(src);
+        if (m && vnum(m[1]) > vnum(VERSION)) restartInto(m[1]);
+        else { updating = false; updateNote(`You have the newest version (${VERSION}).`); }
+      })
+      .catch(fail);
+    return;
+  }
+  sw.getRegistration().then((reg) => {
+    if (!reg) { updating = false; updateNote(`You have version ${VERSION}. Offline mode isn't running yet.`); return null; }
+    return reg.update().then(() => {
+      const w = reg.installing || reg.waiting;
+      if (w) return waitFor(w);
+      // nothing new on the server. A newer copy may already be stored (it downloaded in
+      // the background) while this page is still the old one: then just restart.
+      return newestStored().then((v) => {
+        if (vnum(v) > vnum(VERSION)) restartInto(v);
+        else { updating = false; updateNote(`You have the newest version (${VERSION}).`); }
+      });
+    });
+  }).catch(fail);
+}
+function newestStored() {
+  if (!window.caches) return Promise.resolve('');
+  return caches.keys().then((keys) => keys
+    .filter((k) => k.indexOf('play-party-') === 0).map((k) => k.slice(11))
+    .sort((a, b) => vnum(b) - vnum(a))[0] || '');
+}
+function waitFor(w) {
+  updateNote('Downloading the new version… (keep the app open)');
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    newestStored().then((v) => restartInto(v));
+  };
+  navigator.serviceWorker.addEventListener('controllerchange', finish);
+  if (w.state === 'activated') finish();
+  w.addEventListener('statechange', () => {
+    if (w.state === 'activated') finish();
+    if (w.state === 'redundant' && !done) {
+      done = true;
+      updating = false;
+      updateNote('The download didn\'t finish. Please try again.');
+    }
+  });
+}
+function restartInto(v) {
+  updateNote(`Updated${v ? ` to ${v}` : ''}! Restarting…`);
+  setTimeout(() => location.reload(), 900);
+}
+
 function openGrownups() {
+  $('#gu-update-note').textContent = '';
   buildGrownups();
   buildVersion();
   showScreen('screen-grownups');
@@ -337,6 +407,9 @@ boot({
         if (st) say(st.name);
         break;
       }
+      case 'gu-update':
+        checkForUpdates();
+        break;
       case 'gu-motion':
         setMotionChoice(el.dataset.motion === 'auto' ? 'auto' : +el.dataset.motion);
         buildMotion();

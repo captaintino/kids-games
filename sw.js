@@ -1,7 +1,7 @@
 // Service worker: caches every game so the whole collection works offline.
 // Run `python3 tools/update-sw.py` after changing files: it refreshes ASSETS and
 // bumps VERSION, so installed copies download the new files.
-const VERSION = 'v18';
+const VERSION = 'v21';
 const CACHE = `play-party-${VERSION}`;
 
 const ASSETS = [
@@ -193,6 +193,8 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  // never answer for the service worker itself or a "check for updates" request
+  if (url.pathname.endsWith('/sw.js') || req.cache === 'no-store') return;
 
   // Page loads: serve the cached page for that game (works offline).
   if (req.mode === 'navigate') {
