@@ -96,6 +96,7 @@ export let DPR = 1;
 let animDpr = 1;
 let animAcc = 0;
 let animCleared = false;
+let stillFor = null; // the animator last drawn while motion is "Still"
 let fadeTimer = 0;
 let party = 0;
 let animator = null;
@@ -117,6 +118,7 @@ function resize() {
   // the moving bits are drawn at a lower resolution (and less often) on old devices: see motion.js
   animDpr = motion.scale;
   sizeCanvas(an, anx, animDpr);
+  stillFor = null;
   // sparkles are soft and short-lived: 1.5x resolution is plenty and saves a lot of pixels on 2x/3x screens
   sizeCanvas(fxc, fxx, Math.min(DPR, 1.5));
   fxDirty = true;
@@ -182,7 +184,7 @@ function applyScene() {
 
 /** Hide the moving background details (e.g. to keep a busy game screen calm). */
 let bgAnimate = true;
-export function animateBackground(on) { bgAnimate = on; animCleared = false; }
+export function animateBackground(on) { bgAnimate = on; animCleared = false; stillFor = null; }
 
 /** Turn the whole background world off (for a game that paints its own), saving work every frame. */
 let bgOn = true;
@@ -205,7 +207,12 @@ function drawBackground(t, dt) {
   }
   // the moving bits are slow drifting things: 30 frames a second is plenty (fewer on old devices)
   animAcc += dt;
-  if (animAcc < 1 / (motion.fps + 1)) return;
+  if (motion.still) {
+    // a grown-up picked "Still": draw the bits once for each world and leave them
+    if (stillFor === animator) return;
+    stillFor = animator;
+    animAcc = 1 / 60;
+  } else if (animAcc < 1 / (motion.fps + 1)) return;
   const step = Math.min(animAcc, 0.2);
   animAcc = 0;
   anx.setTransform(1, 0, 0, 1, 0, 0);
@@ -651,6 +658,7 @@ onMotionChange(() => {
   animDpr = motion.scale;
   sizeCanvas(an, anx, animDpr);
   animCleared = false;
+  stillFor = null;
 });
 
 export function boot(options = {}) {

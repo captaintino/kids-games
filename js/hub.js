@@ -10,7 +10,7 @@ import {
 } from '../shared/js/grownups.js';
 import { STICKERS, CATS, album, stickerHTML, resetAlbum } from '../shared/js/rewards.js';
 import { VERSION, BUILT } from './version.js';
-import { motion } from '../shared/js/motion.js';
+import { motion, setMotionChoice } from '../shared/js/motion.js';
 
 // To add a game: add it here, then run tools/update-sw.py.
 // id: used by the grown-up corner to hide a game. icon: an emoji, or an image path (img: true).
@@ -214,10 +214,28 @@ function buildGrownups() {
   $('#gu-limit').innerHTML = LIMITS.map((m) =>
     `<button class="chip${(+g.limit || 0) === m ? ' on' : ''}" data-action="gu-limit" data-min="${m}">${m ? `${m} min` : 'No limit'}</button>`).join('');
   $('#gu-today').textContent = `Played today: ${playedToday()} min`;
+  buildMotion();
   $('#gu-stickers').checked = g.stickers !== false;
   $('#gu-games').innerHTML = SECTIONS.map((sec) => sec.games.map((gm) => `
     <label class="gu-game"><input type="checkbox" data-game="${gm.id}"${isHidden(gm.id) ? '' : ' checked'}>
       <span class="gu-ico">${gm.img ? `<img src="${gm.icon}" alt="">` : gm.icon}</span> ${esc(gm.name)}</label>`).join('')).join('');
+}
+
+// Background motion: Auto (picked for this device), or a level chosen by a grown-up
+const MOTION_CHOICES = [
+  ['auto', 'Auto', 'Picked for this device, and turned down by itself if the games run slowly.'],
+  [0, 'Full', 'Smooth movement in the background worlds.'],
+  [1, 'Light', 'Gentler movement, easier on older tablets.'],
+  [2, 'Minimal', 'Slow, stepping movement for very old or slow devices.'],
+  [3, 'Still', 'The background worlds don\'t move at all. Good for kids who find movement distracting.'],
+];
+function buildMotion() {
+  const cur = motion.choice;
+  $('#gu-motion').innerHTML = MOTION_CHOICES.map(([v, name]) =>
+    `<button class="chip${cur === v ? ' on' : ''}" data-action="gu-motion" data-motion="${v}">${
+      v === 'auto' ? `Auto (${motion.autoName})` : name}</button>`).join('');
+  const pick = MOTION_CHOICES.filter((c) => c[0] === cur)[0];
+  $('#gu-motion-note').textContent = pick ? pick[2] : '';
 }
 
 // Version info for debugging: the version of the page that's running, and which offline
@@ -319,6 +337,11 @@ boot({
         if (st) say(st.name);
         break;
       }
+      case 'gu-motion':
+        setMotionChoice(el.dataset.motion === 'auto' ? 'auto' : +el.dataset.motion);
+        buildMotion();
+        buildVersion();
+        break;
       case 'gu-limit':
         grownups.data.limit = +el.dataset.min;
         saveGrownups();

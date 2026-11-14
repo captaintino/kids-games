@@ -114,6 +114,7 @@ function resize() {
   DPR = Math.max(1, Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(2400000 / (W * H))));
   sizeCanvas(bg, bgx, Math.min(DPR, 1.5));
   sizeCanvas(an, anx, motion.scale); // lower resolution on old devices: see motion.js
+  stillFor = null;
   // sparkles are soft and short-lived: 1.5x resolution is plenty and saves a lot of pixels on 2x/3x screens
   sizeCanvas(fx, fxx, Math.min(DPR, 1.5));
   fxDirty = true;
@@ -131,6 +132,7 @@ if (!SCENES.some((sc) => sc.id === save.scene)) save.scene = 'party';
 const MODE_PALETTE = { title: 0, fill: 1, paint: 2, number: 3, magic: 4, draw: ['#ffb347', '#ff7ac6', '#a98bff'] };
 let fadeTimer = 0;
 let animAcc = 0;
+let stillFor = null; // the animator last drawn while motion is "Still"
 let palette = 0;
 let animator = createAnimator(save.scene);
 
@@ -179,7 +181,12 @@ function setScene(id) {
 function drawBackground(t, dt) {
   // the moving bits are slow drifting things: 30 frames a second is plenty (fewer on old devices)
   animAcc += dt;
-  if (animAcc < 1 / (motion.fps + 1)) return;
+  if (motion.still) {
+    // a grown-up picked "Still": draw the bits once for each world and leave them
+    if (stillFor === animator) return;
+    stillFor = animator;
+    animAcc = 1 / 60;
+  } else if (animAcc < 1 / (motion.fps + 1)) return;
   const step = Math.min(animAcc, 0.2);
   animAcc = 0;
   anx.setTransform(1, 0, 0, 1, 0, 0);
@@ -359,7 +366,7 @@ function drawParticles() {
 
 let last = 0;
 let clock = 0;
-onMotionChange(() => sizeCanvas(an, anx, motion.scale));
+onMotionChange(() => { sizeCanvas(an, anx, motion.scale); stillFor = null; });
 function frame(now) {
   noteFrame((now - last) / 1000);
   const dt = Math.min(0.05, (now - last) / 1000);

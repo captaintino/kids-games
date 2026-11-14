@@ -97,3 +97,6 @@ cores), and 8 times a second at half resolution on the oldest. While the backgro
 kit also watches real frame rates: a device that keeps running under about 30 fps steps down a
 level and remembers it, and steps back up after 20 smooth seconds. The kit, Coloring and Sticker
 Scene use it; the grown-up corner's About card shows the current level.
+
+Grown-ups can override it in the grown-up corner (`setMotionChoice`): Auto, Full, Light, Minimal, or
+Still (the moving bits are drawn once and never move). A chosen level turns off the automatic stepping.
