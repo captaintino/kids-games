@@ -1,7 +1,7 @@
 // Service worker: caches every game so the whole collection works offline.
 // Run `python3 tools/update-sw.py` after changing files: it refreshes ASSETS and
 // bumps VERSION, so installed copies download the new files.
-const VERSION = 'v22';
+const VERSION = 'v27';
 const CACHE = `play-party-${VERSION}`;
 
 const ASSETS = [
@@ -164,17 +164,54 @@ const ASSETS = [
   './tracing/js/words.js',
 ];
 
+// Tell every open page how the download is going (the grown-up corner shows it).
+function tell(msg) {
+  return self.clients.matchAll({ includeUncontrolled: true, type: 'window' })
+    .then((list) => list.forEach((c) => c.postMessage(Object.assign({ sw: VERSION }, msg))))
+    .catch(() => {});
+}
+
+// One file, with a time limit and up to three tries (a slow or dropped connection on an
+// old tablet must not leave the download hanging forever).
+function fetchOne(u, cache) {
+  const once = () => Promise.race([
+    fetch(new Request(`${u}?v=${VERSION}`, { cache: 'reload' })),
+    new Promise((resolve, reject) => setTimeout(() => reject(new Error('timeout')), 30000)),
+  ]).then((res) => {
+    if (!res.ok) throw new Error(`could not fetch ${u}`);
+    return cache.put(u, res);
+  });
+  return once().catch(once).catch(once);
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE)
       // Each file is fetched with ?v=VERSION so no browser or CDN cache can hand back an
-      // older copy: a half-updated mix of files breaks things in confusing ways.
-      .then((cache) => Promise.all(ASSETS.map((u) =>
-        fetch(new Request(`${u}?v=${VERSION}`, { cache: 'reload' })).then((res) => {
-          if (!res.ok) throw new Error(`could not fetch ${u}`);
-          return cache.put(u, res);
-        }))))
+      // older copy: a half-updated mix of files breaks things in confusing ways. Six at a
+      // time, which old iPads handle better than all of them at once.
+      .then((cache) => {
+        let next = 0;
+        let done = 0;
+        const total = ASSETS.length;
+        const worker = () => {
+          if (next >= total) return Promise.resolve();
+          const u = ASSETS[next++];
+          return fetchOne(u, cache).then(() => {
+            done++;
+            if (done % 8 === 0 || done === total) tell({ type: 'progress', done, total });
+            return worker();
+          });
+        };
+        const workers = [];
+        for (let i = 0; i < 6; i++) workers.push(worker());
+        return Promise.all(workers);
+      })
       .then(() => self.skipWaiting())
+      .catch((err) => {
+        // throw away the half-filled copy so nothing mistakes it for a finished one
+        return caches.delete(CACHE).then(() => tell({ type: 'failed' })).then(() => { throw err; });
+      })
   );
 });
 
@@ -185,6 +222,7 @@ self.addEventListener('activate', (event) => {
         keys.filter((k) => k.startsWith('play-party-') && k !== CACHE).map((k) => caches.delete(k))
       ))
       .then(() => self.clients.claim())
+      .then(() => tell({ type: 'ready' }))
   );
 });
 

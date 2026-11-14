@@ -292,8 +292,7 @@ function checkForUpdates() {
   sw.getRegistration().then((reg) => {
     if (!reg) { updating = false; updateNote(`You have version ${VERSION}. Offline mode isn't running yet.`); return null; }
     return reg.update().then(() => {
-      const w = reg.installing || reg.waiting;
-      if (w) return waitFor(w);
+      if (reg.installing || reg.waiting) return waitFor(reg);
       // nothing new on the server. A newer copy may already be stored (it downloaded in
       // the background) while this page is still the old one: then just restart.
       return newestStored().then((v) => {
@@ -309,24 +308,53 @@ function newestStored() {
     .filter((k) => k.indexOf('play-party-') === 0).map((k) => k.slice(11))
     .sort((a, b) => vnum(b) - vnum(a))[0] || '');
 }
-function waitFor(w) {
+// Follow the download: progress messages from the new service worker, plus a check every
+// second (events can be missed, especially on iPads), and a hint if it stalls.
+function waitFor(reg) {
+  const sw = navigator.serviceWorker;
   updateNote('Downloading the new version… (keep the app open)');
   let done = false;
-  const finish = () => {
-    if (done) return;
+  let lastNews = Date.now();
+  let timer = 0;
+  const stop = () => {
     done = true;
-    newestStored().then((v) => restartInto(v));
+    clearInterval(timer);
+    sw.removeEventListener('message', onMsg);
+    sw.removeEventListener('controllerchange', finish);
   };
-  navigator.serviceWorker.addEventListener('controllerchange', finish);
-  if (w.state === 'activated') finish();
-  w.addEventListener('statechange', () => {
-    if (w.state === 'activated') finish();
-    if (w.state === 'redundant' && !done) {
-      done = true;
-      updating = false;
-      updateNote('The download didn\'t finish. Please try again.');
+  function finish() {
+    if (done) return;
+    stop();
+    newestStored().then((v) => restartInto(v));
+  }
+  function failed() {
+    if (done) return;
+    stop();
+    updating = false;
+    updateNote('The download didn\'t finish. Check the internet connection and try again.');
+  }
+  function onMsg(e) {
+    const d = e.data || {};
+    if (d.type === 'progress') {
+      lastNews = Date.now();
+      updateNote(`Downloading the new version… ${Math.round((d.done / d.total) * 100)}% (keep the app open)`);
+    } else if (d.type === 'ready') finish();
+    else if (d.type === 'failed') failed();
+  }
+  sw.addEventListener('message', onMsg);
+  sw.addEventListener('controllerchange', finish);
+  timer = setInterval(() => {
+    if (done) return;
+    if (!reg.installing && !reg.waiting) {
+      // nothing downloading any more: either the new version is in, or it gave up
+      newestStored().then((v) => { if (vnum(v) > vnum(VERSION)) finish(); else failed(); });
+      return;
     }
-  });
+    if (Date.now() - lastNews > 45000) {
+      lastNews = Date.now();
+      updateNote('This is taking a long time. Close the app completely and open it again to finish the update.');
+    }
+  }, 1000);
 }
 function restartInto(v) {
   updateNote(`Updated${v ? ` to ${v}` : ''}! Restarting…`);
