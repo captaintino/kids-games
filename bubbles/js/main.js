@@ -6,6 +6,7 @@ import { SCENES, paintScene, createAnimator } from './scenes.js';
 import { SHAPES, LETTER_WORDS, shapeRound, letterRound, letterPrompt } from './learn.js';
 import { earnSticker } from '../../shared/js/rewards.js';
 import { startGrownups } from '../../shared/js/grownups.js';
+import { motion, onMotionChange } from '../../shared/js/motion.js';
 
 // ---------------------------------------------------------------------------
 // Save data
@@ -77,6 +78,7 @@ function resize() {
   unit = clamp(Math.min(W, H) / 400, 0.8, 1.8);
   for (const b of bubbles) b.x0 = clamp(b.x0, b.r, Math.max(b.r, W - b.r));
   textCache.clear();
+  sizeBgAnim();
   rebuildBackground(false);
 }
 
@@ -110,6 +112,25 @@ const bgBits = document.createElement('div');
 bgBits.className = 'bg-bits';
 bgBits.setAttribute('aria-hidden', 'true');
 canvas.parentNode.insertBefore(bgBits, canvas);
+// On the Full motion level the moving bits are drawn on the game canvas every frame. On
+// lower levels (old devices, or picked in the grown-up corner) they get their own canvas,
+// redrawn less often and at a lower resolution, or only once for "Still" (see motion.js).
+const bgAnim = document.createElement('canvas');
+bgAnim.className = 'bg-pic';
+bgAnim.setAttribute('aria-hidden', 'true');
+const bgAnimX = bgAnim.getContext('2d');
+canvas.parentNode.insertBefore(bgAnim, canvas);
+let animAcc = 0;
+let stillFor = null; // the animator last drawn while motion is "Still"
+function sizeBgAnim() {
+  const on = motion.level > 0;
+  bgAnim.style.visibility = on ? '' : 'hidden';
+  bgAnim.width = on ? Math.round(W * motion.scale) : 0;
+  bgAnim.height = on ? Math.round(H * motion.scale) : 0;
+  stillFor = null;
+  animAcc = 1;
+}
+onMotionChange(sizeBgAnim);
 let bgFade = 1;
 let palette = 0;
 let animator = createAnimator(save.scene, bgBits);
@@ -159,9 +180,26 @@ function drawBackground(t, dt) {
     bgPrev.style.opacity = (1 - bgFade).toFixed(3);
     if (bgFade >= 1) hidePrev();
   }
+  if (motion.level === 0) {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    animator.draw(ctx, W, H, t, dt);
+    ctx.globalAlpha = 1;
+    return;
+  }
+  animAcc += dt;
+  if (motion.still) {
+    if (stillFor === animator) return;
+    stillFor = animator;
+    animAcc = 1 / 60;
+  } else if (animAcc < 1 / (motion.fps + 1)) return;
+  const step = Math.min(animAcc, 0.2);
+  animAcc = 0;
+  bgAnimX.setTransform(1, 0, 0, 1, 0, 0);
+  bgAnimX.clearRect(0, 0, bgAnim.width, bgAnim.height);
+  bgAnimX.setTransform(motion.scale, 0, 0, motion.scale, 0, 0);
+  animator.draw(bgAnimX, W, H, t, step);
+  bgAnimX.globalAlpha = 1;
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  animator.draw(ctx, W, H, t, dt);
-  ctx.globalAlpha = 1;
 }
 
 // Icy edge glow for the snowflake slow-down, pre-rendered at low resolution.

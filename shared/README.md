@@ -96,7 +96,9 @@ second at 3/4 resolution on older ones (iOS 12, Android 7 and older, 2 GB of mem
 cores), and 8 times a second at half resolution on the oldest. While the background is showing, the
 kit also watches real frame rates: a device that keeps running under about 30 fps steps down a
 level and remembers it, and steps back up after 20 smooth seconds. The kit, Coloring and Sticker
-Scene use it; the grown-up corner's About card shows the current level.
+Scene use it, and Bubble Pop, Fishing Pond and Catch the Stars apply it to their own backgrounds
+(weeds, waves, light rays, twinkling stars, snow, leaves, bokeh: never the game itself). The
+grown-up corner's About card shows the current level.
 
 Grown-ups can override it in the grown-up corner (`setMotionChoice`): Auto, Full, Light, Minimal, or
 Still (the moving bits are drawn once and never move). A chosen level turns off the automatic stepping.

@@ -227,7 +227,7 @@ const MOTION_CHOICES = [
   [0, 'Full', 'Smooth movement in the background worlds.'],
   [1, 'Light', 'Gentler movement, easier on older tablets.'],
   [2, 'Minimal', 'Slow, stepping movement for very old or slow devices.'],
-  [3, 'Still', 'The background worlds don\'t move at all. Good for kids who find movement distracting.'],
+  [3, 'Still', 'The backgrounds don\'t move at all (the games themselves still do). Good for kids who find movement distracting.'],
 ];
 function buildMotion() {
   const cur = motion.choice;

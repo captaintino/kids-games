@@ -11,6 +11,7 @@ import {
 } from '../../shared/js/kit.js';
 import { SCENES, paintScene, createAnimator } from '../../shared/js/scenes.js';
 import { createEngine, trimSprite, goFullscreen, sparkleImg, glowImg, dotSprite, makeSprite } from './engine.js';
+import { motion } from '../../shared/js/motion.js';
 import * as art from './art.js';
 import { SEASONS, SEASON_BY_ID, buildSeason, paintSeason, RAINBOW_ARC, WIND } from './seasons.js';
 import { CONSTELLATIONS, BY_ID as CON_BY_ID, drawConstellation, doneSprite, nextConstellation } from './sky.js';
@@ -720,7 +721,9 @@ function updateSeasonal(dt, sdt) {
       else if (season === 'winter' && Math.random() < 0.5) snd.bells();
     }
   }
-  // ambient things
+  // ambient things (background motion: they move in steps, or not at all, on lower motion levels)
+  const dt0 = dt;
+  dt = ambDt;
   const wind = gustForce();
   for (const a of ambient) {
     switch (a.type) {
@@ -745,6 +748,7 @@ function updateSeasonal(dt, sdt) {
         break;
     }
   }
+  dt = dt0;
   void sdt;
 }
 
@@ -1177,8 +1181,8 @@ function drawHint(t) {
 function render(t, dt) {
   const cover = skyCovers(dt);
   eng.begin(!cover);
-  drawSky(t, cover);
-  drawClouds(t);
+  drawSky(ambT, cover);
+  drawClouds(ambT);
   for (const it of items) if (it.kind === 'rain') drawItem(it, t);
   for (const it of items) if (it.kind !== 'rain') drawItem(it, t);
   if (state.mode === 'play' || state.mode === 'over') drawBasket(t);
@@ -1212,8 +1216,27 @@ function flushHud() {
   }
 }
 
+// Background motion (twinkling stars, fireflies, snow, leaves, butterflies and the
+// clouds' gentle bobbing) follows the grown-up corner's motion level
+// (shared/js/motion.js): it moves in steps on Light and Minimal and not at all on Still.
+// The falling stars, clouds dropping them and the basket always move.
+let ambT = 0;
+let ambAcc = 0;
+let ambDt = 0;
+function ambientStep(dt) {
+  if (motion.level === 0) { ambT += dt; return dt; }
+  if (motion.still) return 0;
+  ambAcc += dt;
+  if (ambAcc < 1 / (motion.fps + 1)) return 0;
+  const s = Math.min(ambAcc, 0.2);
+  ambAcc = 0;
+  ambT += s;
+  return s;
+}
+
 let lastNow = performance.now();
 function onFrame(dt, t) {
+  ambDt = ambientStep(dt);
   const now = performance.now();
   const raw = (now - lastNow) / 1000;
   lastNow = now;

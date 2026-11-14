@@ -10,6 +10,7 @@ import {
   vibrate, animateBackground, showBackground, centerOf, replayClass,
 } from '../../shared/js/kit.js';
 import { createEngine, goFullscreen, glowImg, makeSprite, dotSprite } from './engine.js';
+import { motion } from '../../shared/js/motion.js';
 import { SPECIES, BY_ID, buildArt, drawCreature, drawCreatureFlat, portrait, boundsOf, isWalker, isFlipless } from './fish.js';
 import * as scene from './scene.js';
 import * as snd from './sounds.js';
@@ -1546,12 +1547,12 @@ function render(t) {
   ctx.setTransform(eng.DPR, 0, 0, eng.DPR, 0, 0);
   drawSkyClouds();
   if (!baked) {
-    drawWhale(t);
-    drawRays(t);
+    drawWhale(ambT);
+    drawRays(ambT);
   }
   if (friends.whale) resetScenery();
-  else stepScenery(t);
-  drawWeeds(t, weeds, P.floorY, PLACE.weedDark);
+  else if (!(motion.still && scenery.ready)) stepScenery(ambT); // Still: the rays don't move, so the picture is done
+  drawWeeds(ambT, weeds, P.floorY, PLACE.weedDark);
   for (const f of fish) if (!isWalker(f.sp)) drawFish(f, t);
   for (const f of fish) if (isWalker(f.sp)) drawFish(f, t);
   drawDuck(t);
@@ -1562,7 +1563,7 @@ function render(t) {
     const by = line.bobY || P.surfaceY;
     drawBobber(line.bx, by, 0);
   }
-  drawSurface(t);
+  drawSurface(ambT);
   drawRodAndLine(t);
   drawFlying(t);
   eng.drawParticles();
@@ -1668,7 +1669,7 @@ function feed() {
   replayClass($('#feed-btn'), 'bump');
 }
 
-function updateTank(dt, t) {
+function updateTank(dt, t, adt) {
   const { unit } = eng;
   // food sinks slowly and rests on the sand for a while
   for (let i = flakes.length - 1; i >= 0; i--) {
@@ -1741,8 +1742,8 @@ function updateTank(dt, t) {
   chest.t -= dt;
   if (chest.open > 0) chest.open -= dt;
   if (chest.t <= 0) { openChest(); chest.t = rand(7, 11); }
-  // the air stone
-  tankBubbleT -= dt;
+  // the air stone (background motion: see ambientStep)
+  tankBubbleT -= adt;
   if (tankBubbleT <= 0) {
     tankBubbleT = eng.light() ? 0.35 : 0.18;
     addBubble(T.x + 26 * unit + rand(-4, 4), T.sandY - 4 * unit, rand(0.4, 0.9));
@@ -1800,7 +1801,7 @@ function renderTank(t) {
   ctx.beginPath();
   ctx.rect(T.x + 4, T.y + 4, T.wd - 8, T.ht - 8);
   ctx.clip();
-  drawWeeds(t, tankWeeds, T.sandY, '#1d7a45');
+  drawWeeds(ambT, tankWeeds, T.sandY, '#1d7a45');
   // the chest
   if (!CHEST) CHEST = scene.buildChest(RES);
   const cp = chestPos();
@@ -1880,13 +1881,30 @@ function closeTank() {
 // Frame
 // ---------------------------------------------------------------------------
 let lastNow = performance.now();
+// Background motion (weeds, light rays, waves, clouds, rising bubbles and passing
+// visitors) follows the grown-up corner's motion level (shared/js/motion.js): it moves
+// in steps on Light and Minimal and not at all on Still. Fish and the line always move.
+let ambT = 0;
+let ambAcc = 0;
+function ambientStep(dt) {
+  if (motion.level === 0) { ambT += dt; return dt; }
+  if (motion.still) return 0;
+  ambAcc += dt;
+  if (ambAcc < 1 / (motion.fps + 1)) return 0;
+  const s = Math.min(ambAcc, 0.2);
+  ambAcc = 0;
+  ambT += s;
+  return s;
+}
+
 function onFrame(dt, t) {
   const now = performance.now();
+  const adt = ambientStep(dt);
   eng.watch((now - lastNow) / 1000, false);
   lastNow = now;
   clockT = t;
   if (state.mode === 'tank') {
-    updateTank(dt, t);
+    updateTank(dt, t, adt);
     eng.updateParticles(dt);
     renderTank(t);
     frameCost += performance.now() - now;
@@ -1901,7 +1919,7 @@ function onFrame(dt, t) {
   updateLine(dt);
   updateFish(dt, t);
   updateFlying(dt);
-  updateAmbient(dt);
+  updateAmbient(adt);
   eng.updateParticles(dt);
   render(t);
   frameCost += performance.now() - now;
