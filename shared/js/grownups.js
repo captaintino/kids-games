@@ -22,8 +22,59 @@ export const grownups = createStore('grownups', {
   limit: 0,        // minutes of play per day, 0 = no limit
   hidden: [],      // game ids hidden from the home screen
   stickers: true,  // earn stickers for the sticker book
+  lowPerf: false,  // low-performance mode: no decorative looping animations on buttons
 });
 if (!Array.isArray(grownups.data.hidden)) grownups.data.hidden = [];
+
+// Low-performance mode: stops the decorative looping animations (button shine, wobbling
+// and bobbing buttons, tiles, mascots and titles). Every stylesheet rule with an endless
+// animation is copied under html.low-perf with the animation turned off, except the cues
+// that tell a kid what to do (a pulsing hint, the next note to play, edit-mode jiggle) and
+// the quick one-off bounces when something is pressed, which never loop.
+const CUES = /\.(hint|nudge|ready|cur|now|playing|hot|editing|new|start-ring|slot-glow|share-pointer|hint-flick)\b/;
+let lowPerfCss = null;
+function collectLooping(rules, out) {
+  for (let i = 0; i < rules.length; i++) {
+    const r = rules[i];
+    if (r.cssRules && !r.selectorText) { collectLooping(r.cssRules, out); continue; }
+    if (!r.selectorText || !r.style) continue;
+    const n = r.style.animationIterationCount || r.style.webkitAnimationIterationCount || '';
+    if (n.indexOf('infinite') < 0) continue;
+    r.selectorText.split(',').forEach((sel) => {
+      sel = sel.trim();
+      if (sel && !CUES.test(sel)) out.push(`html.low-perf ${sel}`);
+    });
+  }
+}
+function buildLowPerfCss() {
+  const sels = [];
+  for (let i = 0; i < document.styleSheets.length; i++) {
+    let rules = null;
+    try { rules = document.styleSheets[i].cssRules; } catch (e) { rules = null; } // not loaded yet
+    if (rules) collectLooping(rules, sels);
+  }
+  if (!lowPerfCss) {
+    lowPerfCss = document.createElement('style');
+    lowPerfCss.id = 'low-perf-css';
+    document.head.appendChild(lowPerfCss);
+  }
+  lowPerfCss.textContent = sels.length
+    ? `${sels.join(',\n')} { -webkit-animation: none !important; animation: none !important; }`
+    : '';
+}
+function applyLowPerf() {
+  const on = !!grownups.data.lowPerf;
+  const root = document.documentElement;
+  if (on) {
+    buildLowPerfCss();
+    root.classList.add('low-perf');
+  } else {
+    root.classList.remove('low-perf');
+  }
+}
+applyLowPerf();
+// stylesheets may still be loading when this runs: look again once everything has loaded
+window.addEventListener('load', () => { if (grownups.data.lowPerf) buildLowPerfCss(); });
 
 const time = createStore('playtime', { day: '', secs: 0, bonus: 0 });
 
@@ -55,6 +106,7 @@ function apply() {
 export function saveGrownups() {
   grownups.persistNow();
   apply();
+  applyLowPerf();
   checkLimit();
 }
 

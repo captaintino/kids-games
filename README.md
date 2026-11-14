@@ -62,7 +62,8 @@ sticker. The **My Stickers** button on the home screen shows the album.
 **🔒 Grown-up corner:** hold the Grown-ups button at the bottom of the home screen for 3 seconds to set
 the kid's name (used by Letter Tracing), the sound and voice volume, a daily play-time limit (a gentle
 "Time for a break!" screen; hold its lock to add time), how much the background worlds move (Auto,
-Full, Light, Minimal or Still), which games show on the home screen, and whether stickers are earned. Its **About this app** card shows the version that is running and which
+Full, Light, Minimal or Still), a low-performance mode that stops the looping decorations on buttons,
+tiles and mascots (hints that show where to tap keep working), which games show on the home screen, and whether stickers are earned. Its **About this app** card shows the version that is running and which
 offline copy is stored, for debugging, and has a **Check for updates** button that downloads a new
 version right away and restarts into it.
 

@@ -216,6 +216,7 @@ function buildGrownups() {
   $('#gu-today').textContent = `Played today: ${playedToday()} min`;
   buildMotion();
   $('#gu-stickers').checked = g.stickers !== false;
+  $('#gu-lowperf').checked = !!g.lowPerf;
   $('#gu-games').innerHTML = SECTIONS.map((sec) => sec.games.map((gm) => `
     <label class="gu-game"><input type="checkbox" data-game="${gm.id}"${isHidden(gm.id) ? '' : ' checked'}>
       <span class="gu-ico">${gm.img ? `<img src="${gm.icon}" alt="">` : gm.icon}</span> ${esc(gm.name)}</label>`).join('')).join('');
@@ -345,12 +346,13 @@ function readGrownups() {
   g.volume = +$('#gu-volume').value / 100;
   g.voice = +$('#gu-voice').value / 100;
   g.stickers = $('#gu-stickers').checked;
+  g.lowPerf = $('#gu-lowperf').checked;
   g.hidden = $$('#gu-games input').filter((i) => !i.checked).map((i) => i.dataset.game);
   saveGrownups();
 }
 
 function wireGrownups() {
-  ['#gu-name', '#gu-volume', '#gu-voice', '#gu-stickers'].forEach((sel) => {
+  ['#gu-name', '#gu-volume', '#gu-voice', '#gu-stickers', '#gu-lowperf'].forEach((sel) => {
     $(sel).addEventListener('change', readGrownups);
   });
   $('#gu-name').addEventListener('input', readGrownups);
