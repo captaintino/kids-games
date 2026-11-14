@@ -10,6 +10,7 @@ import {
 } from '../shared/js/grownups.js';
 import { STICKERS, CATS, album, stickerHTML, resetAlbum } from '../shared/js/rewards.js';
 import { VERSION, BUILT } from './version.js';
+import { motion } from '../shared/js/motion.js';
 
 // To add a game: add it here, then run tools/update-sw.py.
 // id: used by the grown-up corner to hide a game. icon: an emoji, or an image path (img: true).
@@ -231,7 +232,8 @@ function buildVersion() {
     lines.push(`⚠️ Out of sync: page ${pageVersion}, scripts ${VERSION}. Close and reopen the app.`);
   }
   lines.push(
-    `Screen ${window.innerWidth}×${window.innerHeight} at ${Math.round(dpr * 100) / 100}x`);
+    `Screen ${window.innerWidth}×${window.innerHeight} at ${Math.round(dpr * 100) / 100}x`,
+    `Background motion: ${motion.name} (${motion.reason})`);
   const show = (more) => { box.textContent = lines.concat(more).join('\n'); };
   show(['Offline copy: checking…']);
   const sw = navigator.serviceWorker;

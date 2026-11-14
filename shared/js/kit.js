@@ -21,6 +21,7 @@ import { SCENES, paintScene, createAnimator } from './scenes.js';
 import { unlockSpeech, setSpeechMuted } from './speech.js';
 import { createStore } from './store.js';
 import { startGrownups } from './grownups.js';
+import { motion, noteFrame, onMotionChange } from './motion.js';
 
 // ---------------------------------------------------------------------------
 // Small helpers
@@ -113,7 +114,8 @@ function resize() {
   // pixel budget so big retina tablets stay smooth
   DPR = Math.max(1, Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(2400000 / (W * H))));
   sizeCanvas(bg, bgx, Math.min(DPR, 1.5));
-  animDpr = 1;
+  // the moving bits are drawn at a lower resolution (and less often) on old devices: see motion.js
+  animDpr = motion.scale;
   sizeCanvas(an, anx, animDpr);
   // sparkles are soft and short-lived: 1.5x resolution is plenty and saves a lot of pixels on 2x/3x screens
   sizeCanvas(fxc, fxx, Math.min(DPR, 1.5));
@@ -201,10 +203,10 @@ function drawBackground(t, dt) {
     }
     return;
   }
-  // the moving bits are slow drifting things: 30 frames a second is plenty
+  // the moving bits are slow drifting things: 30 frames a second is plenty (fewer on old devices)
   animAcc += dt;
-  if (animAcc < 1 / 31) return;
-  const step = Math.min(animAcc, 0.1);
+  if (animAcc < 1 / (motion.fps + 1)) return;
+  const step = Math.min(animAcc, 0.2);
   animAcc = 0;
   anx.setTransform(1, 0, 0, 1, 0, 0);
   anx.clearRect(0, 0, an.width, an.height);
@@ -631,7 +633,10 @@ const CHROME = `
 let last = 0;
 let clock = 0;
 function frame(now) {
-  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
+  const raw = (now - last) / 1000;
+  // only judge the device while the moving background is actually showing
+  if (bgOn && bgAnimate) noteFrame(raw);
+  const dt = Math.min(0.05, Math.max(0, raw));
   last = now;
   clock += dt;
   if (bgOn) drawBackground(clock, dt);
@@ -640,6 +645,13 @@ function frame(now) {
   drawParticles();
   requestAnimationFrame(frame);
 }
+
+onMotionChange(() => {
+  if (!an) return;
+  animDpr = motion.scale;
+  sizeCanvas(an, anx, animDpr);
+  animCleared = false;
+});
 
 export function boot(options = {}) {
   opts = options;

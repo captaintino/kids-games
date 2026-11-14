@@ -7,6 +7,7 @@ import {
 import { say, setSpeechMuted, unlockSpeech } from '../../shared/js/speech.js';
 import { earnSticker } from '../../shared/js/rewards.js';
 import { startGrownups } from '../../shared/js/grownups.js';
+import { motion, noteFrame, onMotionChange } from '../../shared/js/motion.js';
 import { addArt } from '../../shared/js/gallery.js';
 import {
   PX as DRAW_PX, STAMPS, beginLine, lineSegment, drawOp, stampIcon, blank, inkAmount,
@@ -112,7 +113,7 @@ function resize() {
   // pixel budget so big retina tablets stay smooth
   DPR = Math.max(1, Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(2400000 / (W * H))));
   sizeCanvas(bg, bgx, Math.min(DPR, 1.5));
-  sizeCanvas(an, anx, 1);
+  sizeCanvas(an, anx, motion.scale); // lower resolution on old devices: see motion.js
   // sparkles are soft and short-lived: 1.5x resolution is plenty and saves a lot of pixels on 2x/3x screens
   sizeCanvas(fx, fxx, Math.min(DPR, 1.5));
   fxDirty = true;
@@ -176,13 +177,14 @@ function setScene(id) {
 }
 
 function drawBackground(t, dt) {
-  // the moving bits are slow drifting things: 30 frames a second is plenty
+  // the moving bits are slow drifting things: 30 frames a second is plenty (fewer on old devices)
   animAcc += dt;
-  if (animAcc < 1 / 31) return;
-  const step = Math.min(animAcc, 0.1);
+  if (animAcc < 1 / (motion.fps + 1)) return;
+  const step = Math.min(animAcc, 0.2);
   animAcc = 0;
   anx.setTransform(1, 0, 0, 1, 0, 0);
   anx.clearRect(0, 0, an.width, an.height);
+  anx.setTransform(motion.scale, 0, 0, motion.scale, 0, 0);
   animator.draw(anx, W, H, t, step);
   anx.globalAlpha = 1;
 }
@@ -357,7 +359,9 @@ function drawParticles() {
 
 let last = 0;
 let clock = 0;
+onMotionChange(() => sizeCanvas(an, anx, motion.scale));
 function frame(now) {
+  noteFrame((now - last) / 1000);
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   clock += dt;

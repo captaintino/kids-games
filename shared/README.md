@@ -88,3 +88,12 @@ Speech is muted along with the sound button. Not every browser has a voice, so n
 - **No build step, no dependencies, no network.** Plain ES modules; everything must work offline.
 - **Kind, never scary.** No losing screens, no timers that punish, no harsh sounds. Wrong answers get a
   gentle `boing` and a wiggle, then help.
+
+## Background motion on old devices (`js/motion.js`)
+
+The moving bits of the background worlds are drawn 30 times a second on most devices, 15 times a
+second at 3/4 resolution on older ones (iOS 12, Android 7 and older, 2 GB of memory or less, two
+cores), and 8 times a second at half resolution on the oldest. While the background is showing, the
+kit also watches real frame rates: a device that keeps running under about 30 fps steps down a
+level and remembers it, and steps back up after 20 smooth seconds. The kit, Coloring and Sticker
+Scene use it; the grown-up corner's About card shows the current level.

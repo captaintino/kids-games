@@ -8,6 +8,7 @@ import {
 import { SCENES, paintScene, createAnimator } from '../../shared/js/scenes.js';
 import { earnSticker } from '../../shared/js/rewards.js';
 import { addArt } from '../../shared/js/gallery.js';
+import { motion } from '../../shared/js/motion.js';
 import { STICKERS, CATS, BY_ID } from './art.js';
 
 const PARTY = ['#ffb03b', '#ff6fb5', '#9b6bff'];
@@ -224,6 +225,7 @@ function loadScene(id) {
 // ---------------------------------------------------------------------------
 // Stage: the world painted behind the stickers (above the tray)
 // ---------------------------------------------------------------------------
+let stageAcc = 1; // time since the stage was last drawn
 function layoutStage() {
   if (!playing) return;
   const tr = $('#tray').getBoundingClientRect();
@@ -242,6 +244,7 @@ function layoutStage() {
   c.setTransform(stageDpr, 0, 0, stageDpr, 0, 0);
   paintScene(c, stage.w, stage.h, worldId, PARTY);
   animator = createAnimator(worldId);
+  stageAcc = 1; // repaint on the very next frame
   renderAll();
 }
 function drawStage(t, dt) {
@@ -1047,7 +1050,12 @@ boot({
   },
   onFrame(dt, t) {
     if (!playing) return;
-    drawStage(t, dt);
+    // the world's moving bits: 30 frames a second is plenty (fewer on old devices, see motion.js)
+    stageAcc += dt;
+    if (stageAcc >= 1 / (motion.fps + 1)) {
+      drawStage(t, Math.min(stageAcc, 0.2));
+      stageAcc = 0;
+    }
     if (fling) {
       scrollBy(fling.v);
       fling.v *= 0.92;
