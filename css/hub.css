@@ -115,6 +115,7 @@
   color: #7a3d00;
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   animation: book-wiggle 4s ease-in-out infinite;
 }
 .book-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #c98a00; }
@@ -169,6 +170,7 @@
   box-shadow: 0 5px 0 rgba(201, 138, 0, .35), 0 8px 14px rgba(40, 10, 90, .15);
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   animation: card-in .45s cubic-bezier(.2, 1.5, .4, 1) both;
 }
 .slot.got .slot-art { -webkit-filter: drop-shadow(0 3px 2px rgba(0,0,0,.18)); filter: drop-shadow(0 3px 2px rgba(0,0,0,.18)); }
@@ -218,6 +220,7 @@
   font-family: inherit; font-size: 16px; font-weight: 700; color: #5420c4;
   margin: 4px; padding: 8px 14px; border-radius: 999px; border: 2px solid #c9b6ff; background: #f4efff;
   cursor: pointer; touch-action: manipulation;
+  touch-action: pan-x pan-y;
 }
 .chip.on { background: #8048ff; border-color: #8048ff; color: #fff; }
 .gu-games { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); grid-gap: 6px 12px; gap: 6px 12px; }
@@ -256,6 +259,7 @@
   text-shadow: 0 2px 0 rgba(80, 30, 150, .5);
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   transition: transform .15s;
 }
 .tab.on {

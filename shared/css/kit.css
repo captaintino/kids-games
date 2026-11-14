@@ -33,7 +33,8 @@ html, body {
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
-  touch-action: manipulation;
+  touch-action: manipulation; /* older browsers: no double-tap zoom */
+  touch-action: pan-x pan-y; /* scrolling yes, pinch-zoom and double-tap zoom no */
 }
 
 body { position: fixed; top: 0; right: 0; bottom: 0; left: 0; }
@@ -201,6 +202,7 @@ canvas#bg, canvas#bg-fade, canvas#bg-anim, canvas#fx {
   justify-content: center;
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   overflow: hidden;
   transition: transform .08s ease, box-shadow .08s ease;
 }
@@ -259,6 +261,7 @@ canvas#bg, canvas#bg-fade, canvas#bg-anim, canvas#fx {
   padding: 0;
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
 }
 .round-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(84, 32, 196, .7); }
 
@@ -368,6 +371,7 @@ canvas#fx { z-index: 30; }
   box-shadow: 0 8px 18px rgba(40, 10, 90, .35);
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   font-family: inherit;
   transition: transform .15s ease;
 }
@@ -537,6 +541,7 @@ canvas#fx { z-index: 30; }
   box-shadow: 0 7px 0 var(--t3, #c4166b), 0 14px 22px rgba(40, 10, 90, .3);
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -604,4 +609,7 @@ canvas#fx { z-index: 30; }
 /* No scrollbars anywhere: lists still scroll by swiping, but tablets and desktop browsers
    would otherwise draw bars inside panels that don't span the whole screen. */
 * { scrollbar-width: none; -ms-overflow-style: none; }
+/* No pinch-zoom anywhere, including inside scrolling lists (which don't inherit the page's
+   setting). Elements with their own touch-action (canvases, drag areas) keep it. */
+* { touch-action: pan-x pan-y; }
 *::-webkit-scrollbar { display: none; width: 0; height: 0; }

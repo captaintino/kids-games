@@ -229,6 +229,7 @@ canvas#game {
   opacity: .72;
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   transition: transform .1s, opacity .1s;
 }
 .book-tab.tab-green { --t1: #a6ff7a; --t2: #23c95a; --t3: #138a3b; }
@@ -291,6 +292,7 @@ canvas#game {
   color: #fff;
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   animation: card-in .4s cubic-bezier(.2, 1.5, .4, 1) both;
 }
 .fish-card:active { transform: translateY(4px); box-shadow: 0 2px 0 #1f6fc0, 0 6px 10px rgba(10, 40, 100, .3); }

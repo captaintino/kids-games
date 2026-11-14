@@ -7,7 +7,10 @@
 // wiggled, we press the button ourselves when the finger lifts, as long as it lifts on
 // the same button and nothing scrolled. Quick, clean taps are left to the browser.
 //
-// Importing this module installs it once; kit.js, coloring and bubbles import it.
+// It also stops pinch-zooming (and Safari's two-finger zoom gestures) everywhere: the
+// viewport tag asks for no zoom, but iPads ignore that.
+//
+// Importing this module installs it once; every page loads it (through grownups.js).
 
 const TAPPABLE = 'button, a[href], label, [data-action], [role="button"], input[type="checkbox"], input[type="radio"]';
 const SKIP = 'input[type="range"], input[type="text"], textarea, select, [data-no-tap-fix]';
@@ -76,4 +79,20 @@ if (!window.__tapFix && 'ontouchstart' in window) {
   document.addEventListener('contextmenu', (e) => {
     if (tappableAt(e.target)) e.preventDefault();
   }, true);
+}
+
+// No zooming. iOS Safari ignores user-scalable=no, so cancel its pinch gestures and any
+// two-finger move; touch handlers still get their events, only the zoom is stopped.
+if (!window.__noZoom) {
+  window.__noZoom = true;
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach((t) => {
+    document.addEventListener(t, (e) => e.preventDefault(), { passive: false });
+  });
+  document.addEventListener('touchmove', (e) => {
+    if (e.touches.length > 1 || (typeof e.scale === 'number' && e.scale !== 1)) {
+      if (e.cancelable) e.preventDefault();
+    }
+  }, { capture: true, passive: false });
+  // trackpad pinch (and ctrl + mouse wheel) in desktop browsers
+  document.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
 }

@@ -50,6 +50,7 @@
   box-shadow: 0 7px 0 rgba(110, 40, 190, .35), 0 14px 22px rgba(40, 10, 90, .3);
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   font-family: inherit;
   animation: card-in .4s cubic-bezier(.2, 1.5, .4, 1) both;
   transition: transform .12s ease;
@@ -238,6 +239,7 @@
   place-items: center;
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
 }
 .sb + .sb { margin-left: 5px; }
 .sb:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(60, 20, 140, .5); }
@@ -328,6 +330,7 @@
   place-items: center;
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   transition: transform .15s, background .15s;
 }
 .tab + .tab { margin-left: 5px; }

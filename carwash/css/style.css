@@ -259,6 +259,7 @@
   box-shadow: 0 5px 0 rgba(30, 90, 170, .45), 0 8px 14px rgba(40, 10, 90, .25);
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -336,6 +337,7 @@
   font-family: inherit;
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   transition: transform .18s cubic-bezier(.2, 1.8, .4, 1), box-shadow .18s;
 }
 .swatch {

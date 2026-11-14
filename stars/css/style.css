@@ -226,6 +226,7 @@ body:not([data-season="night"]) .big-emoji { display: inline-block; margin-right
   color: #fff;
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   animation: card-in .4s cubic-bezier(.2, 1.5, .4, 1) both;
 }
 .sky-card:active { transform: translateY(4px); box-shadow: 0 2px 0 #0d0a33; }

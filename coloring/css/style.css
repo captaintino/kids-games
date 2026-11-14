@@ -31,7 +31,8 @@ html, body {
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
-  touch-action: manipulation;
+  touch-action: manipulation; /* older browsers: no double-tap zoom */
+  touch-action: pan-x pan-y; /* scrolling yes, pinch-zoom and double-tap zoom no */
 }
 
 body { position: fixed; top: 0; right: 0; bottom: 0; left: 0; }
@@ -199,6 +200,7 @@ canvas#bg, canvas#bg-fade, canvas#bg-anim, canvas#fx {
   justify-content: center;
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   overflow: hidden;
   transition: transform .08s ease, box-shadow .08s ease;
 }
@@ -257,6 +259,7 @@ canvas#bg, canvas#bg-fade, canvas#bg-anim, canvas#fx {
   padding: 0;
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
 }
 .round-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(84, 32, 196, .7); }
 
@@ -372,6 +375,7 @@ canvas#fx { z-index: 30; }
   box-shadow: 0 8px 18px rgba(40, 10, 90, .35);
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   font-family: inherit;
   transition: transform .15s ease;
 }
@@ -509,6 +513,7 @@ canvas#fx { z-index: 30; }
   text-shadow: 0 2px 0 rgba(80, 30, 150, .5);
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   transition: transform .15s;
 }
 .tab.on {
@@ -549,6 +554,7 @@ canvas#fx { z-index: 30; }
   color: #fff;
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -733,6 +739,7 @@ canvas#fx { z-index: 30; }
   place-items: center;
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   padding: 0;
   transition: transform .15s, background .15s;
 }
@@ -782,6 +789,7 @@ canvas#fx { z-index: 30; }
   box-shadow: inset 0 -5px 0 rgba(0,0,0,.14), 0 4px 8px rgba(40, 10, 90, .3);
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   padding: 0;
   font-family: inherit;
   transition: transform .18s cubic-bezier(.2, 1.8, .4, 1), box-shadow .18s;
@@ -1022,6 +1030,7 @@ canvas#fx { z-index: 30; }
   place-items: center;
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   transition: transform .15s, background .15s;
 }
 .stamp-btn + .stamp-btn { margin-left: 4px; }
@@ -1071,4 +1080,7 @@ canvas#fx { z-index: 30; }
 /* No scrollbars anywhere: lists still scroll by swiping, but tablets and desktop browsers
    would otherwise draw bars inside panels that don't span the whole screen. */
 * { scrollbar-width: none; -ms-overflow-style: none; }
+/* No pinch-zoom anywhere, including inside scrolling lists (which don't inherit the page's
+   setting). Elements with their own touch-action (canvases, drag areas) keep it. */
+* { touch-action: pan-x pan-y; }
 *::-webkit-scrollbar { display: none; width: 0; height: 0; }

@@ -18,7 +18,8 @@
 * { box-sizing: border-box; }
 
 html, body {
-  touch-action: manipulation;
+  touch-action: manipulation; /* older browsers: no double-tap zoom */
+  touch-action: pan-x pan-y; /* scrolling yes, pinch-zoom and double-tap zoom no */
   margin: 0;
   height: 100%;
   overflow: hidden;
@@ -231,6 +232,7 @@ canvas.bg-pic {
   justify-content: center;
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   overflow: hidden;
   transition: transform .08s ease, box-shadow .08s ease;
 }
@@ -290,6 +292,7 @@ canvas.bg-pic {
   line-height: 1;
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
 }
 /* drawn with CSS (not the ⏸ emoji) so it is centered the same on every device */
 .pause-icon {
@@ -335,6 +338,7 @@ canvas.bg-pic {
   text-shadow: 0 3px 0 hsla(var(--h), 80%, 30%, .6);
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   padding: 0;
   display: grid;
   place-items: center;
@@ -392,6 +396,7 @@ canvas.bg-pic {
   box-shadow: 0 8px 18px rgba(40, 10, 90, .35);
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
   font-family: inherit;
   transition: transform .15s ease;
 }
@@ -784,6 +789,7 @@ canvas.bg-pic {
   text-shadow: 0 2px 0 rgba(60, 10, 120, .5);
   cursor: pointer;
   touch-action: manipulation;
+  touch-action: pan-x pan-y;
 }
 .learn-chip .learn-name { font-weight: 700; font-size: 22px; text-transform: capitalize; }
 .learn-chip.flash { animation: bump .4s ease 2; }
@@ -807,4 +813,7 @@ canvas.bg-pic {
 /* No scrollbars anywhere: lists still scroll by swiping, but tablets and desktop browsers
    would otherwise draw bars inside panels that don't span the whole screen. */
 * { scrollbar-width: none; -ms-overflow-style: none; }
+/* No pinch-zoom anywhere, including inside scrolling lists (which don't inherit the page's
+   setting). Elements with their own touch-action (canvases, drag areas) keep it. */
+* { touch-action: pan-x pan-y; }
 *::-webkit-scrollbar { display: none; width: 0; height: 0; }
