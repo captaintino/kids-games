@@ -22,27 +22,31 @@ export const grownups = createStore('grownups', {
   limit: 0,        // minutes of play per day, 0 = no limit
   hidden: [],      // game ids hidden from the home screen
   stickers: true,  // earn stickers for the sticker book
-  lowPerf: false,  // low-performance mode: no decorative looping animations on buttons
+  lowPerf: false,  // low-performance mode: no decorative animations (loops and entrances)
 });
 if (!Array.isArray(grownups.data.hidden)) grownups.data.hidden = [];
 
-// Low-performance mode: stops the decorative looping animations (button shine, wobbling
-// and bobbing buttons, tiles, mascots and titles). Every stylesheet rule with an endless
-// animation is copied under html.low-perf with the animation turned off, except the cues
-// that tell a kid what to do (a pulsing hint, the next note to play, edit-mode jiggle) and
-// the quick one-off bounces when something is pressed, which never loop.
+// Low-performance mode: stops the decorative CSS animations: looping ones (button shine,
+// wobbling and bobbing buttons, tiles, mascots and titles) and entrances (menu items and
+// cards popping or sliding in, stars flying in, banners). Every stylesheet rule with an
+// animation is copied under html.low-perf with the animation turned off, except:
+// - cues that tell a kid what to do (a pulsing hint, the next note, edit-mode jiggle)
+// - quick reactions to the kid's own taps (a button's bounce, a monster's chomp), so they
+//   can still see that something happened.
+// Screens also switch instantly instead of cross-fading.
 const CUES = /\.(hint|nudge|ready|cur|now|playing|hot|editing|new|start-ring|slot-glow|share-pointer|hint-flick)\b/;
+const REACTIONS = /\.(bounce|bump|wiggle|wiggle-s|shake|wrong|burp|chomp|giggle|happy|poof|pop-bar|pop-l|snap-pop|squash|talk|dance|dancing|sing|shudder|rumble|clunk|beam|turn)\b/;
 let lowPerfCss = null;
-function collectLooping(rules, out) {
+function collectAnimated(rules, out) {
   for (let i = 0; i < rules.length; i++) {
     const r = rules[i];
-    if (r.cssRules && !r.selectorText) { collectLooping(r.cssRules, out); continue; }
+    if (r.cssRules && !r.selectorText) { collectAnimated(r.cssRules, out); continue; }
     if (!r.selectorText || !r.style) continue;
-    const n = r.style.animationIterationCount || r.style.webkitAnimationIterationCount || '';
-    if (n.indexOf('infinite') < 0) continue;
+    const name = r.style.animationName || r.style.webkitAnimationName || '';
+    if (!name || name === 'none' || name === 'initial') continue;
     r.selectorText.split(',').forEach((sel) => {
       sel = sel.trim();
-      if (sel && !CUES.test(sel)) out.push(`html.low-perf ${sel}`);
+      if (sel && !CUES.test(sel) && !REACTIONS.test(sel)) out.push(`html.low-perf ${sel}`);
     });
   }
 }
@@ -51,16 +55,18 @@ function buildLowPerfCss() {
   for (let i = 0; i < document.styleSheets.length; i++) {
     let rules = null;
     try { rules = document.styleSheets[i].cssRules; } catch (e) { rules = null; } // not loaded yet
-    if (rules) collectLooping(rules, sels);
+    if (rules) collectAnimated(rules, sels);
   }
   if (!lowPerfCss) {
     lowPerfCss = document.createElement('style');
     lowPerfCss.id = 'low-perf-css';
     document.head.appendChild(lowPerfCss);
   }
-  lowPerfCss.textContent = sels.length
-    ? `${sels.join(',\n')} { -webkit-animation: none !important; animation: none !important; }`
-    : '';
+  // screens switch instantly instead of cross-fading
+  const screens = 'html.low-perf .screen, html.low-perf .screen.active { -webkit-transition: none !important; transition: none !important; }';
+  lowPerfCss.textContent = (sels.length
+    ? `${sels.join(',\n')} { -webkit-animation: none !important; animation: none !important; }\n`
+    : '') + screens;
 }
 function applyLowPerf() {
   const on = !!grownups.data.lowPerf;
